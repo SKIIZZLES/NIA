@@ -110,8 +110,12 @@ export function getSupabase(): SupabaseClient<Database> | null {
         persistSession: browser,
         detectSessionInUrl: false,
       },
-      // Force global WebSocket so realtime never needs Node `ws`.
-      realtime: typeof WebSocket !== 'undefined' ? { transport: WebSocket } : undefined,
+      // Realtime is stubbed via Metro (shims/supabase-realtime-stub.js) for Expo Go.
+      // Keep params minimal; Auth/REST/Storage are unaffected.
+      realtime: {
+        params: { eventsPerSecond: 0 },
+        ...(typeof WebSocket !== 'undefined' ? { transport: WebSocket } : {}),
+      },
     });
   }
   return client;
