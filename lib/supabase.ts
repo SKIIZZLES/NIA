@@ -1,6 +1,7 @@
 /**
  * Client Supabase NIA — désactivé si les env manquent (mode mock offline).
  */
+import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
