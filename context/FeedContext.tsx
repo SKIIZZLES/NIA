@@ -24,6 +24,11 @@ import {
   fetchFollowingIds,
   toggleFollow as persistToggleFollow,
 } from '@/lib/follows';
+import {
+  blockUser as persistBlockUser,
+  fetchBlockedIds,
+  type BlockResult,
+} from '@/lib/blocks';
 
 type PublishInput = {
   caption: string;
@@ -41,67 +46,86 @@ type FeedContextValue = {
   videos: VideoItem[];
   loading: boolean;
   refresh: () => Promise<void>;
-  /** Mock local ou upload Supabase selon config */
   publishPost: (input: PublishInput) => Promise<void>;
   /** @deprecated préférer publishPost */
   addLocalPost: (caption: string, thumbnailUrl?: string) => void;
   toggleLike: (id: string) => void;
   likedIds: Set<string>;
-  /** Ids des profils suivis */
   followingIds: Set<string>;
   toggleFollow: (targetUserId: string) => void;
+  blockedIds: Set<string>;
+  blockUser: (targetUserId: string) => Promise<BlockResult>;
   bumpCommentCount: (videoId: string, delta?: number) => void;
   isMockFeed: boolean;
+  feedError: string | null;
 };
 
 const FeedContext = createContext<FeedContextValue | null>(null);
 
 function isPersistableId(id: string): boolean {
-  // UUID v4-ish from Supabase ; skip mock numeric / local_* ids
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     id,
   );
 }
 
+function filterBlocked(list: VideoItem[], blocked: Set<string>): VideoItem[] {
+  if (!blocked.size) return list;
+  return list.filter((v) => !v.userId || !blocked.has(v.userId));
+}
+
 export function FeedProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const mockFeed = !isSupabaseConfigured;
-  const [videos, setVideos] = useState<VideoItem[]>(DEMO_VIDEOS);
+  const [rawVideos, setRawVideos] = useState<VideoItem[]>(DEMO_VIDEOS);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [feedError, setFeedError] = useState<string | null>(null);
+
+  const videos = useMemo(
+    () => filterBlocked(rawVideos, blockedIds),
+    [rawVideos, blockedIds],
+  );
 
   const refresh = useCallback(async () => {
     if (!isSupabaseConfigured) {
-      setVideos(DEMO_VIDEOS);
+      setRawVideos(DEMO_VIDEOS);
+      setFeedError(null);
       setLoading(false);
       return;
     }
     setLoading(true);
+    setFeedError(null);
     try {
       const remote = await fetchVideosFromSupabase();
-      setVideos(remote.length ? remote : DEMO_VIDEOS);
+      setRawVideos(remote.length ? remote : DEMO_VIDEOS);
       if (user && !user.id.startsWith('mock_')) {
         try {
-          const [liked, following] = await Promise.all([
+          const [liked, following, blocked] = await Promise.all([
             fetchLikedVideoIds(user.id),
             fetchFollowingIds(user.id),
+            fetchBlockedIds(user.id),
           ]);
           setLikedIds(new Set(liked));
           setFollowingIds(new Set(following));
+          setBlockedIds(new Set(blocked));
         } catch {
-          // ignore hydrate errors
+          // ignore hydrate errors — ne pas crasher la démo
         }
       }
     } catch {
-      setVideos((prev) => (prev.length ? prev : DEMO_VIDEOS));
+      setRawVideos((prev) => (prev.length ? prev : DEMO_VIDEOS));
+      setFeedError(
+        'Connexion limitée. Affichage du feed démo (Supabase indisponible).',
+      );
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   const addLocalPost = useCallback(
@@ -121,7 +145,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         tab: 'pour-toi',
         userId: user?.id,
       };
-      setVideos((prev) => [item, ...prev]);
+      setRawVideos((prev) => [item, ...prev]);
     },
     [user],
   );
@@ -161,26 +185,38 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           userId: user?.id,
           category: input.category as VideoItem['category'],
         };
-        setVideos((prev) => [item, ...prev]);
+        setRawVideos((prev) => [item, ...prev]);
         return;
       }
       if (!input.localUri) {
         throw new Error(PUBLISH_ERRORS.noMedia);
       }
-      const item = await uploadVideoToSupabase({
-        userId: user.id,
-        localUri: input.localUri,
-        caption: input.caption,
-        region: input.region,
-        tag: input.tag,
-        category: input.category,
-        hashtags: tags,
-        mimeType: input.mimeType,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-        status: 'published',
-      });
-      setVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
+      try {
+        const item = await uploadVideoToSupabase({
+          userId: user.id,
+          localUri: input.localUri,
+          caption: input.caption,
+          region: input.region,
+          tag: input.tag,
+          category: input.category,
+          hashtags: tags,
+          mimeType: input.mimeType,
+          username: user.username,
+          avatarUrl: user.avatarUrl,
+          status: 'published',
+        });
+        setRawVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
+      } catch (e) {
+        const msg =
+          e instanceof Error && e.message
+            ? e.message
+            : 'Publication impossible. Vérifiez votre connexion.';
+        throw new Error(
+          msg.includes('fetch') || msg.includes('network')
+            ? 'Supabase hors ligne. Réessayez ou publiez en mode mock.'
+            : msg,
+        );
+      }
     },
     [user],
   );
@@ -195,7 +231,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         else next.add(id);
         return next;
       });
-      setVideos((vids) =>
+      setRawVideos((vids) =>
         vids.map((v) =>
           v.id === id
             ? { ...v, likes: Math.max(0, v.likes + (wasLiked ? -1 : 1)) }
@@ -216,7 +252,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
             else next.delete(id);
             return next;
           });
-          setVideos((vids) =>
+          setRawVideos((vids) =>
             vids.map((v) =>
               v.id === id
                 ? { ...v, likes: Math.max(0, v.likes + (wasLiked ? 1 : -1)) }
@@ -247,21 +283,48 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         !user.id.startsWith('mock_') &&
         isPersistableId(targetUserId)
       ) {
-        void persistToggleFollow(user.id, targetUserId, wasFollowing).catch(() => {
-          setFollowingIds((prev) => {
-            const next = new Set(prev);
-            if (wasFollowing) next.add(targetUserId);
-            else next.delete(targetUserId);
-            return next;
-          });
-        });
+        void persistToggleFollow(user.id, targetUserId, wasFollowing).catch(
+          () => {
+            setFollowingIds((prev) => {
+              const next = new Set(prev);
+              if (wasFollowing) next.add(targetUserId);
+              else next.delete(targetUserId);
+              return next;
+            });
+          },
+        );
       }
     },
     [user, followingIds],
   );
 
+  const blockUser = useCallback(
+    async (targetUserId: string): Promise<BlockResult> => {
+      if (!targetUserId || (user && targetUserId === user.id)) {
+        return { ok: false, message: 'Impossible de vous bloquer vous-même.' };
+      }
+      if (!user) {
+        setBlockedIds((prev) => new Set(prev).add(targetUserId));
+        return { ok: true, mock: true, blocked: true };
+      }
+
+      const result = await persistBlockUser(user.id, targetUserId);
+      if (result.ok) {
+        setBlockedIds((prev) => new Set(prev).add(targetUserId));
+        setFollowingIds((prev) => {
+          if (!prev.has(targetUserId)) return prev;
+          const next = new Set(prev);
+          next.delete(targetUserId);
+          return next;
+        });
+      }
+      return result;
+    },
+    [user],
+  );
+
   const bumpCommentCount = useCallback((videoId: string, delta = 1) => {
-    setVideos((vids) =>
+    setRawVideos((vids) =>
       vids.map((v) =>
         v.id === videoId
           ? { ...v, comments: Math.max(0, v.comments + delta) }
@@ -281,8 +344,11 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       likedIds,
       followingIds,
       toggleFollow,
+      blockedIds,
+      blockUser,
       bumpCommentCount,
       isMockFeed: mockFeed,
+      feedError,
     }),
     [
       videos,
@@ -294,8 +360,11 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       likedIds,
       followingIds,
       toggleFollow,
+      blockedIds,
+      blockUser,
       bumpCommentCount,
       mockFeed,
+      feedError,
     ],
   );
 

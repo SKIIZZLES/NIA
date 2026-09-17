@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
   Pressable,
@@ -14,6 +15,9 @@ import { formatCount, VideoItem } from '@/data/mockVideos';
 import { useFeed } from '@/context/FeedContext';
 import { useAuth } from '@/context/AuthContext';
 import { FollowButton } from '@/components/FollowButton';
+import { VideoMenuSheet } from '@/components/VideoMenuSheet';
+import { ReportSheet } from '@/components/ReportSheet';
+import { shareVideo } from '@/lib/share';
 import { useRouter } from 'expo-router';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
@@ -34,7 +38,8 @@ export function VideoCard({
   const videoRef = useRef<Video>(null);
   const router = useRouter();
   const { user } = useAuth();
-  const { toggleLike, likedIds, followingIds, toggleFollow } = useFeed();
+  const { toggleLike, likedIds, followingIds, toggleFollow, blockUser } =
+    useFeed();
   const liked = likedIds.has(item.id);
   const authorId = item.userId;
   const following = authorId ? followingIds.has(authorId) : false;
@@ -44,6 +49,8 @@ export function VideoCard({
       ? authorId === user.id
       : item.handle === `@${user.username}`);
   const [muted, setMuted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const openProfile = () => {
     const handle = item.handle.replace(/^@/, '');
@@ -69,6 +76,40 @@ export function VideoCard({
 
   const onStatus = (_status: AVPlaybackStatus) => {};
 
+  const onShare = async () => {
+    await shareVideo(item);
+  };
+
+  const onBlock = () => {
+    if (!authorId || isOwn) return;
+    Alert.alert(
+      'Bloquer cet utilisateur ?',
+      `Vous ne verrez plus les vidéos de ${item.handle}.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Bloquer',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const result = await blockUser(authorId);
+              if (!result.ok) {
+                Alert.alert('Erreur', result.message);
+                return;
+              }
+              Alert.alert(
+                'Utilisateur bloqué',
+                result.mock
+                  ? 'Blocage enregistré (mode démo).'
+                  : `${item.handle} a été bloqué.`,
+              );
+            })();
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
       <Video
@@ -83,7 +124,15 @@ export function VideoCard({
       />
       <View style={styles.gradient} pointerEvents="none" />
 
-      {/* Right rail */}
+      <Pressable
+        style={styles.menuBtn}
+        onPress={() => setMenuOpen(true)}
+        hitSlop={12}
+        accessibilityLabel="Options vidéo"
+      >
+        <Ionicons name="ellipsis-vertical" size={22} color={Colors.sable} />
+      </Pressable>
+
       <View style={styles.rail}>
         <View style={styles.avatarWrap}>
           <Pressable onPress={openProfile}>
@@ -110,7 +159,11 @@ export function VideoCard({
           label={formatCount(item.comments)}
           onPress={() => onOpenComments?.(item.id)}
         />
-        <RailAction icon="arrow-redo-outline" label={formatCount(item.shares)} />
+        <RailAction
+          icon="arrow-redo-outline"
+          label={formatCount(item.shares)}
+          onPress={() => void onShare()}
+        />
         <Pressable onPress={() => setMuted((m) => !m)} style={styles.muteBtn}>
           <Ionicons
             name={muted ? 'volume-mute' : 'volume-high'}
@@ -120,7 +173,6 @@ export function VideoCard({
         </Pressable>
       </View>
 
-      {/* Caption */}
       <View style={styles.meta}>
         <Pressable onPress={openProfile}>
           <Text style={styles.handle}>{item.handle}</Text>
@@ -132,6 +184,25 @@ export function VideoCard({
           <Text style={styles.country}>{item.country}</Text>
         ) : null}
       </View>
+
+      <VideoMenuSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        canReport={!isOwn}
+        canBlock={!!authorId && !isOwn}
+        onReport={() => setReportOpen(true)}
+        onBlock={onBlock}
+        onShare={() => void onShare()}
+      />
+
+      <ReportSheet
+        visible={reportOpen}
+        onClose={() => setReportOpen(false)}
+        reporterId={user?.id}
+        targetType="video"
+        targetId={item.id}
+        onDone={(message) => Alert.alert('Signalement', message)}
+      />
     </View>
   );
 }
@@ -166,6 +237,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderBottomWidth: 180,
     borderBottomColor: Colors.overlay,
+  },
+  menuBtn: {
+    position: 'absolute',
+    top: 56,
+    right: 12,
+    zIndex: 5,
+    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    borderRadius: 20,
   },
   rail: {
     position: 'absolute',

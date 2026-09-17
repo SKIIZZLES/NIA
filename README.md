@@ -34,6 +34,48 @@ Puis scanner le QR avec Expo Go, ou `npx expo start --web`.
 npx tsc --noEmit
 ```
 
+
+## Démo investisseur
+
+Objectif : MVP crédible à **0 €** (Expo + Supabase Free), UI française Afro-Tech.
+
+### Checklist Sprint 1
+
+- [x] Auth mock **ou** Supabase (signup → login → logout)
+- [x] Feed vertical (Pour toi / Abonnements / Afrique)
+- [x] Like, commentaires, follow
+- [x] Publier (mock local ou Storage) + profil public
+- [x] Signaler (spam, harcèlement, contenu illégal, autre)
+- [x] Bloquer un utilisateur (filtre hors du feed)
+- [x] Partage natif (Share API) + empty/error states FR
+- [x] Pas de crash si Supabase offline (messages FR / fallback mock)
+
+### Mode mock (sans backend)
+
+```bash
+cp .env.example .env   # laisser EXPO_PUBLIC_SUPABASE_* vides
+npm install
+npx expo start
+```
+
+1. Créer un compte (auth mock AsyncStorage).
+2. Accueil → swipe le feed démo.
+3. **+** → choisir média → légende / #tags / catégorie → Publier (local).
+4. Liker, ouvrir commentaires, follow depuis le rail.
+5. Ouvrir un profil (`@handle`) → Bloquer / Signaler (toast démo).
+6. Partager via le bouton share (Share API native).
+7. Profil → se déconnecter.
+
+### Mode Supabase Free
+
+1. Remplir `.env` avec URL + anon key (ne jamais committer `.env`).
+2. Exécuter `supabase/migrations/001_*.sql` puis `002_*.sql` dans le SQL Editor.
+3. Auth → Email : désactiver « Confirm email » pour la démo.
+4. Redémarrer Metro (`npx expo start -c`).
+5. Même parcours : compte réel → publier (Storage) → like / comment / follow → signaler / bloquer (tables `reports` / `blocks`).
+
+Si Supabase est down : l’app bascule sur le feed démo + toasts FR, **sans crash**.
+
 ## Brancher Supabase (~10 minutes)
 
 ### 1. Créer un projet
@@ -108,6 +150,7 @@ lib/
   supabase.ts             # Client (null si env manquantes)
   videos.ts               # list + upload + filtre category
   likes.ts / comments.ts / follows.ts / notifications.ts
+  reports.ts / blocks.ts / share.ts
 constants/categories.ts   # IDs Découvrir (= videos.category)
 supabase/migrations/      # 001 puis 002 dans le SQL Editor
 docs/SCHEMA_SPRINT1.md    # Modèle données Sprint 1 (statut à jour)
@@ -133,14 +176,13 @@ Fichier stub : `eas.json`.
 3. Builds preview / production via profils `eas.json`
 4. Définir aussi les secrets EAS `EXPO_PUBLIC_SUPABASE_*` pour les builds stores
 
-## Prochaines étapes (Étape 3+)
+## Après le MVP (hors scope Sprint 1)
 
-1. ~~Migration 002 + helpers likes/comments/follows + Découvrir par category~~ ✅ Étape 2
-2. Brancher un vrai projet Supabase (`.env`) + auth email réelle (Étape 3)
-3. UI commentaires / boutons follow profil / notifications riches (Étapes 4–6)
-4. OAuth Apple / Google
-5. Transcoding CDN si besoin (Mux / Cloudflare Stream)
-6. Messagerie (phase 2) · icônes / splash brand · analytics
+1. ~~Étapes 1–7~~ ✅ nav, schéma, engagement UI, publish, profils, signalement/blocage, démo investisseur
+2. OAuth Apple / Google
+3. Transcoding CDN si besoin (Mux / Cloudflare Stream)
+4. Messagerie (phase 2) · lives · marketplace · tips / ads
+5. Modération IA / back-office reviews
 
 ## Licence
 

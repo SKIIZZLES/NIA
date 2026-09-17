@@ -55,8 +55,30 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Helpers likes / comments / follows / notifications | ✅ Étape 2 |
 | UI engagement (like, commentaires sheet, follow, abo tab) | ✅ Étape 4 |
 | Publication polish + profils publics | ✅ Étape 5 |
-| Transcoding / CDN pro | ❌ prochain |
+| Signalement (spam / harcèlement / illégal / autre) | ✅ Étape 6 |
+| Blocage utilisateur + filtre feed | ✅ Étape 6 |
+| Partage natif (Share API) + empty/error FR | ✅ Étape 7 |
+| Guard rails offline (pas de crash si Supabase down) | ✅ Étape 7 |
+| Transcoding / CDN pro | ❌ après MVP |
 | Lives / messagerie / marketplace | ❌ hors scope immédiat |
+
+
+
+## Critères Sprint 1 — statut (signup → logout)
+
+| Critère | Statut |
+|---------|--------|
+| Inscription / connexion (mock **ou** Supabase email) | ✅ |
+| Parcours Accueil → Découvrir → Publier → Profil | ✅ |
+| Like / commentaire / follow dans le feed | ✅ |
+| Publication (mock local **ou** Storage) + profil public | ✅ |
+| Signalement + blocage (filtre feed) | ✅ |
+| Partage natif + états vides / erreurs FR | ✅ |
+| Déconnexion (logout) | ✅ |
+| Budget 0 € (Expo + Supabase Free) | ✅ |
+| `npx tsc --noEmit` OK | ✅ |
+
+**Parcours démo :** créer un compte → publier → liker / commenter / follow → ouvrir un profil → signaler ou bloquer → partager → se déconnecter.
 
 ## Après le MVP
 
@@ -64,7 +86,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 - OAuth (Google / Apple)
 - Transcoding vidéo (Mux / Cloudflare Stream) si free tier insuffisant
 - Compteurs commentaires serveur (profils publics : ✅ Étape 5)
-- Modération de base + signalements (UI)
+- ~~Modération de base + signalements (UI)~~ ✅ Étape 6 (légère, sans IA)
 - Messagerie (après nav Notifications)
 - OAuth (Google / Apple) — aussi listé ci-dessus
 

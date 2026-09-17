@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -13,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FollowButton } from '@/components/FollowButton';
+import { ReportSheet } from '@/components/ReportSheet';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
@@ -29,7 +31,13 @@ export default function PublicProfileScreen() {
   const username = (Array.isArray(raw) ? raw[0] : raw || '').replace(/^@/, '');
   const router = useRouter();
   const { user } = useAuth();
-  const { followingIds, toggleFollow, videos: feedVideos } = useFeed();
+  const {
+    followingIds,
+    toggleFollow,
+    videos: feedVideos,
+    blockedIds,
+    blockUser,
+  } = useFeed();
   const { width } = useWindowDimensions();
   const gap = 2;
   const cols = 3;
@@ -39,6 +47,7 @@ export default function PublicProfileScreen() {
   const [grid, setGrid] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!username) {
@@ -79,6 +88,38 @@ export default function PublicProfileScreen() {
 
   const isOwn = !!user && !!profile && (user.id === profile.id || user.username === profile.username);
   const following = profile ? followingIds.has(profile.id) : false;
+  const isBlocked = profile ? blockedIds.has(profile.id) : false;
+
+  const onBlock = () => {
+    if (!profile || isOwn) return;
+    Alert.alert(
+      'Bloquer cet utilisateur ?',
+      `Vous ne verrez plus les vidéos de @${profile.username}.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Bloquer',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const result = await blockUser(profile.id);
+              if (!result.ok) {
+                Alert.alert('Erreur', result.message);
+                return;
+              }
+              Alert.alert(
+                'Utilisateur bloqué',
+                result.mock
+                  ? 'Blocage enregistré (mode démo).'
+                  : `@${profile.username} a été bloqué.`,
+              );
+              router.back();
+            })();
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -90,7 +131,18 @@ export default function PublicProfileScreen() {
         <Text style={styles.topTitle} numberOfLines={1}>
           @{username || 'profil'}
         </Text>
-        <View style={{ width: 36 }} />
+        {!isOwn && profile ? (
+          <Pressable
+            onPress={() => setReportOpen(true)}
+            hitSlop={12}
+            style={styles.backBtn}
+            accessibilityLabel="Signaler le profil"
+          >
+            <Ionicons name="flag-outline" size={22} color={Colors.sable} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
       </View>
 
       {loading ? (
@@ -99,7 +151,11 @@ export default function PublicProfileScreen() {
         </View>
       ) : error || !profile ? (
         <View style={styles.center}>
+          <Ionicons name="person-outline" size={40} color={Colors.textMuted} />
           <Text style={styles.error}>{error || 'Profil introuvable'}</Text>
+          <Pressable style={styles.retryBtn} onPress={() => void load()}>
+            <Text style={styles.retryText}>Réessayer</Text>
+          </Pressable>
         </View>
       ) : (
         <FlatList
@@ -122,11 +178,20 @@ export default function PublicProfileScreen() {
                   <Text style={styles.editBtnText}>Modifier le profil</Text>
                 </Pressable>
               ) : (
-                <View style={styles.followWrap}>
+                <View style={styles.actionsRow}>
                   <FollowButton
                     following={following}
                     onPress={() => toggleFollow(profile.id)}
                   />
+                  <Pressable
+                    style={[styles.blockBtn, isBlocked && styles.blockBtnDone]}
+                    onPress={onBlock}
+                    disabled={isBlocked}
+                  >
+                    <Text style={styles.blockBtnText}>
+                      {isBlocked ? 'Bloqué' : 'Bloquer'}
+                    </Text>
+                  </Pressable>
                 </View>
               )}
             </View>
@@ -151,6 +216,17 @@ export default function PublicProfileScreen() {
           )}
         />
       )}
+
+      {profile ? (
+        <ReportSheet
+          visible={reportOpen}
+          onClose={() => setReportOpen(false)}
+          reporterId={user?.id}
+          targetType="user"
+          targetId={profile.id}
+          onDone={(message) => Alert.alert('Signalement', message)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -180,7 +256,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 16,
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: Spacing.lg },
   error: {
     color: Colors.textSecondary,
     fontFamily: Fonts.regular,
@@ -235,7 +311,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
-  followWrap: { marginTop: Spacing.md },
+  actionsRow: {
+    marginTop: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  blockBtn: {
+    borderWidth: 1,
+    borderColor: Colors.danger,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  blockBtnDone: {
+    opacity: 0.55,
+    borderColor: Colors.border,
+  },
+  blockBtnText: {
+    color: Colors.danger,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+  },
+  retryBtn: {
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  retryText: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+  },
   editBtn: {
     marginTop: Spacing.md,
     borderWidth: 1,
