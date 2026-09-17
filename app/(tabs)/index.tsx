@@ -20,21 +20,39 @@ const TABS: { key: FeedTab; label: string }[] = [
   { key: 'afrique', label: 'Afrique' },
 ];
 
-function filterVideos(videos: VideoItem[], tab: FeedTab): VideoItem[] {
+function filterVideos(
+  videos: VideoItem[],
+  tab: FeedTab,
+  followingIds: Set<string>,
+): VideoItem[] {
   if (tab === 'pour-toi') return videos;
-  const filtered = videos.filter((v) => v.tab === tab);
-  return filtered.length ? filtered : videos;
+  if (tab === 'afrique') {
+    const filtered = videos.filter((v) => v.tab === 'afrique' || v.category === 'afrique');
+    return filtered.length ? filtered : videos;
+  }
+  // Abonnements : prioriser les créateurs suivis ; sinon tag legacy / démo
+  if (followingIds.size > 0) {
+    const followed = videos.filter(
+      (v) => v.userId && followingIds.has(v.userId),
+    );
+    if (followed.length) return followed;
+  }
+  const tagged = videos.filter((v) => v.tab === 'abonnements');
+  return tagged.length ? tagged : videos;
 }
 
 export default function HomeScreen() {
-  const { videos } = useFeed();
+  const { videos, followingIds } = useFeed();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [tab, setTab] = useState<FeedTab>('pour-toi');
   const tabBarApprox = 64;
   const bottomInset = tabBarApprox;
 
-  const data = useMemo(() => filterVideos(videos, tab), [videos, tab]);
+  const data = useMemo(
+    () => filterVideos(videos, tab, followingIds),
+    [videos, tab, followingIds],
+  );
 
   return (
     <View style={[styles.root, { height }]}>

@@ -14,6 +14,8 @@ export type VideoItem = {
   country?: string;
   /** Aligné Découvrir / videos.category */
   category?: CategoryId;
+  /** Auteur (uuid Supabase ou id mock) — pour follow */
+  userId?: string;
 };
 
 /** Démos publiques (Big Buck Bunny / samples) — à remplacer par CDN NIA */
@@ -31,6 +33,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     tab: 'pour-toi',
     country: 'Sénégal',
     category: 'culture',
+    userId: 'mock_user_aminata',
   },
   {
     id: '2',
@@ -45,6 +48,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     tab: 'pour-toi',
     country: 'Ghana',
     category: 'mode',
+    userId: 'mock_user_kwame',
   },
   {
     id: '3',
@@ -59,6 +63,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     tab: 'afrique',
     country: "Côte d'Ivoire",
     category: 'afrique',
+    userId: 'mock_user_fatou',
   },
   {
     id: '4',
@@ -73,6 +78,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     tab: 'decouvrir',
     country: 'Maroc',
     category: 'diaspora',
+    userId: 'mock_user_sofia',
   },
   {
     id: '5',
@@ -87,6 +93,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     tab: 'abonnements',
     country: 'RDC',
     category: 'musique',
+    userId: 'mock_user_jean',
   },
   {
     id: '6',
@@ -101,6 +108,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     tab: 'pour-toi',
     country: 'Nigeria',
     category: 'musique',
+    userId: 'mock_user_nana',
   },
 ];
 

@@ -14,6 +14,10 @@ import {
   uploadVideoToSupabase,
 } from '@/lib/videos';
 import { fetchLikedVideoIds, toggleLike as persistToggleLike } from '@/lib/likes';
+import {
+  fetchFollowingIds,
+  toggleFollow as persistToggleFollow,
+} from '@/lib/follows';
 
 type PublishInput = {
   caption: string;
@@ -34,12 +38,16 @@ type FeedContextValue = {
   addLocalPost: (caption: string, thumbnailUrl?: string) => void;
   toggleLike: (id: string) => void;
   likedIds: Set<string>;
+  /** Ids des profils suivis */
+  followingIds: Set<string>;
+  toggleFollow: (targetUserId: string) => void;
+  bumpCommentCount: (videoId: string, delta?: number) => void;
   isMockFeed: boolean;
 };
 
 const FeedContext = createContext<FeedContextValue | null>(null);
 
-function isPersistableVideoId(id: string): boolean {
+function isPersistableId(id: string): boolean {
   // UUID v4-ish from Supabase ; skip mock numeric / local_* ids
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     id,
@@ -51,6 +59,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
   const mockFeed = !isSupabaseConfigured;
   const [videos, setVideos] = useState<VideoItem[]>(DEMO_VIDEOS);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const refresh = useCallback(async () => {
@@ -65,10 +74,14 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       setVideos(remote.length ? remote : DEMO_VIDEOS);
       if (user && !user.id.startsWith('mock_')) {
         try {
-          const ids = await fetchLikedVideoIds(user.id);
-          setLikedIds(new Set(ids));
+          const [liked, following] = await Promise.all([
+            fetchLikedVideoIds(user.id),
+            fetchFollowingIds(user.id),
+          ]);
+          setLikedIds(new Set(liked));
+          setFollowingIds(new Set(following));
         } catch {
-          // ignore likes hydrate errors
+          // ignore hydrate errors
         }
       }
     } catch {
@@ -97,6 +110,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         shares: 0,
         avatarUrl: user?.avatarUrl || 'https://i.pravatar.cc/150?u=moi',
         tab: 'pour-toi',
+        userId: user?.id,
       };
       setVideos((prev) => [item, ...prev]);
     },
@@ -150,7 +164,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         isSupabaseConfigured &&
         user &&
         !user.id.startsWith('mock_') &&
-        isPersistableVideoId(id)
+        isPersistableId(id)
       ) {
         void persistToggleLike(user.id, id, wasLiked).catch(() => {
           setLikedIds((prev) => {
@@ -172,6 +186,47 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     [user, likedIds],
   );
 
+  const toggleFollow = useCallback(
+    (targetUserId: string) => {
+      if (!targetUserId || (user && targetUserId === user.id)) return;
+      const wasFollowing = followingIds.has(targetUserId);
+
+      setFollowingIds((prev) => {
+        const next = new Set(prev);
+        if (wasFollowing) next.delete(targetUserId);
+        else next.add(targetUserId);
+        return next;
+      });
+
+      if (
+        isSupabaseConfigured &&
+        user &&
+        !user.id.startsWith('mock_') &&
+        isPersistableId(targetUserId)
+      ) {
+        void persistToggleFollow(user.id, targetUserId, wasFollowing).catch(() => {
+          setFollowingIds((prev) => {
+            const next = new Set(prev);
+            if (wasFollowing) next.add(targetUserId);
+            else next.delete(targetUserId);
+            return next;
+          });
+        });
+      }
+    },
+    [user, followingIds],
+  );
+
+  const bumpCommentCount = useCallback((videoId: string, delta = 1) => {
+    setVideos((vids) =>
+      vids.map((v) =>
+        v.id === videoId
+          ? { ...v, comments: Math.max(0, v.comments + delta) }
+          : v,
+      ),
+    );
+  }, []);
+
   const value = useMemo(
     () => ({
       videos,
@@ -181,9 +236,24 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       addLocalPost,
       toggleLike,
       likedIds,
+      followingIds,
+      toggleFollow,
+      bumpCommentCount,
       isMockFeed: mockFeed,
     }),
-    [videos, loading, refresh, publishPost, addLocalPost, toggleLike, likedIds, mockFeed],
+    [
+      videos,
+      loading,
+      refresh,
+      publishPost,
+      addLocalPost,
+      toggleLike,
+      likedIds,
+      followingIds,
+      toggleFollow,
+      bumpCommentCount,
+      mockFeed,
+    ],
   );
 
   return <FeedContext.Provider value={value}>{children}</FeedContext.Provider>;

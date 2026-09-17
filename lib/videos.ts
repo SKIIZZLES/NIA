@@ -60,6 +60,7 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     tab: guessTab(row.region, row.tag, row.category),
     country: row.region || undefined,
     category: resolveCategory(row.category, row.tag, row.region),
+    userId: row.user_id,
   };
 }
 

@@ -1,17 +1,141 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import {
+  fetchNotifications,
+  markNotificationRead,
+  isSupabaseConfigured,
+  type NotificationWithActor,
+} from '@/lib/notifications';
 
-const UPCOMING = [
-  'Likes & commentaires sur vos vidéos',
-  'Nouveaux abonnés',
-  'Mentions & collaborations',
-  'Alertes de modération (signalements)',
-];
+function actorName(n: NotificationWithActor): string {
+  const u = n.profiles?.username || n.profiles?.display_name;
+  if (u) return `@${u.replace(/^@/, '')}`;
+  return 'Quelqu’un';
+}
+
+function actorAvatar(n: NotificationWithActor): string {
+  if (n.profiles?.avatar_url) return n.profiles.avatar_url;
+  const u = n.profiles?.username || n.actor_id || 'nia';
+  return `https://i.pravatar.cc/80?u=${encodeURIComponent(u)}`;
+}
+
+function notifLabel(n: NotificationWithActor): string {
+  if (n.body) return n.body;
+  switch (n.type) {
+    case 'like':
+      return 'a aimé votre vidéo';
+    case 'comment':
+      return 'a commenté votre vidéo';
+    case 'follow':
+      return 's’est abonné·e à vous';
+    case 'system':
+      return 'Notification système';
+    default:
+      return 'a interagi avec vous';
+  }
+}
+
+function notifIcon(type: string): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case 'like':
+      return 'heart';
+    case 'comment':
+      return 'chatbubble';
+    case 'follow':
+      return 'person-add';
+    default:
+      return 'notifications';
+  }
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'à l’instant';
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.floor(h / 24);
+  return `il y a ${d} j`;
+}
 
 export default function NotificationsScreen() {
+  const { user } = useAuth();
+  const [items, setItems] = useState<NotificationWithActor[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const canFetch =
+    isSupabaseConfigured && !!user && !user.id.startsWith('mock_');
+
+  const load = useCallback(
+    async (soft = false) => {
+      if (!canFetch) {
+        setItems([]);
+        return;
+      }
+      if (soft) setRefreshing(true);
+      else setLoading(true);
+      try {
+        const rows = await fetchNotifications(user!.id);
+        setItems(rows);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [canFetch, user],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const onPressItem = async (n: NotificationWithActor) => {
+    if (n.read_at) return;
+    setItems((prev) =>
+      prev.map((x) =>
+        x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x,
+      ),
+    );
+    try {
+      await markNotificationRead(n.id);
+    } catch {
+      // ignore
+    }
+  };
+
+  const empty = (
+    <View style={styles.emptyCard}>
+      <View style={styles.iconRing}>
+        <Ionicons name="notifications-outline" size={36} color={Colors.or} />
+      </View>
+      <Text style={styles.emptyTitle}>Rien pour l’instant</Text>
+      <Text style={styles.emptyBody}>
+        Quand la communauté interagit avec vos contenus, tout apparaîtra ici —
+        clairement, sans bruit inutile.
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Text style={styles.title}>Notifications</Text>
@@ -19,34 +143,60 @@ export default function NotificationsScreen() {
         Activité autour de votre profil et de vos publications.
       </Text>
 
-      <View style={styles.emptyCard}>
-        <View style={styles.iconRing}>
-          <Ionicons name="notifications-outline" size={36} color={Colors.or} />
+      {loading && items.length === 0 ? (
+        <View style={styles.center}>
+          <ActivityIndicator color={Colors.or} />
         </View>
-        <Text style={styles.emptyTitle}>Rien pour l’instant</Text>
-        <Text style={styles.emptyBody}>
-          Quand la communauté interagit avec vos contenus, tout apparaîtra ici —
-          clairement, sans bruit inutile.
-        </Text>
-      </View>
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(n) => n.id}
+          refreshControl={
+            canFetch ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => void load(true)}
+                tintColor={Colors.or}
+              />
+            ) : undefined
+          }
+          ListEmptyComponent={empty}
+          contentContainerStyle={
+            items.length === 0 ? styles.emptyContainer : undefined
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              onPress={() => void onPressItem(item)}
+              style={[styles.row, !item.read_at && styles.rowUnread]}
+            >
+              <Image source={{ uri: actorAvatar(item) }} style={styles.avatar} />
+              <View style={styles.rowBody}>
+                <Text style={styles.rowText}>
+                  <Text style={styles.actor}>{actorName(item)}</Text>
+                  {' '}
+                  {notifLabel(item)}
+                </Text>
+                <Text style={styles.time}>{timeAgo(item.created_at)}</Text>
+              </View>
+              <Ionicons
+                name={notifIcon(item.type)}
+                size={18}
+                color={item.type === 'like' ? '#E74C3C' : Colors.or}
+              />
+            </Pressable>
+          )}
+        />
+      )}
 
-      <Text style={styles.section}>Bientôt</Text>
-      <View style={styles.list}>
-        {UPCOMING.map((item) => (
-          <View key={item} style={styles.row}>
-            <View style={styles.dot} />
-            <Text style={styles.rowText}>{item}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.note}>
-        <Ionicons name="lock-closed-outline" size={14} color={Colors.textMuted} />
-        <Text style={styles.noteText}>
-          Messagerie privée reportée en phase 2. Focus Sprint 1 : feed, publication,
-          engagement social.
-        </Text>
-      </View>
+      {!canFetch ? (
+        <View style={styles.note}>
+          <Ionicons name="information-circle-outline" size={14} color={Colors.textMuted} />
+          <Text style={styles.noteText}>
+            Connectez-vous avec Supabase pour recevoir likes, commentaires et
+            nouveaux abonnés. Messagerie privée reportée en phase 2.
+          </Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -67,6 +217,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     lineHeight: 18,
   },
+  center: { paddingVertical: 48, alignItems: 'center' },
+  emptyContainer: { flexGrow: 1 },
   emptyCard: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
@@ -100,48 +252,51 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 19,
   },
-  section: {
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.sm,
-    color: Colors.textSecondary,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  list: {
-    borderRadius: Radii.md,
-    backgroundColor: Colors.noirElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
+    paddingHorizontal: 12,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.noirElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 8,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.or,
+  rowUnread: {
+    borderColor: 'rgba(201, 162, 39, 0.45)',
   },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: Colors.or,
+  },
+  rowBody: { flex: 1 },
   rowText: {
-    flex: 1,
-    color: Colors.sable,
+    color: Colors.textPrimary,
     fontFamily: Fonts.regular,
     fontSize: 14,
+    lineHeight: 20,
+  },
+  actor: {
+    color: Colors.sable,
+    fontFamily: Fonts.bold,
+  },
+  time: {
+    marginTop: 4,
+    color: Colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
   },
   note: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
     padding: Spacing.md,
     borderRadius: Radii.md,
     backgroundColor: Colors.noirSoft,

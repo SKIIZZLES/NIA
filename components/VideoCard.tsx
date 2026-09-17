@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
 import { formatCount, VideoItem } from '@/data/mockVideos';
 import { useFeed } from '@/context/FeedContext';
+import { useAuth } from '@/context/AuthContext';
+import { FollowButton } from '@/components/FollowButton';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
@@ -19,12 +21,26 @@ type Props = {
   item: VideoItem;
   isActive: boolean;
   bottomInset?: number;
+  onOpenComments?: (videoId: string) => void;
 };
 
-export function VideoCard({ item, isActive, bottomInset = 80 }: Props) {
+export function VideoCard({
+  item,
+  isActive,
+  bottomInset = 80,
+  onOpenComments,
+}: Props) {
   const videoRef = useRef<Video>(null);
-  const { toggleLike, likedIds } = useFeed();
+  const { user } = useAuth();
+  const { toggleLike, likedIds, followingIds, toggleFollow } = useFeed();
   const liked = likedIds.has(item.id);
+  const authorId = item.userId;
+  const following = authorId ? followingIds.has(authorId) : false;
+  const isOwn =
+    !!user &&
+    (!!authorId
+      ? authorId === user.id
+      : item.handle === `@${user.username}`);
   const [muted, setMuted] = useState(false);
 
   useEffect(() => {
@@ -61,14 +77,29 @@ export function VideoCard({ item, isActive, bottomInset = 80 }: Props) {
 
       {/* Right rail */}
       <View style={styles.rail}>
-        <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+        <View style={styles.avatarWrap}>
+          <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+          {authorId && !isOwn ? (
+            <View style={styles.followBadge}>
+              <FollowButton
+                following={following}
+                compact
+                onPress={() => toggleFollow(authorId)}
+              />
+            </View>
+          ) : null}
+        </View>
         <RailAction
           icon={liked ? 'heart' : 'heart-outline'}
           color={liked ? '#E74C3C' : Colors.sable}
           label={formatCount(item.likes)}
           onPress={() => toggleLike(item.id)}
         />
-        <RailAction icon="chatbubble-outline" label={formatCount(item.comments)} />
+        <RailAction
+          icon="chatbubble-outline"
+          label={formatCount(item.comments)}
+          onPress={() => onOpenComments?.(item.id)}
+        />
         <RailAction icon="arrow-redo-outline" label={formatCount(item.shares)} />
         <Pressable onPress={() => setMuted((m) => !m)} style={styles.muteBtn}>
           <Ionicons
@@ -131,13 +162,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 18,
   },
+  avatarWrap: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
     borderWidth: 2,
     borderColor: Colors.or,
-    marginBottom: 4,
+  },
+  followBadge: {
+    marginTop: -10,
   },
   railItem: { alignItems: 'center', gap: 4 },
   railLabel: {

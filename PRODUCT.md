@@ -27,7 +27,7 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 | **Accueil** | Feed vertical (Pour toi / Abonnements / Afrique) |
 | **Découvrir** | Univers (Afrique, Diaspora, Culture, Musique…) — recherche full-text plus tard |
 | **+ (Publier)** | Pick média + légende → mock local ou Storage |
-| **Notifications** | Shell vide (likes, abonnés, mentions — Sprint 2) |
+| **Notifications** | Liste branchée `lib/notifications` (empty state sinon) |
 | **Profil** | Grille + compte |
 
 Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » remplacée par **Découvrir**.
@@ -46,23 +46,26 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Auth email/mdp mock **ou** Supabase Auth | ✅ (fallback mock si env vides) |
 | Feed vertical plein écran + démos | ✅ |
 | Nav Accueil / Découvrir / + / Notifications / Profil | ✅ Étape 1 |
-| Rail like / commentaire / partage | ✅ local |
+| Rail like / commentaire / partage | ✅ Étape 4 (compteurs + actions) |
 | Création : pick média + publier local **ou** Storage | ✅ |
 | Profil + grille | ✅ |
-| Découvrir (catégories) + Notifications (empty state) | ✅ UI shell |
-| Schéma SQL init + doc Sprint 1 | ✅ `001_nia_init.sql` + `docs/SCHEMA_SPRINT1.md` |
-| Likes / follows / comments persistés | ❌ Étape 2 |
+| Découvrir (catégories) | ✅ UI shell |
+| Notifications (liste Supabase / empty) | ✅ Étape 4 |
+| Schéma SQL init + doc Sprint 1 | ✅ `001` + `002` + `docs/SCHEMA_SPRINT1.md` |
+| Helpers likes / comments / follows / notifications | ✅ Étape 2 |
+| UI engagement (like, commentaires sheet, follow, abo tab) | ✅ Étape 4 |
 | Transcoding / CDN pro | ❌ prochain |
+| Lives / messagerie / marketplace | ❌ hors scope immédiat |
 
 ## Après le MVP
 
 ### Phase 2 — Fondations
 - OAuth (Google / Apple)
 - Transcoding vidéo (Mux / Cloudflare Stream) si free tier insuffisant
-- Likes / abonnements / commentaires persistés
-- Notifications backend
-- Modération de base + signalements
+- Compteurs commentaires serveur + profils publics
+- Modération de base + signalements (UI)
 - Messagerie (après nav Notifications)
+- OAuth (Google / Apple) — aussi listé ci-dessus
 
 ### Phase 3 — Engagement
 - Live / lives culturels
