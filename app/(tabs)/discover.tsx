@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -10,78 +12,76 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
-
-type Category = {
-  id: string;
-  label: string;
-  blurb: string;
-  icon: keyof typeof Ionicons.glyphMap;
-};
-
-const CATEGORIES: Category[] = [
-  {
-    id: 'afrique',
-    label: 'Afrique',
-    blurb: 'Créations nées sur le continent',
-    icon: 'globe-outline',
-  },
-  {
-    id: 'diaspora',
-    label: 'Diaspora',
-    blurb: 'Voix et récits hors frontières',
-    icon: 'airplane-outline',
-  },
-  {
-    id: 'culture',
-    label: 'Culture',
-    blurb: 'Arts, langues, patrimoine vivant',
-    icon: 'library-outline',
-  },
-  {
-    id: 'musique',
-    label: 'Musique',
-    blurb: 'Afrobeats, jazz, tradition & scène',
-    icon: 'musical-notes-outline',
-  },
-  {
-    id: 'mode',
-    label: 'Mode',
-    blurb: 'Style, design & maison créative',
-    icon: 'shirt-outline',
-  },
-  {
-    id: 'tech',
-    label: 'Tech & Innovation',
-    blurb: 'Builders, startups, futur afro-tech',
-    icon: 'hardware-chip-outline',
-  },
-  {
-    id: 'food',
-    label: 'Gastronomie',
-    blurb: 'Saveurs, chefs & tables urbaines',
-    icon: 'restaurant-outline',
-  },
-  {
-    id: 'sport',
-    label: 'Sport',
-    blurb: 'Talents, clubs & moments forts',
-    icon: 'football-outline',
-  },
-];
+import {
+  DISCOVER_CATEGORIES,
+  type CategoryId,
+  type DiscoverCategory,
+} from '@/constants/categories';
+import { useFeed } from '@/context/FeedContext';
+import { DEMO_VIDEOS, type VideoItem, formatCount } from '@/data/mockVideos';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { fetchVideosFromSupabase } from '@/lib/videos';
 
 export default function DiscoverScreen() {
+  const { videos: feedVideos } = useFeed();
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<CategoryId | null>(null);
+  const [remoteByCategory, setRemoteByCategory] = useState<VideoItem[]>([]);
+  const [loadingRemote, setLoadingRemote] = useState(false);
 
-  const filtered = useMemo(() => {
+  const filteredCategories = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return CATEGORIES;
-    return CATEGORIES.filter(
+    if (!q) return DISCOVER_CATEGORIES;
+    return DISCOVER_CATEGORIES.filter(
       (c) =>
         c.label.toLowerCase().includes(q) ||
-        c.blurb.toLowerCase().includes(q),
+        c.blurb.toLowerCase().includes(q) ||
+        c.id.includes(q),
     );
   }, [query]);
+
+  const loadCategoryVideos = useCallback(async (categoryId: CategoryId) => {
+    if (!isSupabaseConfigured) {
+      setRemoteByCategory([]);
+      return;
+    }
+    setLoadingRemote(true);
+    try {
+      const rows = await fetchVideosFromSupabase({ category: categoryId, limit: 30 });
+      setRemoteByCategory(rows);
+    } catch {
+      setRemoteByCategory([]);
+    } finally {
+      setLoadingRemote(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selected) {
+      void loadCategoryVideos(selected);
+    } else {
+      setRemoteByCategory([]);
+    }
+  }, [selected, loadCategoryVideos]);
+
+  /** Mock : filtre feed / démos par category. Supabase : résultats remote (ou fallback mock). */
+  const categoryVideos = useMemo(() => {
+    if (!selected) return [];
+    if (isSupabaseConfigured) {
+      if (remoteByCategory.length) return remoteByCategory;
+      // fallback soft si table vide / 002 pas joué
+      const fromFeed = feedVideos.filter((v) => v.category === selected);
+      if (fromFeed.length) return fromFeed;
+      return DEMO_VIDEOS.filter((v) => v.category === selected);
+    }
+    const fromFeed = feedVideos.filter((v) => v.category === selected);
+    if (fromFeed.length) return fromFeed;
+    return DEMO_VIDEOS.filter((v) => v.category === selected);
+  }, [selected, remoteByCategory, feedVideos]);
+
+  const onSelectCategory = (item: DiscoverCategory) => {
+    setSelected((prev) => (prev === item.id ? null : item.id));
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -110,15 +110,58 @@ export default function DiscoverScreen() {
       <Text style={styles.section}>Univers</Text>
 
       <FlatList
-        data={filtered}
+        data={filteredCategories}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          selected ? (
+            <View style={styles.resultsBlock}>
+              <View style={styles.resultsHeader}>
+                <Text style={styles.resultsTitle}>
+                  {DISCOVER_CATEGORIES.find((c) => c.id === selected)?.label}
+                </Text>
+                <Pressable onPress={() => setSelected(null)} hitSlop={8}>
+                  <Text style={styles.clearFilter}>Effacer</Text>
+                </Pressable>
+              </View>
+              {loadingRemote ? (
+                <ActivityIndicator color={Colors.or} style={{ marginVertical: 16 }} />
+              ) : categoryVideos.length === 0 ? (
+                <Text style={styles.emptyCat}>
+                  Aucune vidéo dans cet univers pour l’instant.
+                </Text>
+              ) : (
+                <FlatList
+                  data={categoryVideos}
+                  keyExtractor={(v) => v.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 10, paddingBottom: 8 }}
+                  renderItem={({ item: v }) => (
+                    <View style={styles.thumbCard}>
+                      <Image source={{ uri: v.thumbnailUrl }} style={styles.thumb} />
+                      <Text style={styles.thumbHandle} numberOfLines={1}>
+                        {v.handle}
+                      </Text>
+                      <Text style={styles.thumbMeta} numberOfLines={1}>
+                        {formatCount(v.likes)} likes
+                      </Text>
+                    </View>
+                  )}
+                />
+              )}
+              {!isSupabaseConfigured ? (
+                <Text style={styles.mockHint}>Mode mock — catégories locales.</Text>
+              ) : null}
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => {
           const active = selected === item.id;
           return (
             <Pressable
               style={[styles.card, active && styles.cardActive]}
-              onPress={() => setSelected(active ? null : item.id)}
+              onPress={() => onSelectCategory(item)}
             >
               <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
                 <Ionicons
@@ -152,7 +195,8 @@ export default function DiscoverScreen() {
           <View style={styles.footerNote}>
             <Ionicons name="sparkles-outline" size={16} color={Colors.or} />
             <Text style={styles.footerText}>
-              Contenu par catégorie branché au Sprint 2 (vidéos + filtres).
+              Filtre sur `videos.category` (migration 002) quand Supabase est
+              configuré ; sinon démos par catégorie.
             </Text>
           </View>
         }
@@ -204,6 +248,62 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   listContent: { paddingBottom: Spacing.xxl },
+  resultsBlock: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.noirElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  resultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  resultsTitle: {
+    color: Colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  clearFilter: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  emptyCat: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    marginVertical: 8,
+  },
+  mockHint: {
+    marginTop: 8,
+    color: Colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+  },
+  thumbCard: {
+    width: 120,
+  },
+  thumb: {
+    width: 120,
+    height: 180,
+    borderRadius: Radii.sm,
+    backgroundColor: Colors.noirSoft,
+  },
+  thumbHandle: {
+    marginTop: 6,
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+  thumbMeta: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+  },
   card: {
     flexDirection: 'row',
     alignItems: 'center',

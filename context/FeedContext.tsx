@@ -13,6 +13,7 @@ import {
   fetchVideosFromSupabase,
   uploadVideoToSupabase,
 } from '@/lib/videos';
+import { fetchLikedVideoIds, toggleLike as persistToggleLike } from '@/lib/likes';
 
 type PublishInput = {
   caption: string;
@@ -20,6 +21,7 @@ type PublishInput = {
   mimeType?: string | null;
   region?: string;
   tag?: string;
+  category?: string;
 };
 
 type FeedContextValue = {
@@ -36,6 +38,13 @@ type FeedContextValue = {
 };
 
 const FeedContext = createContext<FeedContextValue | null>(null);
+
+function isPersistableVideoId(id: string): boolean {
+  // UUID v4-ish from Supabase ; skip mock numeric / local_* ids
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    id,
+  );
+}
 
 export function FeedProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -54,13 +63,20 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     try {
       const remote = await fetchVideosFromSupabase();
       setVideos(remote.length ? remote : DEMO_VIDEOS);
+      if (user && !user.id.startsWith('mock_')) {
+        try {
+          const ids = await fetchLikedVideoIds(user.id);
+          setLikedIds(new Set(ids));
+        } catch {
+          // ignore likes hydrate errors
+        }
+      }
     } catch {
-      // garde démos si API down
       setVideos((prev) => (prev.length ? prev : DEMO_VIDEOS));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     refresh();
@@ -102,6 +118,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         caption: input.caption,
         region: input.region,
         tag: input.tag,
+        category: input.category,
         mimeType: input.mimeType,
         username: user.username,
         avatarUrl: user.avatarUrl,
@@ -111,12 +128,16 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     [user, addLocalPost],
   );
 
-  const toggleLike = useCallback((id: string) => {
-    setLikedIds((prev) => {
-      const next = new Set(prev);
-      const wasLiked = next.has(id);
-      if (wasLiked) next.delete(id);
-      else next.add(id);
+  const toggleLike = useCallback(
+    (id: string) => {
+      const wasLiked = likedIds.has(id);
+
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (wasLiked) next.delete(id);
+        else next.add(id);
+        return next;
+      });
       setVideos((vids) =>
         vids.map((v) =>
           v.id === id
@@ -124,9 +145,32 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
             : v,
         ),
       );
-      return next;
-    });
-  }, []);
+
+      if (
+        isSupabaseConfigured &&
+        user &&
+        !user.id.startsWith('mock_') &&
+        isPersistableVideoId(id)
+      ) {
+        void persistToggleLike(user.id, id, wasLiked).catch(() => {
+          setLikedIds((prev) => {
+            const next = new Set(prev);
+            if (wasLiked) next.add(id);
+            else next.delete(id);
+            return next;
+          });
+          setVideos((vids) =>
+            vids.map((v) =>
+              v.id === id
+                ? { ...v, likes: Math.max(0, v.likes + (wasLiked ? 1 : -1)) }
+                : v,
+            ),
+          );
+        });
+      }
+    },
+    [user, likedIds],
+  );
 
   const value = useMemo(
     () => ({

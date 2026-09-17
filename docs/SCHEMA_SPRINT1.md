@@ -7,26 +7,31 @@ Objectif : démo investisseur (feed, publication, profils, engagement de base) �
 
 ---
 
-## État actuel (`supabase/migrations/001_nia_init.sql`)
+## État actuel
 
 | Élément | Statut | Notes |
 |---------|--------|-------|
-| `profiles` | ✅ Existe | `id`, `username`, `bio`, `avatar_url`, `created_at` |
-| `videos` | ✅ Existe | `id`, `user_id`, `storage_path`, `caption`, `region`, `tag`, `like_count`, `created_at` |
-| Trigger `handle_new_user` | ✅ Existe | Crée un profil à l’inscription Auth |
-| Bucket Storage `videos` | ✅ Existe | Public read, upload `{user_id}/…` |
-| RLS profiles / videos | ✅ Existe | Select public ; write own |
-| `profiles.display_name` | ❌ Manquant | Affichage séparable du `@handle` |
-| `videos.thumbnail_url` | ❌ Manquant | Aperçu grille / feed sans lire le média |
-| `videos.status` | ❌ Manquant | `draft` / `processing` / `published` / `rejected` |
-| `videos.category` | ❌ Manquant | Aligné Découvrir (afrique, diaspora, culture…) |
-| `videos` hashtags | ❌ Manquant | Caption seule aujourd’hui ; hashtags structurés à venir |
-| `likes` | ❌ Manquant | Compteur dénormalisé seulement (`like_count`) |
-| `comments` | ❌ Manquant | — |
-| `follows` | ❌ Manquant | — |
-| `notifications` | ❌ Manquant | — |
-| `reports` | ❌ Manquant | — |
-| `blocks` | ❌ Manquant | — |
+| `profiles` | ✅ Existe (001) | `id`, `username`, `bio`, `avatar_url`, `created_at` |
+| `videos` | ✅ Existe (001) | `id`, `user_id`, `storage_path`, `caption`, `region`, `tag`, `like_count`, `created_at` |
+| Trigger `handle_new_user` | ✅ Existe (001) | Crée un profil à l’inscription Auth |
+| Bucket Storage `videos` | ✅ Existe (001) | Public read, upload `{user_id}/…` |
+| RLS profiles / videos | ✅ Existe (001) | Select public ; write own |
+| `profiles.display_name` | ✅ 002 | Affichage séparable du `@handle` |
+| `videos.thumbnail_url` | ✅ 002 | Aperçu grille / feed sans lire le média |
+| `videos.status` | ✅ 002 | `draft` / `processing` / `published` / `rejected` / `archived` (défaut `published`) |
+| `videos.category` | ✅ 002 | Aligné Découvrir (`afrique`, `diaspora`, `culture`…) |
+| `videos.hashtags` | ✅ 002 | `text[]` optionnel |
+| `likes` | ✅ 002 | PK `(user_id, video_id)` + trigger `like_count` |
+| `comments` | ✅ 002 | RLS own write / public read |
+| `follows` | ✅ 002 | Check no-self + RLS |
+| `notifications` | ✅ 002 | Triggers stubs like/comment/follow |
+| `reports` | ✅ 002 | `video` \| `user` \| `comment` |
+| `blocks` | ✅ 002 | PK `(blocker_id, blocked_id)` |
+
+Migrations :
+
+1. `supabase/migrations/001_nia_init.sql` — Auth profiles + vidéos + storage
+2. `supabase/migrations/002_sprint1_engagement.sql` — colonnes + engagement + RLS + triggers
 
 ---
 
@@ -38,7 +43,7 @@ Objectif : démo investisseur (feed, publication, profils, engagement de base) �
 |---------|------|-------------|
 | `id` | uuid PK → `auth.users` | Existant |
 | `username` | text unique | Handle `@…` |
-| **`display_name`** | text | Nom affiché (nouveau) |
+| **`display_name`** | text | Nom affiché (002) |
 | `bio` | text | Existant |
 | `avatar_url` | text | Existant |
 | `created_at` | timestamptz | Existant |
@@ -51,14 +56,14 @@ Objectif : démo investisseur (feed, publication, profils, engagement de base) �
 | `id` | uuid PK | Existant |
 | `user_id` | uuid → profiles | Existant |
 | `storage_path` | text | Existant |
-| **`thumbnail_url`** | text | Nouveau — URL publique vignette |
-| **`status`** | text / enum | Nouveau — défaut `published` (MVP) |
-| **`category`** | text | Nouveau — ex. `afrique`, `diaspora`, `culture`, `musique`… |
+| **`thumbnail_url`** | text | 002 — URL publique vignette |
+| **`status`** | text / enum | 002 — défaut `published` (MVP) |
+| **`category`** | text | 002 — ex. `afrique`, `diaspora`, `culture`, `musique`… |
 | `caption` | text | Existant — légende + hashtags en texte libre au MVP |
-| **`hashtags`** | text[] *(optionnel)* | Nouveau — extraction / index recherche |
+| **`hashtags`** | text[] *(optionnel)* | 002 — extraction / index recherche |
 | `region` | text | Existant — pays / zone (legacy ok) |
 | `tag` | text | Existant — peut migrer vers `category` |
-| `like_count` | int | Existant — tenu à jour via trigger likes |
+| `like_count` | int | Existant — tenu à jour via trigger likes (002) |
 | `created_at` | timestamptz | Existant |
 
 `status` recommandé : `draft` | `processing` | `published` | `rejected` | `archived`.
@@ -72,7 +77,7 @@ Objectif : démo investisseur (feed, publication, profils, engagement de base) �
 | `created_at` | timestamptz |
 | PK | `(user_id, video_id)` |
 
-RLS : insert/delete own ; select public ou own selon besoin produit.
+RLS : insert/delete own ; select public.
 
 ### 4. `comments`
 
@@ -110,7 +115,7 @@ Alimente l’onglet feed **Abonnements**.
 | `read_at` | timestamptz nullable |
 | `created_at` | timestamptz |
 
-UI shell déjà en place (onglet Notifications). Backend = Sprint 2.
+UI shell déjà en place (onglet Notifications). Helpers `lib/notifications.ts` prêts ; UI riche = Étape 4+.
 
 ### 7. `reports`
 
@@ -146,12 +151,14 @@ Filtrer feed / commentaires / follows côté requêtes.
 
 ---
 
-## Ordre d’implémentation suggéré (Étape 2+)
+## Ordre d’implémentation
 
-1. Migration `002` : colonnes manquantes `profiles` + `videos`
-2. Tables `likes`, `comments`, `follows` + triggers compteurs
-3. `notifications` + écriture depuis likes/comments/follows
-4. `reports` + `blocks` (confiance & sûreté démo)
-5. Brancher l’UI Découvrir sur `videos.category` + recherche
+1. ~~Migration `002` : colonnes manquantes `profiles` + `videos`~~ ✅
+2. ~~Tables `likes`, `comments`, `follows` + triggers compteurs~~ ✅
+3. ~~`notifications` + écriture depuis likes/comments/follows~~ ✅ (stubs triggers)
+4. ~~`reports` + `blocks`~~ ✅ (schéma + RLS)
+5. ~~Brancher l’UI Découvrir sur `videos.category`~~ ✅ (helpers + filtre)
+6. **Étape 3** : auth réelle + projet Supabase branché (`.env` + run 001 puis 002)
+7. Étapes 4–6 : UI commentaires / follows profil / notifications riches
 
 Contrainte budget : tout sur **Supabase Free** + Expo ; pas de service payant obligatoire pour la démo.

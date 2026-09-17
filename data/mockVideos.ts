@@ -1,3 +1,5 @@
+import type { CategoryId } from '@/constants/categories';
+
 export type VideoItem = {
   id: string;
   videoUrl: string;
@@ -10,6 +12,8 @@ export type VideoItem = {
   avatarUrl: string;
   tab: 'pour-toi' | 'abonnements' | 'afrique' | 'decouvrir';
   country?: string;
+  /** Aligné Découvrir / videos.category */
+  category?: CategoryId;
 };
 
 /** Démos publiques (Big Buck Bunny / samples) — à remplacer par CDN NIA */
@@ -26,6 +30,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=aminata',
     tab: 'pour-toi',
     country: 'Sénégal',
+    category: 'culture',
   },
   {
     id: '2',
@@ -39,6 +44,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=kwame',
     tab: 'pour-toi',
     country: 'Ghana',
+    category: 'mode',
   },
   {
     id: '3',
@@ -52,6 +58,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=fatou',
     tab: 'afrique',
     country: "Côte d'Ivoire",
+    category: 'afrique',
   },
   {
     id: '4',
@@ -65,6 +72,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=sofia',
     tab: 'decouvrir',
     country: 'Maroc',
+    category: 'diaspora',
   },
   {
     id: '5',
@@ -78,6 +86,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=jean',
     tab: 'abonnements',
     country: 'RDC',
+    category: 'musique',
   },
   {
     id: '6',
@@ -91,6 +100,7 @@ export const DEMO_VIDEOS: VideoItem[] = [
     avatarUrl: 'https://i.pravatar.cc/150?u=nana',
     tab: 'pour-toi',
     country: 'Nigeria',
+    category: 'musique',
   },
 ];
 

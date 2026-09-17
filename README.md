@@ -60,17 +60,23 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
 
 Redémarrer Metro (`npx expo start -c`) pour charger les env.
 
-### 3. Exécuter le SQL
+### 3. Exécuter le SQL (001 puis 002)
 
 1. Dashboard → **SQL Editor** → New query.
-2. Coller le contenu de `supabase/migrations/001_nia_init.sql`.
-3. **Run**.
+2. Coller le contenu de `supabase/migrations/001_nia_init.sql` → **Run**.
+3. Nouvelle query → coller `supabase/migrations/002_sprint1_engagement.sql` → **Run**.
 
-Cela crée :
+**001** crée :
 
 - tables `profiles` + `videos` + RLS
 - trigger profil à l’inscription (`handle_new_user`)
 - bucket Storage `videos` (lecture publique, upload authentifié dans `{user_id}/…`)
+
+**002** ajoute :
+
+- colonnes `profiles.display_name`, `videos.thumbnail_url` / `status` / `category` / `hashtags`
+- tables `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks` + RLS
+- triggers `like_count` + stubs notifications (like / comment / follow)
 
 ### 4. (Optionnel) Vérifier le bucket
 
@@ -100,9 +106,11 @@ app/
   (tabs)/                 # Accueil, Découvrir, +, Notifications, Profil
 lib/
   supabase.ts             # Client (null si env manquantes)
-  videos.ts               # list + upload
-supabase/migrations/      # SQL à coller dans le Dashboard
-docs/SCHEMA_SPRINT1.md    # Modèle données cible Sprint 1
+  videos.ts               # list + upload + filtre category
+  likes.ts / comments.ts / follows.ts / notifications.ts
+constants/categories.ts   # IDs Découvrir (= videos.category)
+supabase/migrations/      # 001 puis 002 dans le SQL Editor
+docs/SCHEMA_SPRINT1.md    # Modèle données Sprint 1 (statut à jour)
 context/                  # AuthContext, FeedContext
 constants/theme.ts        # Tokens Noir / Terre / Or / Sable / Vert
 data/mockVideos.ts        # Feed démo (fallback)
@@ -111,6 +119,7 @@ data/mockVideos.ts        # Feed démo (fallback)
 - **Auth** : Supabase si `EXPO_PUBLIC_SUPABASE_URL` + `ANON_KEY` ; sinon mock AsyncStorage.
 - **Session** : SecureStore (natif, petites valeurs) + AsyncStorage (web / JWT longs).
 - **Feed / Créer** : lecture `videos` + upload Storage quand configuré ; sinon mock local.
+- **Engagement** : likes persistés (`likes` + optimistic UI), helpers comments/follows/notifications prêts ; Découvrir filtre `videos.category`.
 - **Nav** : Accueil · Découvrir · Publier (+) · Notifications · Profil (Messages = phase 2).
 - **Thème** : dark brand, typo **Plus Jakarta Sans**, UI en français.
 - **Budget** : 0 € — Expo + Supabase Free pour la démo investisseur.
@@ -124,11 +133,11 @@ Fichier stub : `eas.json`.
 3. Builds preview / production via profils `eas.json`
 4. Définir aussi les secrets EAS `EXPO_PUBLIC_SUPABASE_*` pour les builds stores
 
-## Prochaines étapes (Étape 2+)
+## Prochaines étapes (Étape 3+)
 
-1. Migration SQL : colonnes `display_name`, `thumbnail_url`, `status`, `category` (+ tables likes / comments / follows)
-2. Brancher Découvrir sur `videos.category` + recherche
-3. Notifications backend + signalements / blocks
+1. ~~Migration 002 + helpers likes/comments/follows + Découvrir par category~~ ✅ Étape 2
+2. Brancher un vrai projet Supabase (`.env`) + auth email réelle (Étape 3)
+3. UI commentaires / boutons follow profil / notifications riches (Étapes 4–6)
 4. OAuth Apple / Google
 5. Transcoding CDN si besoin (Mux / Cloudflare Stream)
 6. Messagerie (phase 2) · icônes / splash brand · analytics
