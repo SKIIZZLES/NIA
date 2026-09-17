@@ -4,7 +4,7 @@
 
 Application mobile de vidéos verticales courtes centrée sur les contenus, cultures et talents africains.
 
-- Stack : **Expo SDK 57** · **TypeScript** · **Expo Router** · **expo-av**
+- Stack : **Expo SDK 57** · **TypeScript** · **Expo Router** · **expo-av** · **Supabase** (optionnel)
 - Cibles : App Store & Google Play via **EAS**
 - Brand board : `assets/brand/nia-brand-board.png`
 
@@ -13,23 +13,20 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 - Node.js 20.19.4+ (20.19.2 fonctionne avec des warnings moteurs)
 - npm 9+
 - Compte Expo (pour EAS)
+- (Optionnel) Projet gratuit [Supabase](https://supabase.com)
 
-## Installation & lancement
+## Installation & lancement (mode mock, sans backend)
+
+Sans `.env` (ou avec URL / clé vides), l’app tourne **offline** : auth mock + feed démo.
 
 ```bash
-cd /workspace/NIA
-cp .env.example .env   # optionnel pour le MVP
+cd NIA
+cp .env.example .env   # laisser les clés Supabase vides
 npm install
 npx expo start
 ```
 
-Puis scanner le QR avec Expo Go (iOS/Android), ou :
-
-```bash
-npx expo start --web
-npx expo start --android
-npx expo start --ios
-```
+Puis scanner le QR avec Expo Go, ou `npx expo start --web`.
 
 ### Vérification TypeScript
 
@@ -37,27 +34,86 @@ npx expo start --ios
 npx tsc --noEmit
 ```
 
+## Brancher Supabase (~10 minutes)
+
+### 1. Créer un projet
+
+1. Aller sur [https://supabase.com](https://supabase.com) → **New project** (plan Free).
+2. Noter la région proche de votre audience.
+3. Attendre que le projet soit **Healthy**.
+
+### 2. Récupérer les clés
+
+**Project Settings → API** :
+
+| Variable | Où |
+|----------|-----|
+| `EXPO_PUBLIC_SUPABASE_URL` | Project URL |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `anon` `public` key |
+
+Coller dans `.env` (ne jamais committer `.env`) :
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+```
+
+Redémarrer Metro (`npx expo start -c`) pour charger les env.
+
+### 3. Exécuter le SQL
+
+1. Dashboard → **SQL Editor** → New query.
+2. Coller le contenu de `supabase/migrations/001_nia_init.sql`.
+3. **Run**.
+
+Cela crée :
+
+- tables `profiles` + `videos` + RLS
+- trigger profil à l’inscription (`handle_new_user`)
+- bucket Storage `videos` (lecture publique, upload authentifié dans `{user_id}/…`)
+
+### 4. (Optionnel) Vérifier le bucket
+
+**Storage** → bucket `videos` doit exister et être **Public**.  
+Si le SQL n’a pas créé le bucket (droits), créez-le manuellement nommé `videos`, Public = ON, puis relancez uniquement les policies `storage.objects` du fichier SQL.
+
+### 5. Auth email facile à tester
+
+**Authentication → Providers → Email** :
+
+- Activer Email.
+- Pour le MVP : **désactiver** « Confirm email » (sinon l’inscription exige un mail de confirmation).
+
+### 6. Tester dans l’app
+
+1. Badge **AUTH SUPABASE** sur login / inscription (vert).
+2. Créer un compte → un row apparaît dans `profiles`.
+3. Onglet **Créer** → choisir une vidéo / image → **Publier**.
+4. Fichier dans Storage `videos/{user_id}/…` + row dans `videos`.
+5. Feed recharge les vidéos distantes (sinon garde les démos si table vide / erreur réseau).
+
 ## Architecture
 
 ```
 app/
-  index.tsx              # Auth gate (redirect)
-  welcome.tsx            # Splash / bienvenue
-  (auth)/login|register  # Auth mock MVP
-  (tabs)/                # Accueil, Recherche, +, Messages, Profil
-components/              # VideoCard, FeedPager, Button, NiaWordmark
-constants/theme.ts       # Tokens Noir / Terre / Or / Sable / Vert
-context/                 # AuthContext, FeedContext
-data/mockVideos.ts       # Feed démo
-assets/brand/            # Brand board de référence
+  (auth)/login|register   # Auth mock ou Supabase
+  (tabs)/                 # Accueil, Découvrir, +, Notifications, Profil
+lib/
+  supabase.ts             # Client (null si env manquantes)
+  videos.ts               # list + upload
+supabase/migrations/      # SQL à coller dans le Dashboard
+docs/SCHEMA_SPRINT1.md    # Modèle données cible Sprint 1
+context/                  # AuthContext, FeedContext
+constants/theme.ts        # Tokens Noir / Terre / Or / Sable / Vert
+data/mockVideos.ts        # Feed démo (fallback)
 ```
 
-- **Auth** : mock locale via AsyncStorage (`AuthContext`). Badge « AUTH MOCK MVP ».
-- **Feed** : pager vertical plein écran, onglets Pour toi | Abonnements | Afrique | Découvrir.
-- **Création** : ImagePicker + publication dans l’état local du feed.
-- **Thème** : dark brand (`constants/theme.ts`), typo **Plus Jakarta Sans**.
-
-Prêt pour un futur backend **Supabase** (Auth + Storage) — voir `.env.example`.
+- **Auth** : Supabase si `EXPO_PUBLIC_SUPABASE_URL` + `ANON_KEY` ; sinon mock AsyncStorage.
+- **Session** : SecureStore (natif, petites valeurs) + AsyncStorage (web / JWT longs).
+- **Feed / Créer** : lecture `videos` + upload Storage quand configuré ; sinon mock local.
+- **Nav** : Accueil · Découvrir · Publier (+) · Notifications · Profil (Messages = phase 2).
+- **Thème** : dark brand, typo **Plus Jakarta Sans**, UI en français.
+- **Budget** : 0 € — Expo + Supabase Free pour la démo investisseur.
 
 ## EAS (stores)
 
@@ -65,21 +121,17 @@ Fichier stub : `eas.json`.
 
 1. `npm i -g eas-cli` puis `eas login`
 2. `eas init` — remplacer `extra.eas.projectId` dans `app.json`
-3. Builds :
-   - Preview APK : `eas build -p android --profile preview`
-   - Production : `eas build -p all --profile production`
-4. Soumission : `eas submit -p ios|android --profile production`
+3. Builds preview / production via profils `eas.json`
+4. Définir aussi les secrets EAS `EXPO_PUBLIC_SUPABASE_*` pour les builds stores
 
-Configurer `ios.bundleIdentifier` / `android.package` (`app.nia.mobile`) et les identifiants Apple / Play dans `eas.json`.
+## Prochaines étapes (Étape 2+)
 
-## Prochaines étapes
-
-1. Remplacer l’auth mock par **Supabase Auth**
-2. CDN vidéo (Mux / Cloudflare Stream / Supabase Storage)
-3. Upload réel depuis l’écran Créer
-4. Messagerie & recherche backend
-5. Icônes / splash brand (logo NIA avec A-continent)
-6. Analytics & moderation
+1. Migration SQL : colonnes `display_name`, `thumbnail_url`, `status`, `category` (+ tables likes / comments / follows)
+2. Brancher Découvrir sur `videos.category` + recherche
+3. Notifications backend + signalements / blocks
+4. OAuth Apple / Google
+5. Transcoding CDN si besoin (Mux / Cloudflare Stream)
+6. Messagerie (phase 2) · icônes / splash brand · analytics
 
 ## Licence
 

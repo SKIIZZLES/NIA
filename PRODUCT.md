@@ -12,6 +12,26 @@ NIA est l’application de vidéos verticales courtes qui met en lumière **les 
 
 Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain), ouverture (Sable), avenir (Vert).
 
+## Objectif immédiat
+
+**Démo investisseur (MVP)** : parcours crédible Accueil → Découvrir → Publier → Profil, avec auth mock ou Supabase Free, UI Afro-Tech Premium en français.
+
+## Contrainte budget
+
+**0 €** — stack Expo + **Supabase Free tier** uniquement. Pas d’abonnement payant obligatoire pour la démo (pas de Mux / Stream payant tant que le free tier suffit).
+
+## Navigation cible (bottom tabs)
+
+| Onglet | Rôle |
+|--------|------|
+| **Accueil** | Feed vertical (Pour toi / Abonnements / Afrique) |
+| **Découvrir** | Univers (Afrique, Diaspora, Culture, Musique…) — recherche full-text plus tard |
+| **+ (Publier)** | Pick média + légende → mock local ou Storage |
+| **Notifications** | Shell vide (likes, abonnés, mentions — Sprint 2) |
+| **Profil** | Grille + compte |
+
+Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » remplacée par **Découvrir**.
+
 ## Public
 
 - Créateur·rice·s et talents en Afrique & diaspora
@@ -23,28 +43,31 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 | Zone | Statut |
 |------|--------|
 | Splash / welcome brand | ✅ |
-| Auth email/mdp mock (session locale) | ✅ stub |
+| Auth email/mdp mock **ou** Supabase Auth | ✅ (fallback mock si env vides) |
 | Feed vertical plein écran + démos | ✅ |
-| Onglets Pour toi / Abonnements / Afrique / Découvrir | ✅ UI |
+| Nav Accueil / Découvrir / + / Notifications / Profil | ✅ Étape 1 |
 | Rail like / commentaire / partage | ✅ local |
-| Création : pick média + publier local | ✅ stub |
+| Création : pick média + publier local **ou** Storage | ✅ |
 | Profil + grille | ✅ |
-| Messages / Recherche | ✅ placeholders |
-| Backend réel / CDN | ❌ prochain |
+| Découvrir (catégories) + Notifications (empty state) | ✅ UI shell |
+| Schéma SQL init + doc Sprint 1 | ✅ `001_nia_init.sql` + `docs/SCHEMA_SPRINT1.md` |
+| Likes / follows / comments persistés | ❌ Étape 2 |
+| Transcoding / CDN pro | ❌ prochain |
 
 ## Après le MVP
 
 ### Phase 2 — Fondations
-- Auth réelle (Supabase / OAuth)
-- Upload & transcoding vidéo (CDN)
-- Profils, abonnements, likes persistés
+- OAuth (Google / Apple)
+- Transcoding vidéo (Mux / Cloudflare Stream) si free tier insuffisant
+- Likes / abonnements / commentaires persistés
+- Notifications backend
 - Modération de base + signalements
+- Messagerie (après nav Notifications)
 
 ### Phase 3 — Engagement
 - Live / lives culturels
 - Duets / stitches
 - Challenges & hashtags géoculturels
-- Messagerie temps réel
 
 ### Phase 4 — Croissance & revenus
 - Publicités natives respectueuses de la marque
@@ -57,7 +80,8 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 1. **Dark first** — Noir dominant, Or pour accents (CTA +, underline tabs)
 2. **Français d’abord** — labels UI en français
 3. **Créateur au centre** — handle + caption toujours visibles
-4. **Afrique visible** — onglet dédié, pays sur les posts
+4. **Afrique visible** — onglet feed dédié + univers Découvrir
+5. **Pas de clichés touristiques** — ton premium, contemporain, afro-tech
 
 ## KPIs MVP (cibles)
 
@@ -71,3 +95,4 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 - Web social complet
 - Marketplace e-commerce
 - Streaming long-form type OTT
+- Messagerie temps réel (phase 2)

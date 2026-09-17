@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -13,10 +14,10 @@ import { useAuth } from '@/context/AuthContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
+  const { signIn, isMockAuth } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState('demo@nia.app');
-  const [password, setPassword] = useState('nia123');
+  const [email, setEmail] = useState(isMockAuth ? 'demo@nia.app' : '');
+  const [password, setPassword] = useState(isMockAuth ? 'nia123' : '');
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async () => {
@@ -24,6 +25,9 @@ export default function LoginScreen() {
     try {
       await signIn(email, password);
       router.replace('/(tabs)');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Connexion impossible';
+      Alert.alert('Erreur', msg);
     } finally {
       setLoading(false);
     }
@@ -34,10 +38,20 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.badge}>AUTH MOCK MVP</Text>
+      <View
+        style={[
+          styles.badgeWrap,
+          { backgroundColor: isMockAuth ? Colors.terre : Colors.vert },
+        ]}
+      >
+        <Text style={styles.badge}>
+          {isMockAuth ? 'AUTH MOCK MVP' : 'AUTH SUPABASE'}
+        </Text>
+      </View>
       <Text style={styles.hint}>
-        Accepte n&apos;importe quel email / mot de passe. Session stockée localement
-        (AsyncStorage). Remplacer par Supabase Auth plus tard.
+        {isMockAuth
+          ? 'Accepte n’importe quel email / mot de passe. Session stockée localement (AsyncStorage). Remplissez EXPO_PUBLIC_SUPABASE_* dans .env pour activer Supabase.'
+          : 'Connexion email / mot de passe via Supabase Auth. Créez un compte sur l’écran Inscription.'}
       </Text>
 
       <Text style={styles.label}>Email</Text>
@@ -78,17 +92,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.noir,
     padding: Spacing.lg,
   },
-  badge: {
+  badgeWrap: {
     alignSelf: 'flex-start',
-    backgroundColor: Colors.terre,
+    borderRadius: Radii.sm,
+    marginBottom: Spacing.md,
+  },
+  badge: {
     color: Colors.sable,
     overflow: 'hidden',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: Radii.sm,
     fontFamily: Fonts.bold,
     fontSize: 11,
-    marginBottom: Spacing.md,
   },
   hint: {
     color: Colors.textSecondary,

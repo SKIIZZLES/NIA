@@ -15,10 +15,12 @@ import { useFeed } from '@/context/FeedContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 
 export default function CreateScreen() {
-  const { addLocalPost } = useFeed();
+  const { publishPost, isMockFeed } = useFeed();
   const router = useRouter();
   const [caption, setCaption] = useState('');
   const [uri, setUri] = useState<string | null>(null);
+  const [mimeType, setMimeType] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const pick = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -27,23 +29,43 @@ export default function CreateScreen() {
     });
     if (!res.canceled && res.assets[0]) {
       setUri(res.assets[0].uri);
+      setMimeType(res.assets[0].mimeType ?? null);
     }
   };
 
-  const publish = () => {
-    addLocalPost(caption, uri || undefined);
-    setCaption('');
-    setUri(null);
-    Alert.alert('Publié (mock)', 'Ajouté au fil local « Pour toi ».');
-    router.push('/(tabs)');
+  const publish = async () => {
+    setBusy(true);
+    try {
+      await publishPost({
+        caption,
+        localUri: uri || undefined,
+        mimeType,
+      });
+      setCaption('');
+      setUri(null);
+      setMimeType(null);
+      Alert.alert(
+        isMockFeed ? 'Publié (mock)' : 'Publié',
+        isMockFeed
+          ? 'Ajouté au fil local « Pour toi ».'
+          : 'Vidéo envoyée sur Supabase Storage + table videos.',
+      );
+      router.push('/(tabs)');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Échec de la publication';
+      Alert.alert('Erreur', msg);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Text style={styles.title}>Créer</Text>
       <Text style={styles.subtitle}>
-        Stub MVP — sélection média + légende. La publication alimente le feed local
-        (pas d&apos;upload CDN).
+        {isMockFeed
+          ? 'Mode mock — sélection média + légende. Publication dans le feed local (pas d’upload CDN).'
+          : 'Mode Supabase — le média est uploadé dans le bucket « videos », puis une ligne est créée.'}
       </Text>
 
       <View style={styles.preview}>
@@ -66,7 +88,13 @@ export default function CreateScreen() {
         placeholderTextColor={Colors.textMuted}
       />
 
-      <Button title="Publier" variant="gold" onPress={publish} style={{ marginTop: Spacing.md }} />
+      <Button
+        title="Publier"
+        variant="gold"
+        loading={busy}
+        onPress={publish}
+        style={{ marginTop: Spacing.md }}
+      />
     </SafeAreaView>
   );
 }

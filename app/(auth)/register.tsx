@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
@@ -12,7 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 
 export default function RegisterScreen() {
-  const { signUp } = useAuth();
+  const { signUp, isMockAuth } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -24,6 +26,9 @@ export default function RegisterScreen() {
     try {
       await signUp(email || 'nouveau@nia.app', password || 'nia', username);
       router.replace('/(tabs)');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Inscription impossible';
+      Alert.alert('Erreur', msg);
     } finally {
       setLoading(false);
     }
@@ -34,9 +39,20 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.badge}>AUTH MOCK MVP</Text>
+      <View
+        style={[
+          styles.badgeWrap,
+          { backgroundColor: isMockAuth ? Colors.terre : Colors.vert },
+        ]}
+      >
+        <Text style={styles.badge}>
+          {isMockAuth ? 'AUTH MOCK MVP' : 'AUTH SUPABASE'}
+        </Text>
+      </View>
       <Text style={styles.hint}>
-        Formulaire stub — aucune validation serveur. Créera une session locale.
+        {isMockAuth
+          ? 'Formulaire stub — aucune validation serveur. Créera une session locale.'
+          : 'Inscription Supabase Auth. Un profil est créé automatiquement (trigger SQL). Désactivez « Confirm email » dans Auth → Providers pour tester sans mail.'}
       </Text>
 
       <Text style={styles.label}>Nom d&apos;utilisateur</Text>
@@ -87,17 +103,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.noir,
     padding: Spacing.lg,
   },
-  badge: {
+  badgeWrap: {
     alignSelf: 'flex-start',
-    backgroundColor: Colors.terre,
+    borderRadius: Radii.sm,
+    marginBottom: Spacing.md,
+  },
+  badge: {
     color: Colors.sable,
     overflow: 'hidden',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: Radii.sm,
     fontFamily: Fonts.bold,
     fontSize: 11,
-    marginBottom: Spacing.md,
   },
   hint: {
     color: Colors.textSecondary,

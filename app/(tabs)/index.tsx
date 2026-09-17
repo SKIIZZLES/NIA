@@ -12,13 +12,12 @@ import { useFeed } from '@/context/FeedContext';
 import { Colors, Fonts } from '@/constants/theme';
 import { VideoItem } from '@/data/mockVideos';
 
-type FeedTab = 'pour-toi' | 'abonnements' | 'afrique' | 'decouvrir';
+type FeedTab = 'pour-toi' | 'abonnements' | 'afrique';
 
 const TABS: { key: FeedTab; label: string }[] = [
   { key: 'pour-toi', label: 'Pour toi' },
   { key: 'abonnements', label: 'Abonnements' },
   { key: 'afrique', label: 'Afrique' },
-  { key: 'decouvrir', label: 'Découvrir' },
 ];
 
 function filterVideos(videos: VideoItem[], tab: FeedTab): VideoItem[] {
