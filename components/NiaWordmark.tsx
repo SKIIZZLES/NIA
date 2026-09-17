@@ -1,15 +1,38 @@
 import React from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Image, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Colors, Fonts } from '@/constants/theme';
 
 type Props = {
   size?: number;
   style?: ViewStyle;
   showTagline?: boolean;
+  /** Prefer official PNG logo (default true). Set false for text-only wordmark. */
+  useImage?: boolean;
 };
 
-/** Wordmark texte approximant le logo NIA (i doré) */
-export function NiaWordmark({ size = 64, style, showTagline }: Props) {
+/** Official NIA logo (image) with text fallback approximating the mark. */
+export function NiaWordmark({
+  size = 64,
+  style,
+  showTagline,
+  useImage = true,
+}: Props) {
+  if (useImage) {
+    return (
+      <View style={[styles.wrap, style]}>
+        <Image
+          source={require('@/assets/brand/nia-logo-official.png')}
+          style={{ width: size * 2.2, height: size * 2.2 }}
+          resizeMode="contain"
+          accessibilityLabel="NIA"
+        />
+        {showTagline ? (
+          <Text style={styles.tagline}>VIDÉOS · CULTURES · TALENTS · SANS FRONTIÈRES</Text>
+        ) : null}
+      </View>
+    );
+  }
+
   const iSize = size * 0.85;
   return (
     <View style={[styles.wrap, style]}>

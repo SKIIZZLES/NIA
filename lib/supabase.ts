@@ -110,6 +110,8 @@ export function getSupabase(): SupabaseClient<Database> | null {
         persistSession: browser,
         detectSessionInUrl: false,
       },
+      // Force global WebSocket so realtime never needs Node `ws`.
+      realtime: typeof WebSocket !== 'undefined' ? { transport: WebSocket } : undefined,
     });
   }
   return client;

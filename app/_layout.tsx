@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import { Buffer } from 'buffer';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
@@ -14,6 +15,8 @@ import {
 import { AuthProvider } from '@/context/AuthContext';
 import { FeedProvider } from '@/context/FeedContext';
 import { Colors } from '@/constants/theme';
+
+global.Buffer = global.Buffer || Buffer;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

@@ -1,31 +1,44 @@
-// Metro config for Expo + Supabase on React Native (Expo Go Android/iOS).
-// Prefer RN/browser exports over Node so @supabase/realtime-js does not pull
-// Node-only `ws` / `stream` / `zlib` into the bundle.
+// Aggressive Metro shims so @supabase/realtime-js never pulls Node `ws` /
+// `stream` / `zlib` into the Expo Go Android/iOS bundle.
+const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
+const { resolve: metroResolve } = require('metro-resolver');
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-const emptyModules = new Set(['ws', 'zlib']);
+const emptyShim = path.resolve(__dirname, 'shims/empty.js');
+const readableStream = require.resolve('readable-stream');
 
-config.resolver.unstable_enablePackageExports = true;
+// Prefer classic resolution; package "exports" often pick Node entrypoints.
+config.resolver.unstable_enablePackageExports = false;
 config.resolver.unstable_conditionNames = ['react-native', 'browser', 'require'];
 
-const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.extraNodeModules = {
+  ...(config.resolver.extraNodeModules || {}),
+  ws: emptyShim,
+  stream: readableStream,
+};
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (emptyModules.has(moduleName)) {
-    return { type: 'empty' };
+  if (moduleName === 'ws' || moduleName.startsWith('ws/')) {
+    return { type: 'sourceFile', filePath: emptyShim };
   }
 
-  if (moduleName === 'stream') {
-    return context.resolveRequest(context, 'readable-stream', platform);
+  if (moduleName === 'stream' || moduleName === 'node:stream') {
+    return { type: 'sourceFile', filePath: readableStream };
   }
 
-  if (originalResolveRequest) {
-    return originalResolveRequest(context, moduleName, platform);
+  if (moduleName === 'zlib' || moduleName === 'node:zlib') {
+    return { type: 'sourceFile', filePath: emptyShim };
   }
 
-  return context.resolveRequest(context, moduleName, platform);
+  // Default Metro resolver without re-entering this custom resolveRequest.
+  return metroResolve(
+    { ...context, resolveRequest: undefined },
+    moduleName,
+    platform
+  );
 };
 
 module.exports = config;
