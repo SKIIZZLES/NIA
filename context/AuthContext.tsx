@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow } from '@/types/database';
+import { updateProfile as persistProfile } from '@/lib/profiles';
 
 const SESSION_KEY = '@nia/session_v1';
 
@@ -17,6 +18,7 @@ export type NiaUser = {
   id: string;
   email: string;
   username: string;
+  displayName: string;
   bio: string;
   avatarUrl: string;
 };
@@ -27,6 +29,8 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Met à jour bio / display_name (mock local ou profiles) */
+  updateProfile: (patch: { displayName?: string; bio?: string }) => Promise<void>;
   /** true = AsyncStorage mock ; false = Supabase Auth */
   isMockAuth: boolean;
 };
@@ -41,6 +45,7 @@ function mockUserFromEmail(email: string, username?: string): NiaUser {
     id: `mock_${Date.now()}`,
     email,
     username: handle,
+    displayName: handle,
     bio: 'Créateur·rice sur NIA · cultures & talents 🌍',
     avatarUrl: `https://i.pravatar.cc/200?u=${encodeURIComponent(handle)}`,
   };
@@ -61,6 +66,7 @@ function profileToUser(sessionUser: User, profile: ProfileRow | null): NiaUser {
     id: sessionUser.id,
     email,
     username: handle,
+    displayName: profile?.display_name || handle,
     bio: profile?.bio || 'Créateur·rice sur NIA · cultures & talents 🌍',
     avatarUrl:
       profile?.avatar_url ||
@@ -88,7 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         if (!sb) {
           const raw = await AsyncStorage.getItem(SESSION_KEY);
-          if (alive && raw) setUser(JSON.parse(raw) as NiaUser);
+          if (alive && raw) {
+            const parsed = JSON.parse(raw) as NiaUser;
+            if (!parsed.displayName) parsed.displayName = parsed.username;
+            setUser(parsed);
+          }
           return;
         }
 
@@ -179,6 +189,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persistMock],
   );
 
+  const updateProfile = useCallback(
+    async (patch: { displayName?: string; bio?: string }) => {
+      if (!user) throw new Error('Connectez-vous pour modifier le profil.');
+      const nextDisplay =
+        patch.displayName !== undefined ? patch.displayName.trim() : user.displayName;
+      const nextBio = patch.bio !== undefined ? patch.bio.trim() : user.bio;
+
+      if (!isSupabaseConfigured || user.id.startsWith('mock_')) {
+        const next: NiaUser = {
+          ...user,
+          displayName: nextDisplay,
+          bio: nextBio,
+        };
+        await persistMock(next);
+        return;
+      }
+
+      await persistProfile(user.id, {
+        display_name: nextDisplay,
+        bio: nextBio,
+      });
+      setUser({
+        ...user,
+        displayName: nextDisplay,
+        bio: nextBio,
+      });
+    },
+    [user, persistMock],
+  );
+
   const signOut = useCallback(async () => {
     const sb = getSupabase();
     if (!sb) {
@@ -196,9 +236,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       signOut,
+      updateProfile,
       isMockAuth: mockMode,
     }),
-    [user, loading, signIn, signUp, signOut, mockMode],
+    [user, loading, signIn, signUp, signOut, updateProfile, mockMode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -47,13 +47,14 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Feed vertical plein écran + démos | ✅ |
 | Nav Accueil / Découvrir / + / Notifications / Profil | ✅ Étape 1 |
 | Rail like / commentaire / partage | ✅ Étape 4 (compteurs + actions) |
-| Création : pick média + publier local **ou** Storage | ✅ |
-| Profil + grille | ✅ |
+| Création : pick média + publier local **ou** Storage | ✅ Étape 5 (preview, #tags, catégorie, limites) |
+| Profil + grille | ✅ Étape 5 (profil public + édition bio/display_name) |
 | Découvrir (catégories) | ✅ UI shell |
 | Notifications (liste Supabase / empty) | ✅ Étape 4 |
 | Schéma SQL init + doc Sprint 1 | ✅ `001` + `002` + `docs/SCHEMA_SPRINT1.md` |
 | Helpers likes / comments / follows / notifications | ✅ Étape 2 |
 | UI engagement (like, commentaires sheet, follow, abo tab) | ✅ Étape 4 |
+| Publication polish + profils publics | ✅ Étape 5 |
 | Transcoding / CDN pro | ❌ prochain |
 | Lives / messagerie / marketplace | ❌ hors scope immédiat |
 
@@ -62,7 +63,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 ### Phase 2 — Fondations
 - OAuth (Google / Apple)
 - Transcoding vidéo (Mux / Cloudflare Stream) si free tier insuffisant
-- Compteurs commentaires serveur + profils publics
+- Compteurs commentaires serveur (profils publics : ✅ Étape 5)
 - Modération de base + signalements (UI)
 - Messagerie (après nav Notifications)
 - OAuth (Google / Apple) — aussi listé ci-dessus

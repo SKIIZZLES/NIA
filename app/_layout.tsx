@@ -31,6 +31,8 @@ function RootNavigator() {
         <Stack.Screen name="welcome" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="user/[username]" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
       </Stack>
     </>
   );

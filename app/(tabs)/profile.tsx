@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Image,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -13,6 +14,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useRouter } from 'expo-router';
+import {
+  countFollowers,
+  countFollowing,
+  fetchVideosByUserId,
+} from '@/lib/profiles';
+import { formatCount } from '@/data/mockVideos';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -23,10 +30,47 @@ export default function ProfileScreen() {
   const cols = 3;
   const size = (width - gap * (cols - 1)) / cols;
 
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
   const myVideos = videos.filter(
-    (v) => user && (v.handle === `@${user.username}` || v.id.startsWith('local_')),
+    (v) =>
+      user &&
+      (v.userId === user.id ||
+        v.handle === `@${user.username}` ||
+        v.id.startsWith('local_')),
   );
-  const grid = myVideos.length ? myVideos : videos.slice(0, 6);
+
+  const [grid, setGrid] = useState(myVideos);
+
+  const loadCounts = useCallback(async () => {
+    if (!user) {
+      setFollowerCount(0);
+      setFollowingCount(0);
+      return;
+    }
+    try {
+      const [f1, f2, remote] = await Promise.all([
+        countFollowers(user.id),
+        countFollowing(user.id),
+        fetchVideosByUserId(user.id),
+      ]);
+      setFollowerCount(f1);
+      setFollowingCount(f2);
+      if (remote.length) setGrid(remote);
+      else setGrid(myVideos.length ? myVideos : []);
+    } catch {
+      setGrid(myVideos.length ? myVideos : []);
+    }
+  }, [user, myVideos.length]);
+
+  useEffect(() => {
+    loadCounts();
+  }, [loadCounts]);
+
+  useEffect(() => {
+    if (myVideos.length) setGrid(myVideos);
+  }, [videos, user?.id]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -39,22 +83,48 @@ export default function ProfileScreen() {
               }}
               style={styles.avatar}
             />
+            <Text style={styles.displayName}>
+              {user?.displayName || user?.username || 'Invité'}
+            </Text>
             <Text style={styles.username}>@{user?.username || 'invite'}</Text>
             <Text style={styles.bio}>{user?.bio || 'Profil NIA'}</Text>
             <View style={styles.stats}>
               <Stat label="Publications" value={String(grid.length)} />
-              <Stat label="Abonnés" value="12.4K" />
-              <Stat label="Abonnements" value="128" />
+              <Stat label="Abonnés" value={formatCount(followerCount)} />
+              <Stat label="Abonnements" value={formatCount(followingCount)} />
             </View>
-            <Button
-              title="Se déconnecter"
-              variant="outline"
-              onPress={async () => {
-                await signOut();
-                router.replace('/welcome');
-              }}
-              style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
-            />
+            {user ? (
+              <>
+                <Pressable
+                  style={styles.editBtn}
+                  onPress={() => router.push('/edit-profile')}
+                >
+                  <Text style={styles.editBtnText}>Modifier le profil</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.linkBtn}
+                  onPress={() => router.push(`/user/${user.username}`)}
+                >
+                  <Text style={styles.linkText}>Voir mon profil public</Text>
+                </Pressable>
+                <Button
+                  title="Se déconnecter"
+                  variant="outline"
+                  onPress={async () => {
+                    await signOut();
+                    router.replace('/welcome');
+                  }}
+                  style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
+                />
+              </>
+            ) : (
+              <Button
+                title="Se connecter"
+                variant="gold"
+                onPress={() => router.push('/(auth)/login')}
+                style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
+              />
+            )}
           </View>
         }
         data={grid}
@@ -62,6 +132,9 @@ export default function ProfileScreen() {
         numColumns={cols}
         columnWrapperStyle={{ gap }}
         contentContainerStyle={{ gap }}
+        ListEmptyComponent={
+          <Text style={styles.empty}>Aucune publication pour l’instant.</Text>
+        }
         renderItem={({ item }) => (
           <Image
             source={{ uri: item.thumbnailUrl }}
@@ -97,11 +170,17 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.or,
   },
-  username: {
+  displayName: {
     marginTop: Spacing.md,
     color: Colors.sable,
     fontFamily: Fonts.bold,
     fontSize: 20,
+  },
+  username: {
+    marginTop: 4,
+    color: Colors.textSecondary,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
   },
   bio: {
     marginTop: 6,
@@ -126,5 +205,30 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 11,
     marginTop: 2,
+  },
+  editBtn: {
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  editBtnText: {
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+  },
+  linkBtn: { marginTop: Spacing.sm, padding: 6 },
+  linkText: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  empty: {
+    textAlign: 'center',
+    color: Colors.textMuted,
+    fontFamily: Fonts.regular,
+    marginTop: Spacing.lg,
   },
 });

@@ -14,6 +14,7 @@ import { formatCount, VideoItem } from '@/data/mockVideos';
 import { useFeed } from '@/context/FeedContext';
 import { useAuth } from '@/context/AuthContext';
 import { FollowButton } from '@/components/FollowButton';
+import { useRouter } from 'expo-router';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 
@@ -31,6 +32,7 @@ export function VideoCard({
   onOpenComments,
 }: Props) {
   const videoRef = useRef<Video>(null);
+  const router = useRouter();
   const { user } = useAuth();
   const { toggleLike, likedIds, followingIds, toggleFollow } = useFeed();
   const liked = likedIds.has(item.id);
@@ -42,6 +44,12 @@ export function VideoCard({
       ? authorId === user.id
       : item.handle === `@${user.username}`);
   const [muted, setMuted] = useState(false);
+
+  const openProfile = () => {
+    const handle = item.handle.replace(/^@/, '');
+    if (!handle) return;
+    router.push(`/user/${handle}`);
+  };
 
   useEffect(() => {
     (async () => {
@@ -78,7 +86,9 @@ export function VideoCard({
       {/* Right rail */}
       <View style={styles.rail}>
         <View style={styles.avatarWrap}>
-          <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+          <Pressable onPress={openProfile}>
+            <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+          </Pressable>
           {authorId && !isOwn ? (
             <View style={styles.followBadge}>
               <FollowButton
@@ -112,7 +122,9 @@ export function VideoCard({
 
       {/* Caption */}
       <View style={styles.meta}>
-        <Text style={styles.handle}>{item.handle}</Text>
+        <Pressable onPress={openProfile}>
+          <Text style={styles.handle}>{item.handle}</Text>
+        </Pressable>
         <Text style={styles.caption} numberOfLines={3}>
           {item.caption}
         </Text>

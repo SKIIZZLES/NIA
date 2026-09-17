@@ -5,6 +5,7 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { VideoItem } from '@/data/mockVideos';
 import type { CategoryId } from '@/constants/categories';
 import { isCategoryId } from '@/constants/categories';
+import { parseHashtags } from '@/constants/publish';
 import type { ProfileRow, VideoRow } from '@/types/database';
 
 type VideoWithProfile = VideoRow & {
@@ -129,9 +130,12 @@ export type UploadVideoInput = {
   region?: string;
   tag?: string;
   category?: string;
+  hashtags?: string[];
   mimeType?: string | null;
   username?: string;
   avatarUrl?: string;
+  /** Statut DB — défaut published (pas de transcoder) */
+  status?: 'published' | 'processing' | 'draft';
 };
 
 export async function uploadVideoToSupabase(
@@ -170,8 +174,9 @@ export async function uploadVideoToSupabase(
     region: input.region || null,
     tag: input.tag || null,
     category: input.category || input.tag || null,
+    hashtags: input.hashtags?.length ? input.hashtags : null,
     thumbnail_url: urlData.publicUrl,
-    status: 'published',
+    status: input.status || 'published',
   };
 
   const { data: inserted, error: insErr } = await sb
@@ -191,4 +196,4 @@ export async function uploadVideoToSupabase(
   return item;
 }
 
-export { isSupabaseConfigured };
+export { isSupabaseConfigured, parseHashtags };

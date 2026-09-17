@@ -13,6 +13,12 @@ import {
   fetchVideosFromSupabase,
   uploadVideoToSupabase,
 } from '@/lib/videos';
+import {
+  MAX_UPLOAD_BYTES,
+  MAX_VIDEO_DURATION_SEC,
+  PUBLISH_ERRORS,
+  parseHashtags,
+} from '@/constants/publish';
 import { fetchLikedVideoIds, toggleLike as persistToggleLike } from '@/lib/likes';
 import {
   fetchFollowingIds,
@@ -26,6 +32,9 @@ type PublishInput = {
   region?: string;
   tag?: string;
   category?: string;
+  hashtags?: string[];
+  fileSize?: number;
+  durationMs?: number;
 };
 
 type FeedContextValue = {
@@ -119,12 +128,44 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
 
   const publishPost = useCallback(
     async (input: PublishInput) => {
+      if (input.fileSize != null && input.fileSize > MAX_UPLOAD_BYTES) {
+        throw new Error(PUBLISH_ERRORS.tooLarge);
+      }
+      if (
+        input.durationMs != null &&
+        input.durationMs > MAX_VIDEO_DURATION_SEC * 1000
+      ) {
+        throw new Error(PUBLISH_ERRORS.tooLong);
+      }
+
+      const tags =
+        input.hashtags?.length
+          ? input.hashtags
+          : parseHashtags(input.caption || '');
+
       if (!isSupabaseConfigured || !user || user.id.startsWith('mock_')) {
-        addLocalPost(input.caption, input.localUri);
+        const handle = user ? `@${user.username}` : '@moi';
+        const item: VideoItem = {
+          id: `local_${Date.now()}`,
+          videoUrl:
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          thumbnailUrl:
+            input.localUri || 'https://picsum.photos/seed/localnia/540/960',
+          handle,
+          caption: input.caption || 'Nouvelle vidéo NIA ✨',
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          avatarUrl: user?.avatarUrl || 'https://i.pravatar.cc/150?u=moi',
+          tab: 'pour-toi',
+          userId: user?.id,
+          category: input.category as VideoItem['category'],
+        };
+        setVideos((prev) => [item, ...prev]);
         return;
       }
       if (!input.localUri) {
-        throw new Error('Sélectionnez un média à publier.');
+        throw new Error(PUBLISH_ERRORS.noMedia);
       }
       const item = await uploadVideoToSupabase({
         userId: user.id,
@@ -133,13 +174,15 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
         region: input.region,
         tag: input.tag,
         category: input.category,
+        hashtags: tags,
         mimeType: input.mimeType,
         username: user.username,
         avatarUrl: user.avatarUrl,
+        status: 'published',
       });
       setVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
     },
-    [user, addLocalPost],
+    [user],
   );
 
   const toggleLike = useCallback(
