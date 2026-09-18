@@ -64,15 +64,12 @@ export default function DiscoverScreen() {
     }
   }, [selected, loadCategoryVideos]);
 
-  /** Mock : filtre feed / démos par category. Supabase : résultats remote (ou fallback mock). */
+  /** Mock : filtre feed / démos par category. Supabase : remote puis feed (pas de DEMO). */
   const categoryVideos = useMemo(() => {
     if (!selected) return [];
     if (isSupabaseConfigured) {
       if (remoteByCategory.length) return remoteByCategory;
-      // fallback soft si table vide / 002 pas joué
-      const fromFeed = feedVideos.filter((v) => v.category === selected);
-      if (fromFeed.length) return fromFeed;
-      return DEMO_VIDEOS.filter((v) => v.category === selected);
+      return feedVideos.filter((v) => v.category === selected);
     }
     const fromFeed = feedVideos.filter((v) => v.category === selected);
     if (fromFeed.length) return fromFeed;

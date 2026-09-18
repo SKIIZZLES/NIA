@@ -76,7 +76,10 @@ function filterBlocked(list: VideoItem[], blocked: Set<string>): VideoItem[] {
 export function FeedProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const mockFeed = !isSupabaseConfigured;
-  const [rawVideos, setRawVideos] = useState<VideoItem[]>(DEMO_VIDEOS);
+  // Real mode starts empty (no demo injection). Mock mode seeds DEMO_VIDEOS.
+  const [rawVideos, setRawVideos] = useState<VideoItem[]>(
+    isSupabaseConfigured ? [] : DEMO_VIDEOS,
+  );
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
@@ -99,7 +102,8 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     setFeedError(null);
     try {
       const remote = await fetchVideosFromSupabase();
-      setRawVideos(remote.length ? remote : DEMO_VIDEOS);
+      // Empty table = empty feed (do NOT inject DEMO_VIDEOS in real mode).
+      setRawVideos(remote);
       if (user && !user.id.startsWith('mock_')) {
         try {
           const [liked, following, blocked] = await Promise.all([
@@ -111,13 +115,13 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           setFollowingIds(new Set(following));
           setBlockedIds(new Set(blocked));
         } catch {
-          // ignore hydrate errors — ne pas crasher la démo
+          // ignore hydrate errors — ne pas crasher l'UI
         }
       }
     } catch {
-      setRawVideos((prev) => (prev.length ? prev : DEMO_VIDEOS));
+      // Keep previous remote list if any; never inject demo while configured.
       setFeedError(
-        'Connexion limitée. Affichage du feed démo (Supabase indisponible).',
+        'Connexion limitée. Impossible de charger le feed Supabase.',
       );
     } finally {
       setLoading(false);

@@ -10,7 +10,7 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 
 ## Android preview note
 
-- EAS preview/production : Supabase réel si `EXPO_PUBLIC_SUPABASE_*` sont définies (Expo Go reste en auth mock).
+- EAS preview/production : Supabase **réel** si `EXPO_PUBLIC_SUPABASE_*` sont définies (sauf `EXPO_PUBLIC_USE_MOCK=1`). Voir **SUPABASE.md**.
 - Google Sign-In : `@react-native-google-signin/google-signin` + `signInWithIdToken` — voir **GOOGLE_AUTH.md** (projet Google Cloud **NIA APP**). Nouveau build EAS requis.
 - Snapchat Login : OAuth Login Kit (`expo-auth-session`) + Edge Function `snapchat-auth` — voir **SNAPCHAT_AUTH.md** (kit.snapchat.com). Rebuild EAS en général **non** requis si scheme `nia` déjà présent.
 - Video playback uses **`expo-video`** (SDK 57); `expo-av` is not used.
@@ -34,12 +34,13 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 - Plugin `expo-localization` dans `app.json` → déjà présent ; **pas de nouveau build EAS** requis pour ces locales JS (rebuild seulement si vous activez RTL natif / changez des plugins natifs).
 
 
-## Expo Go Android / iOS (important)
+## Supabase vs mock (important)
 
-Sur **Expo Go** uniquement (`Constants.executionEnvironment === StoreClient` ou `appOwnership === 'expo'`), Supabase est **désactivé** → auth **mock**, même si `.env` contient des clés. Metro **ne remplace plus** `@supabase/supabase-js` sur android/ios (sinon les builds EAS n’auraient plus d’auth réelle) : shims `ws` / `zlib` / `stream`, et stub optionnel `@supabase/realtime-js` seulement. `shims/supabase-js-native.js` reste dans le repo mais **n’est pas** branché par Metro.
+Mock **uniquement** si `EXPO_PUBLIC_SUPABASE_URL` / `ANON_KEY` manquent, **ou** `EXPO_PUBLIC_USE_MOCK=1`. Sinon client réel (Expo Go, web, EAS). Metro **ne remplace pas** `@supabase/supabase-js` : shims `ws` / `zlib` / `stream` + stub `@supabase/realtime-js` seulement (évite crashs Node sur RN). `shims/supabase-js-native.js` reste en secours manuel, **non** branché.
 
-- **Mock auth (Expo Go)** : `npx expo start` → scanner le QR → badge **AUTH MOCK MVP**
-- **Supabase réel** : `npx expo start --web`, ou **EAS preview / production** (APK/IPA standalone) avec secrets `EXPO_PUBLIC_SUPABASE_*`
+- **Mock** : clés vides ou `EXPO_PUBLIC_USE_MOCK=1` → badge **AUTH MOCK MVP** + feed démo
+- **Réel** : `.env` / EAS secrets remplis → badge **AUTH SUPABASE** ; feed vide si table `videos` vide (plus d’injection démo)
+- Détails bucket / RLS : **SUPABASE.md**
 - Après `git pull` : `npx expo start -c`
 
 ## Prérequis
@@ -108,7 +109,7 @@ npx expo start
 4. Redémarrer Metro (`npx expo start -c`).
 5. Même parcours : compte réel → publier (Storage) → like / comment / follow → signaler / bloquer (tables `reports` / `blocks`).
 
-Si Supabase est down : l’app bascule sur le feed démo + toasts FR, **sans crash**.
+Si Supabase est down en mode réel : message d’erreur feed + conservation de la dernière liste, **sans** réinjecter le feed démo (ErrorBoundary reste actif).
 
 ## Brancher Supabase (~10 minutes)
 
@@ -172,7 +173,7 @@ Si le SQL n’a pas créé le bucket (droits), créez-le manuellement nommé `vi
 2. Créer un compte → un row apparaît dans `profiles`.
 3. Onglet **Créer** → choisir une vidéo / image → **Publier**.
 4. Fichier dans Storage `videos/{user_id}/…` + row dans `videos`.
-5. Feed recharge les vidéos distantes (sinon garde les démos si table vide / erreur réseau).
+5. Feed recharge les vidéos distantes (table vide = feed vide ; erreur réseau = message, pas de démo).
 
 ## Architecture
 
@@ -193,7 +194,7 @@ constants/theme.ts        # Tokens Noir / Terre / Or / Sable / Vert
 data/mockVideos.ts        # Feed démo (fallback)
 ```
 
-- **Auth** : Supabase si `EXPO_PUBLIC_SUPABASE_URL` + `ANON_KEY` ; sinon mock AsyncStorage.
+- **Auth** : Supabase si `EXPO_PUBLIC_SUPABASE_URL` + `ANON_KEY` (sauf `EXPO_PUBLIC_USE_MOCK=1`) ; sinon mock AsyncStorage.
 - **Session** : SecureStore (natif, petites valeurs) + AsyncStorage (web / JWT longs).
 - **Feed / Créer** : lecture `videos` + upload Storage quand configuré ; sinon mock local.
 - **Durée max vidéo** : `MAX_VIDEO_DURATION_SEC` = **600 s (10 min)** dans `constants/publish.ts` (picker + validation). Pas de transcoder payant ; les longues vidéos consomment plus de Storage / bande passante sur **Supabase Free**.

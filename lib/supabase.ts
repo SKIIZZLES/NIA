@@ -1,26 +1,23 @@
 /**
  * Client Supabase NIA.
- * Expo Go : mock auth (évite crashs Node ws/stream dans le client store).
- * EAS / standalone / bare / web : client réel si EXPO_PUBLIC_SUPABASE_* sont définies.
+ *
+ * Real client when EXPO_PUBLIC_SUPABASE_URL + ANON_KEY are set.
+ * Mock only when env missing or EXPO_PUBLIC_USE_MOCK=1.
+ * Metro stubs @supabase/realtime-js + Node ws/stream (see metro.config.js)
+ * so REST / Auth / Storage work on RN without realtime websocket crashes.
  */
 import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import type { Database } from '@/types/database';
 
 const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
-
-/**
- * Expo Go only (store client / appOwnership expo).
- * Standalone EAS APK, bare, and web are NOT Expo Go → real Supabase when env set.
- */
-const isExpoGo =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
-  Constants.appOwnership === 'expo';
+const forceMock =
+  (process.env.EXPO_PUBLIC_USE_MOCK || '').trim() === '1' ||
+  (process.env.EXPO_PUBLIC_USE_MOCK || '').trim().toLowerCase() === 'true';
 
 const envLooksValid =
   supabaseUrl.length > 0 &&
@@ -28,10 +25,10 @@ const envLooksValid =
   supabaseUrl.startsWith('http');
 
 /**
- * false in Expo Go (mock auth).
- * Elsewhere: true when EXPO_PUBLIC_SUPABASE_* are set (incl. EAS preview/production).
+ * true when URL+anon key are present and mock is not forced.
+ * Applies to Expo Go, EAS standalone, bare, and web (realtime stubbed on native).
  */
-export const isSupabaseConfigured = !isExpoGo && envLooksValid;
+export const isSupabaseConfigured = !forceMock && envLooksValid;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
@@ -132,7 +129,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
 }
 
 /**
- * Alias pratique — null en mode mock (Expo Go, ou env manquantes).
+ * Alias pratique — null en mode mock (env manquantes ou EXPO_PUBLIC_USE_MOCK=1).
  */
 export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
   ? getSupabase()
