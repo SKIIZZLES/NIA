@@ -1,38 +1,30 @@
-import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, Fonts } from '@/constants/theme';
 
 export default function NotFoundScreen() {
   return (
-    <>
-      <Stack.Screen options={{ title: 'Introuvable' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>Page introuvable</Text>
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Retour à NIA</Text>
-        </Link>
-      </View>
-    </>
+    <View style={styles.container}>
+      <Text style={styles.title}>NIA</Text>
+      <Text style={styles.subtitle}>ça marche</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.noir,
+    backgroundColor: '#0A0A0A',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
   },
   title: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 20,
+    color: '#D4AF37',
+    fontSize: 48,
+    fontWeight: '700',
+    letterSpacing: 4,
   },
-  link: { marginTop: 16 },
-  linkText: {
-    color: Colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 16,
+  subtitle: {
+    color: '#F5F0E8',
+    fontSize: 18,
+    marginTop: 12,
   },
 });

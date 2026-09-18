@@ -8,6 +8,17 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 - Cibles : App Store & Google Play via **EAS**
 - Brand board : `assets/brand/nia-brand-board.png`
 
+## ⚠️ EMERGENCY OPEN-BUILD (temporary)
+
+The APK was crashing after the native splash. For a **guaranteed-open** first paint:
+
+- `app/` currently contains only `_layout.tsx`, `index.tsx`, `+not-found.tsx` — a black screen with text **NIA** / **ça marche**.
+- Full routes live in `app_disabled/` (`(auth)`, `(tabs)`, `welcome.tsx`, `user/`, `edit-profile.tsx`) so Metro/Expo Router cannot evaluate their import-time side effects (AuthProvider, supabase, expo-av, etc.).
+- **Restore later:** move those folders/files back under `app/` and reinstate the real root layout / auth gate.
+
+---
+
+
 
 ## Expo Go Android / iOS (important)
 
