@@ -53,7 +53,8 @@
         {
           "photosPermission": "NIA accède à vos médias pour publier."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

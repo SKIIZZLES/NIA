@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts } from '@/constants/theme';
 import { formatCount, VideoItem } from '@/data/mockVideos';
@@ -35,7 +35,10 @@ export function VideoCard({
   bottomInset = 80,
   onOpenComments,
 }: Props) {
-  const videoRef = useRef<Video>(null);
+  const player = useVideoPlayer(item.videoUrl, (p) => {
+    p.loop = true;
+    p.muted = false;
+  });
   const router = useRouter();
   const { user } = useAuth();
   const { toggleLike, likedIds, followingIds, toggleFollow, blockUser } =
@@ -59,22 +62,21 @@ export function VideoCard({
   };
 
   useEffect(() => {
-    (async () => {
-      if (!videoRef.current) return;
-      try {
-        if (isActive) {
-          await videoRef.current.playAsync();
-        } else {
-          await videoRef.current.pauseAsync();
-          await videoRef.current.setPositionAsync(0);
-        }
-      } catch {
-        // ignore playback race
-      }
-    })();
-  }, [isActive]);
+    player.muted = muted;
+  }, [muted, player]);
 
-  const onStatus = (_status: AVPlaybackStatus) => {};
+  useEffect(() => {
+    try {
+      if (isActive) {
+        player.play();
+      } else {
+        player.pause();
+        player.currentTime = 0;
+      }
+    } catch {
+      // ignore playback race
+    }
+  }, [isActive, player]);
 
   const onShare = async () => {
     await shareVideo(item);
@@ -112,15 +114,11 @@ export function VideoCard({
 
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
-      <Video
-        ref={videoRef}
+      <VideoView
+        player={player}
         style={StyleSheet.absoluteFill}
-        source={{ uri: item.videoUrl }}
-        resizeMode={ResizeMode.COVER}
-        isLooping
-        isMuted={muted}
-        shouldPlay={isActive}
-        onPlaybackStatusUpdate={onStatus}
+        contentFit="cover"
+        nativeControls={false}
       />
       <View style={styles.gradient} pointerEvents="none" />
 

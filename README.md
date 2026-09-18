@@ -4,20 +4,16 @@
 
 Application mobile de vidéos verticales courtes centrée sur les contenus, cultures et talents africains.
 
-- Stack : **Expo SDK 57** · **TypeScript** · **Expo Router** · **expo-av** · **Supabase** (optionnel)
+- Stack : **Expo SDK 57** · **TypeScript** · **Expo Router** · **expo-video** · **Supabase** (optionnel)
 - Cibles : App Store & Google Play via **EAS**
 - Brand board : `assets/brand/nia-brand-board.png`
 
-## ⚠️ EMERGENCY OPEN-BUILD (temporary)
+## Android preview note
 
-The APK was crashing after the native splash. For a **guaranteed-open** first paint:
-
-- `app/` currently contains only `_layout.tsx`, `index.tsx`, `+not-found.tsx` — a black screen with text **NIA** / **ça marche**.
-- Full routes live in `app_disabled/` (`(auth)`, `(tabs)`, `welcome.tsx`, `user/`, `edit-profile.tsx`) so Metro/Expo Router cannot evaluate their import-time side effects (AuthProvider, supabase, expo-av, etc.).
-- **Restore later:** move those folders/files back under `app/` and reinstate the real root layout / auth gate.
+- Preview APK builds keep **`lib/supabase.ts` forced mock** (`isSupabaseConfigured === false`) for native startup stability.
+- Video playback uses **`expo-video`** (SDK 57); `expo-av` is not used.
 
 ---
-
 
 
 ## Expo Go Android / iOS (important)
