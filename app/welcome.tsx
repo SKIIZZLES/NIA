@@ -9,6 +9,7 @@ import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function WelcomeScreen() {
           style={{ marginTop: Spacing.md }}
         />
         <GoogleSignInButton />
+        <SnapchatSignInButton />
         <LanguageToggle compact />
         <Text style={styles.mockHint}>
           {isMockAuth ? t('welcome.mockHint') : t('welcome.supabaseHint')}

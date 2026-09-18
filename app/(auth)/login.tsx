@@ -14,6 +14,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
 
 export default function LoginScreen() {
   const { signIn, isMockAuth } = useAuth();
@@ -84,6 +85,7 @@ export default function LoginScreen() {
         style={{ marginTop: Spacing.lg }}
       />
       <GoogleSignInButton />
+      <SnapchatSignInButton />
     </KeyboardAvoidingView>
   );
 }
