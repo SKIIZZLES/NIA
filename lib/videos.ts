@@ -112,15 +112,90 @@ export async function fetchVideosFromSupabase(options?: {
   });
 }
 
-function extFromUri(uri: string, mime?: string | null): string {
-  if (mime?.includes('png')) return 'png';
-  if (mime?.includes('webp')) return 'webp';
-  if (mime?.includes('jpeg') || mime?.includes('jpg')) return 'jpg';
-  if (mime?.includes('quicktime')) return 'mov';
-  if (mime?.includes('webm')) return 'webm';
-  const m = uri.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
-  if (m) return m[1].toLowerCase();
-  return 'mp4';
+/** Extensions → MIME alignés bucket `videos` (001_nia_init). */
+const EXT_TO_MIME: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  qt: 'video/quicktime',
+  webm: 'video/webm',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+};
+
+const MIME_TO_EXT: Record<string, string> = {
+  'video/mp4': 'mp4',
+  'video/quicktime': 'mov',
+  'video/webm': 'webm',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+
+function stripMimeParams(mime: string): string {
+  return mime.split(';')[0].trim().toLowerCase();
+}
+
+function isUsableMime(mime: string | null | undefined): mime is string {
+  if (!mime) return false;
+  const cleaned = stripMimeParams(mime);
+  if (!cleaned || cleaned === 'application/octet-stream') return false;
+  // RN Android fetch(file).blob() often reports text/plain — never trust it.
+  if (cleaned === 'text/plain' || cleaned.startsWith('text/')) return false;
+  return true;
+}
+
+function extFromName(name: string): string | null {
+  const m = name.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/);
+  return m ? m[1].toLowerCase() : null;
+}
+
+/**
+ * Resolve a Storage-safe Content-Type.
+ * Prefer picker mimeType, then fileName/URI extension, then mediaKind.
+ * Never returns text/plain.
+ */
+export function resolveUploadContentType(input: {
+  mimeType?: string | null;
+  localUri: string;
+  fileName?: string | null;
+  mediaKind?: 'image' | 'video' | 'unknown' | null;
+}): { contentType: string; ext: string } {
+  let mime: string | null = null;
+
+  if (isUsableMime(input.mimeType)) {
+    mime = stripMimeParams(input.mimeType);
+    if (mime === 'image/jpg') mime = 'image/jpeg';
+  }
+
+  if (!mime) {
+    const fromFile = input.fileName ? extFromName(input.fileName) : null;
+    const fromUri = extFromName(input.localUri);
+    const ext = fromFile || fromUri;
+    if (ext && EXT_TO_MIME[ext]) {
+      mime = EXT_TO_MIME[ext];
+    }
+  }
+
+  if (!mime) {
+    if (input.mediaKind === 'image') mime = 'image/jpeg';
+    else mime = 'video/mp4'; // short-video default when Android omits mime + ext
+  }
+
+  const ext =
+    MIME_TO_EXT[mime] ||
+    (mime.startsWith('image/')
+      ? 'jpg'
+      : mime.includes('quicktime')
+        ? 'mov'
+        : mime.includes('webm')
+          ? 'webm'
+          : 'mp4');
+
+  return { contentType: mime, ext };
 }
 
 export type UploadVideoInput = {
@@ -132,6 +207,10 @@ export type UploadVideoInput = {
   category?: string;
   hashtags?: string[];
   mimeType?: string | null;
+  /** expo-image-picker fileName — useful when URI is content:// without extension */
+  fileName?: string | null;
+  /** Picker asset.type / inferred kind — fallback when mime + extension missing */
+  mediaKind?: 'image' | 'video' | 'unknown' | null;
   username?: string;
   avatarUrl?: string;
   /** Statut DB — défaut published (pas de transcoder) */
@@ -144,22 +223,26 @@ export async function uploadVideoToSupabase(
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase non configuré');
 
-  const ext = extFromUri(input.localUri, input.mimeType);
+  const { contentType, ext } = resolveUploadContentType({
+    mimeType: input.mimeType,
+    localUri: input.localUri,
+    fileName: input.fileName,
+    mediaKind: input.mediaKind,
+  });
+
   const path = `${input.userId}/${Date.now()}.${ext}`;
-  const contentType =
-    input.mimeType ||
-    (ext === 'png'
-      ? 'image/png'
-      : ext === 'jpg' || ext === 'jpeg'
-        ? 'image/jpeg'
-        : ext === 'webp'
-          ? 'image/webp'
-          : 'video/mp4');
 
+  // Critical: do NOT upload a Blob from fetch(uri).blob() on RN Android.
+  // Blob.type is often "text/plain", and @supabase/storage-js FormData path
+  // uses Blob.type and ignores the contentType option → Storage rejects with
+  // "mime type text/plain is not supported". ArrayBuffer sets Content-Type header.
   const response = await fetch(input.localUri);
-  const blob = await response.blob();
+  if (!response.ok) {
+    throw new Error(`Impossible de lire le média local (${response.status})`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
 
-  const { error: upErr } = await sb.storage.from('videos').upload(path, blob, {
+  const { error: upErr } = await sb.storage.from('videos').upload(path, arrayBuffer, {
     contentType,
     upsert: false,
   });

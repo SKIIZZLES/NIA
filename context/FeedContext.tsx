@@ -34,6 +34,8 @@ type PublishInput = {
   caption: string;
   localUri?: string;
   mimeType?: string | null;
+  fileName?: string | null;
+  mediaKind?: 'image' | 'video' | 'unknown' | null;
   region?: string;
   tag?: string;
   category?: string;
@@ -205,6 +207,8 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           category: input.category,
           hashtags: tags,
           mimeType: input.mimeType,
+          fileName: input.fileName,
+          mediaKind: input.mediaKind,
           username: user.username,
           avatarUrl: user.avatarUrl,
           status: 'published',

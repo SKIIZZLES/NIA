@@ -41,6 +41,8 @@ Run the storage section from `001_nia_init.sql`, or create equivalent policies o
 
 Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 
+**Android / RN note:** never upload `fetch(uri).blob()` as-is — Blob.type is often `text/plain` and storage-js FormData ignores the `contentType` option, so Storage rejects with “mime type text/plain is not supported”. The app uploads an `ArrayBuffer` with an explicit Content-Type inferred from picker mime / fileName / extension / media kind.
+
 ## Dashboard checklist (verify before blaming the app)
 
 - [ ] **API**: Project URL + anon (publishable) key match EAS `EXPO_PUBLIC_*` / local `.env`

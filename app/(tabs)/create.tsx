@@ -29,10 +29,32 @@ import {
 type PickedMedia = {
   uri: string;
   mimeType: string | null;
+  fileName: string | null;
   fileSize: number | null;
   durationMs: number | null;
   type: 'image' | 'video' | 'unknown';
 };
+
+/** Android gallery often omits mimeType; infer from type / fileName / URI. */
+function inferMimeType(
+  asset: ImagePicker.ImagePickerAsset,
+  kind: PickedMedia['type'],
+): string | null {
+  const raw = asset.mimeType?.split(';')[0]?.trim().toLowerCase() || null;
+  if (raw && raw !== 'text/plain' && !raw.startsWith('text/')) {
+    return raw === 'image/jpg' ? 'image/jpeg' : raw;
+  }
+  const name = `${asset.fileName || ''} ${asset.uri || ''}`.toLowerCase();
+  if (name.includes('.png')) return 'image/png';
+  if (name.includes('.webp')) return 'image/webp';
+  if (name.includes('.jpg') || name.includes('.jpeg')) return 'image/jpeg';
+  if (name.includes('.mov') || name.includes('.qt')) return 'video/quicktime';
+  if (name.includes('.webm')) return 'video/webm';
+  if (name.includes('.mp4') || name.includes('.m4v')) return 'video/mp4';
+  if (kind === 'image') return 'image/jpeg';
+  if (kind === 'video') return 'video/mp4';
+  return null;
+}
 
 export default function CreateScreen() {
   const { publishPost, isMockFeed } = useFeed();
@@ -91,7 +113,8 @@ export default function CreateScreen() {
 
     setMedia({
       uri: asset.uri,
-      mimeType: asset.mimeType ?? null,
+      mimeType: inferMimeType(asset, type),
+      fileName: asset.fileName ?? null,
       fileSize,
       durationMs,
       type,
@@ -132,6 +155,8 @@ export default function CreateScreen() {
         caption,
         localUri: media?.uri || undefined,
         mimeType: media?.mimeType ?? null,
+        fileName: media?.fileName ?? null,
+        mediaKind: media?.type ?? null,
         category,
         hashtags,
         fileSize: media?.fileSize ?? undefined,
