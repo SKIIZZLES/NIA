@@ -1,9 +1,7 @@
 /**
- * OPTIONAL full stub for @supabase/supabase-js (unused by metro.config.js).
- * Kept for emergency Expo Go debugging only — do NOT re-alias the whole package
- * on android/ios or EAS preview/production builds lose real auth.
- * Prefer: realtime stub + ws/stream/zlib shims; mock only in Expo Go via
- * Constants.executionEnvironment / appOwnership in lib/supabase.ts.
+ * Native stub for @supabase/supabase-js + realtime (wired by metro.config.js
+ * on android/ios). Guaranteed-open preview: real client is NOT in the APK.
+ * Auth/data use mock paths via isSupabaseConfigured === false.
  */
 'use strict';
 

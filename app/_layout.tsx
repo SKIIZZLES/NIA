@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { Buffer } from 'buffer';
-import React, { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import React, { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -90,6 +90,8 @@ function RootNavigator() {
   );
 }
 
+const FONT_TIMEOUT_MS = 3000;
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_300Light,
@@ -97,12 +99,21 @@ export default function RootLayout() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_700Bold,
   });
+  const [fontTimedOut, setFontTimedOut] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+    const t = setTimeout(() => setFontTimedOut(true), FONT_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, []);
 
-  if (!fontsLoaded) {
+  useEffect(() => {
+    if (fontsLoaded || fontTimedOut) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [fontsLoaded, fontTimedOut]);
+
+  // Do not block forever on font download failure — continue with system fonts.
+  if (!fontsLoaded && !fontTimedOut) {
     return (
       <View
         style={{

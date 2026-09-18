@@ -1,150 +1,42 @@
 /**
- * Client Supabase NIA.
- * Expo Go : mock auth (évite crashs Node ws/stream dans le client store).
- * EAS / standalone / bare / web : client réel si EXPO_PUBLIC_SUPABASE_* sont définies.
+ * Guaranteed-open build: always mock auth/data.
+ * Prioritize APK opening over live Supabase.
  *
- * Lazy-init only — never createClient at module top-level (publishable keys /
- * older SDKs / storage quirks can throw and crash the APK on open).
+ * - isSupabaseConfigured is always false → AuthContext / Feed use mocks.
+ * - getSupabase() never calls createClient and never loads the real SDK.
+ * - On android/ios, Metro resolves @supabase/* to shims/supabase-js-native.js
+ *   so the real client is not in the APK bundle.
  */
-import 'react-native-url-polyfill/auto';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { Platform } from 'react-native';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
-const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
-const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+/** Always false for this guaranteed-open Android preview. */
+export const isSupabaseConfigured: boolean = false;
 
 /**
- * Expo Go only (store client / appOwnership expo).
- * Standalone EAS APK, bare, and web are NOT Expo Go → real Supabase when env set.
- */
-const isExpoGo =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
-  Constants.appOwnership === 'expo';
-
-const envLooksValid =
-  supabaseUrl.length > 0 &&
-  supabaseAnonKey.length > 0 &&
-  supabaseUrl.startsWith('http');
-
-/**
- * false in Expo Go (mock auth).
- * Elsewhere: true when EXPO_PUBLIC_SUPABASE_* are set (incl. EAS preview/production).
- * Mutated to false if createClient throws so the app stays in mock mode.
- */
-export let isSupabaseConfigured = !isExpoGo && envLooksValid;
-
-function isBrowser(): boolean {
-  return typeof window !== 'undefined';
-}
-
-/** In-memory storage for SSR — never touches window / AsyncStorage / SecureStore. */
-const memoryStore = new Map<string, string>();
-
-const MemoryAuthStorage = {
-  async getItem(key: string): Promise<string | null> {
-    return memoryStore.get(key) ?? null;
-  },
-  async setItem(key: string, value: string): Promise<void> {
-    memoryStore.set(key, value);
-  },
-  async removeItem(key: string): Promise<void> {
-    memoryStore.delete(key);
-  },
-};
-
-/**
- * Stockage session : SecureStore sur natif (valeurs courtes),
- * AsyncStorage sur web / fallback (JWT session peut dépasser 2048 octets).
- * Sur SSR : mémoire uniquement (jamais AsyncStorage/SecureStore).
- */
-const ExpoAuthStorage = {
-  async getItem(key: string): Promise<string | null> {
-    if (!isBrowser()) {
-      return MemoryAuthStorage.getItem(key);
-    }
-    if (Platform.OS === 'web') {
-      return AsyncStorage.getItem(key);
-    }
-    try {
-      const secure = await SecureStore.getItemAsync(key);
-      if (secure != null) return secure;
-      return AsyncStorage.getItem(key);
-    } catch {
-      return AsyncStorage.getItem(key);
-    }
-  },
-  async setItem(key: string, value: string): Promise<void> {
-    if (!isBrowser()) {
-      await MemoryAuthStorage.setItem(key, value);
-      return;
-    }
-    if (Platform.OS === 'web') {
-      await AsyncStorage.setItem(key, value);
-      return;
-    }
-    try {
-      if (value.length < 2000) {
-        await SecureStore.setItemAsync(key, value);
-        await AsyncStorage.removeItem(key);
-      } else {
-        await AsyncStorage.setItem(key, value);
-        await SecureStore.deleteItemAsync(key).catch(() => {});
-      }
-    } catch {
-      await AsyncStorage.setItem(key, value);
-    }
-  },
-  async removeItem(key: string): Promise<void> {
-    if (!isBrowser()) {
-      await MemoryAuthStorage.removeItem(key);
-      return;
-    }
-    if (Platform.OS === 'web') {
-      await AsyncStorage.removeItem(key);
-      return;
-    }
-    await Promise.all([
-      SecureStore.deleteItemAsync(key).catch(() => {}),
-      AsyncStorage.removeItem(key),
-    ]);
-  },
-};
-
-let client: SupabaseClient<Database> | null = null;
-/** Rebuild if the cached client was created in the wrong environment (SSR vs browser). */
-let clientBuiltForBrowser: boolean | null = null;
-let initFailed = false;
-
-/**
- * Lazy Supabase client. Returns null in mock mode or if createClient fails.
- * Do not call at module load — only via this getter.
+ * Always null. Real createClient is intentionally unreachable so the native
+ * bundle never depends on SecureStore / ws / stream via supabase-js.
+ *
+ * Dead path below is kept only so a future flip of isSupabaseConfigured can
+ * re-enable web via dynamic require without a static top-level import.
  */
 export function getSupabase(): SupabaseClient<Database> | null {
-  if (!isSupabaseConfigured || initFailed) return null;
-  const browser = isBrowser();
-  if (!client || clientBuiltForBrowser !== browser) {
-    try {
-      clientBuiltForBrowser = browser;
-      client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          storage: browser ? ExpoAuthStorage : MemoryAuthStorage,
-          autoRefreshToken: browser,
-          persistSession: browser,
-          detectSessionInUrl: false,
-        },
-      });
-    } catch (err) {
-      console.warn('[supabase] createClient failed — falling back to mock mode', err);
-      initFailed = true;
-      isSupabaseConfigured = false;
-      client = null;
-      clientBuiltForBrowser = null;
-      return null;
-    }
+  if (!isSupabaseConfigured) return null;
+
+  // Unreachable while isSupabaseConfigured === false (intentional).
+  try {
+    // Dynamic require — not evaluated on the mock path; Metro stubs on native.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@supabase/supabase-js') as {
+      createClient: (
+        url: string,
+        key: string,
+        opts?: unknown,
+      ) => SupabaseClient<Database>;
+    };
+    void mod;
+  } catch {
+    return null;
   }
-  return client;
+  return null;
 }

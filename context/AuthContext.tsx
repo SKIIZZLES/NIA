@@ -7,10 +7,17 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Session, User } from '@supabase/supabase-js';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow } from '@/types/database';
 import { updateProfile as persistProfile } from '@/lib/profiles';
+
+/** Local auth shapes — no runtime/value import from @supabase/supabase-js. */
+type AuthUser = {
+  id: string;
+  email?: string | null;
+  user_metadata?: { username?: string };
+};
+type AuthSession = { user: AuthUser } | null;
 
 const SESSION_KEY = '@nia/session_v1';
 
@@ -51,7 +58,7 @@ function mockUserFromEmail(email: string, username?: string): NiaUser {
   };
 }
 
-function profileToUser(sessionUser: User, profile: ProfileRow | null): NiaUser {
+function profileToUser(sessionUser: AuthUser, profile: ProfileRow | null): NiaUser {
   const metaHandle =
     typeof sessionUser.user_metadata?.username === 'string'
       ? sessionUser.user_metadata.username
@@ -119,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       alive = false;
     };
 
-    const { data: sub } = sb.auth.onAuthStateChange(async (_event, session: Session | null) => {
+    const { data: sub } = sb.auth.onAuthStateChange(async (_event: string, session: AuthSession) => {
       if (!alive) return;
       if (!session?.user) {
         setUser(null);
