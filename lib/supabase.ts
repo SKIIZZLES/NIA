@@ -1,5 +1,8 @@
 /**
- * Client Supabase NIA — désactivé si les env manquent (mode mock offline).
+ * Client Supabase NIA.
+ * Sur Expo Go iOS/Android : toujours désactivé (mock auth) — Metro résout
+ * @supabase/supabase-js vers shims/supabase-js-native.js pour éviter le crash
+ * ws → stream. Sur web : client réel si env présentes.
  */
 import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -11,10 +14,19 @@ import type { Database } from '@/types/database';
 const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
-export const isSupabaseConfigured =
+/** Expo Go native cannot safely load real @supabase/supabase-js (Node ws/stream). */
+const isExpoGoNative = Platform.OS === 'ios' || Platform.OS === 'android';
+
+const envLooksValid =
   supabaseUrl.length > 0 &&
   supabaseAnonKey.length > 0 &&
   supabaseUrl.startsWith('http');
+
+/**
+ * false on iOS/Android always (mock auth).
+ * On web: true only when EXPO_PUBLIC_SUPABASE_* are set.
+ */
+export const isSupabaseConfigured = !isExpoGoNative && envLooksValid;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
@@ -105,16 +117,9 @@ export function getSupabase(): SupabaseClient<Database> | null {
     client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         storage: browser ? ExpoAuthStorage : MemoryAuthStorage,
-        // Avoid auth storage / refresh during SSR (no window).
         autoRefreshToken: browser,
         persistSession: browser,
         detectSessionInUrl: false,
-      },
-      // Realtime is stubbed via Metro (shims/supabase-realtime-stub.js) for Expo Go.
-      // Keep params minimal; Auth/REST/Storage are unaffected.
-      realtime: {
-        params: { eventsPerSecond: 0 },
-        ...(typeof WebSocket !== 'undefined' ? { transport: WebSocket } : {}),
       },
     });
   }
@@ -122,8 +127,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
 }
 
 /**
- * Alias pratique — null en mode mock.
- * Created via getSupabase() which is SSR-safe (memory storage, no persist on server).
+ * Alias pratique — null en mode mock (toujours sur iOS/Android Expo Go).
  */
 export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
   ? getSupabase()

@@ -8,6 +8,15 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 - Cibles : App Store & Google Play via **EAS**
 - Brand board : `assets/brand/nia-brand-board.png`
 
+
+## Expo Go Android / iOS (important)
+
+Sur **Expo Go** (Android & iOS), `@supabase/supabase-js` est **désactivé** et remplacé par un shim Metro (`shims/supabase-js-native.js`) pour éviter le crash Node `ws` → `stream`. L’auth est donc **toujours en mode mock** sur le natif Expo Go, même si `.env` contient des clés.
+
+- **Mock auth (Expo Go)** : `npx expo start` → scanner le QR → badge **AUTH MOCK MVP**
+- **Supabase réel** : `npx expo start --web`, ou un futur **EAS / dev client** natif
+- Après `git pull` : vérifier `dir metro.config.js` (Windows) ou `ls metro.config.js`, puis `npx expo start -c`
+
 ## Prérequis
 
 - Node.js 20.19.4+ (20.19.2 fonctionne avec des warnings moteurs)
@@ -26,7 +35,7 @@ npm install
 npx expo start
 ```
 
-Puis scanner le QR avec Expo Go, ou `npx expo start --web`.
+Puis scanner le QR avec Expo Go (auth **mock**), ou `npx expo start --web` (Supabase réel si `.env` rempli).
 
 ### Vérification TypeScript
 

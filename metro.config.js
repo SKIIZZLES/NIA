@@ -1,6 +1,6 @@
-// Nuclear Metro fix: stub @supabase/realtime-js entirely so nested Node `ws`
-// (and thus `stream` / `zlib`) never enter the Expo Go Android/iOS bundle.
-// Auth, REST, and Storage still load from real @supabase packages.
+// Nuclear Metro fix: on iOS/Android, resolve ALL @supabase/supabase-js and
+// @supabase/realtime-js (incl. subpaths) to a stub so Node `ws` → `stream`
+// never enters the Expo Go bundle. Web keeps the real packages.
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 const { resolve: metroResolve } = require('metro-resolver');
@@ -9,8 +9,21 @@ const { resolve: metroResolve } = require('metro-resolver');
 const config = getDefaultConfig(__dirname);
 
 const emptyShim = path.resolve(__dirname, 'shims/empty.js');
-const realtimeStub = path.resolve(__dirname, 'shims/supabase-realtime-stub.js');
+const supabaseNativeShim = path.resolve(__dirname, 'shims/supabase-js-native.js');
 const readableStream = require.resolve('readable-stream');
+
+function isNativePlatform(platform) {
+  return platform === 'android' || platform === 'ios';
+}
+
+function isSupabasePackage(moduleName) {
+  return (
+    moduleName === '@supabase/supabase-js' ||
+    moduleName.startsWith('@supabase/supabase-js/') ||
+    moduleName === '@supabase/realtime-js' ||
+    moduleName.startsWith('@supabase/realtime-js/')
+  );
+}
 
 // Prefer classic resolution; package "exports" often pick Node entrypoints.
 config.resolver.unstable_enablePackageExports = false;
@@ -20,7 +33,8 @@ config.resolver.extraNodeModules = {
   ...(config.resolver.extraNodeModules || {}),
   ws: emptyShim,
   stream: readableStream,
-  '@supabase/realtime-js': realtimeStub,
+  '@supabase/realtime-js': supabaseNativeShim,
+  '@supabase/supabase-js': supabaseNativeShim,
 };
 
 const prevBlockList = config.resolver.blockList;
@@ -37,12 +51,9 @@ config.resolver.blockList = Array.isArray(prevBlockList)
     : nestedWsBlock;
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  // Any request for realtime-js (root or subpath) → stub.
-  if (
-    moduleName === '@supabase/realtime-js' ||
-    moduleName.startsWith('@supabase/realtime-js/')
-  ) {
-    return { type: 'sourceFile', filePath: realtimeStub };
+  // Expo Go native: never load real supabase packages (pulls Node ws/stream).
+  if (isNativePlatform(platform) && isSupabasePackage(moduleName)) {
+    return { type: 'sourceFile', filePath: supabaseNativeShim };
   }
 
   if (moduleName === 'ws' || moduleName.startsWith('ws/')) {
@@ -57,7 +68,6 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     return { type: 'sourceFile', filePath: emptyShim };
   }
 
-  // Default Metro resolver without re-entering this custom resolveRequest.
   return metroResolve(
     { ...context, resolveRequest: undefined },
     moduleName,
