@@ -128,6 +128,18 @@ const fr = {
     hoursAgo: 'il y a %{count} h',
     daysAgo: 'il y a %{count} j',
   },
+  feed: {
+    repost: 'Republier',
+    repostedBy: 'a republié',
+    repostSuccess: 'Republié',
+    repostSuccessBody: 'La vidéo apparaît dans votre profil et le fil.',
+    repostSuccessMock: 'Republication ajoutée au fil local.',
+    repostAlready: 'Vous avez déjà republié cette vidéo.',
+    repostFail: 'Impossible de republier',
+    loginRequiredTitle: 'Connexion requise',
+    loginRequired: 'Connectez-vous pour republier une vidéo.',
+    share: 'Partager',
+  },
   errors: {
     boundaryTitle: 'Une erreur est survenue',
   },

@@ -129,6 +129,18 @@ const dyo: TranslationKeys = {
     hoursAgo: '%{count} waxtu ci gannaaw',
     daysAgo: '%{count} bés ci gannaaw',
   },
+  feed: {
+    repost: 'Bayyi kadi',
+    repostedBy: 'bayyi na kadi',
+    repostSuccess: 'Bayyi na kadi',
+    repostSuccessBody: 'Widewoo feeñ na ci profil ak feed.',
+    repostSuccessMock: 'Bayyi kadi yokk na ci feed bi ci biir.',
+    repostAlready: 'Bayyi nga widewoo bi kadi ba noppi.',
+    repostFail: 'Mënuloo bayyi kadi',
+    loginRequiredTitle: 'Dugg am na njariñ',
+    loginRequired: 'Duggal ngir bayyi widewoo kadi.',
+    share: 'Séddoo',
+  },
   errors: {
     boundaryTitle: 'Am na bujom',
   },

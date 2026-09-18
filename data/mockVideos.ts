@@ -16,6 +16,10 @@ export type VideoItem = {
   category?: CategoryId;
   /** Auteur (uuid Supabase ou id mock) — pour follow */
   userId?: string;
+  /** Id de la vidéo originale si republication */
+  repostOf?: string;
+  /** Handle du créateur original (UI « a republié ») */
+  originalHandle?: string;
 };
 
 /** Démos publiques (Big Buck Bunny / samples) — à remplacer par CDN NIA */

@@ -30,6 +30,7 @@ import {
   fetchBlockedIds,
   type BlockResult,
 } from '@/lib/blocks';
+import { createRepost, type RepostResult } from '@/lib/reposts';
 
 type PublishInput = {
   caption: string;
@@ -59,6 +60,7 @@ type FeedContextValue = {
   blockedIds: Set<string>;
   blockUser: (targetUserId: string) => Promise<BlockResult>;
   bumpCommentCount: (videoId: string, delta?: number) => void;
+  repostVideo: (item: VideoItem) => Promise<RepostResult>;
   isMockFeed: boolean;
   feedError: string | null;
 };
@@ -104,7 +106,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setFeedError(null);
     try {
-      const remote = await fetchVideosFromSupabase();
+      const remote = await fetchVideosFromSupabase({ limit: 20 });
       // Empty table = empty feed (do NOT inject DEMO_VIDEOS in real mode).
       setRawVideos(remote);
       if (user && !user.id.startsWith('mock_')) {
@@ -331,6 +333,31 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     [user],
   );
 
+  const repostVideo = useCallback(
+    async (item: VideoItem): Promise<RepostResult> => {
+      if (!user) {
+        return { ok: false, message: 'login_required' };
+      }
+      const result = await createRepost(user.id, item, {
+        username: user.username,
+        avatarUrl: user.avatarUrl,
+      });
+      if (result.ok) {
+        const originalId = item.repostOf || item.id;
+        setRawVideos((prev) => {
+          const bumped = prev.map((v) =>
+            v.id === originalId || v.id === item.id
+              ? { ...v, shares: Math.max(v.shares, (v.shares || 0) + 1) }
+              : v,
+          );
+          return [result.item, ...bumped.filter((v) => v.id !== result.item.id)];
+        });
+      }
+      return result;
+    },
+    [user],
+  );
+
   const bumpCommentCount = useCallback((videoId: string, delta = 1) => {
     setRawVideos((vids) =>
       vids.map((v) =>
@@ -355,6 +382,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       blockedIds,
       blockUser,
       bumpCommentCount,
+      repostVideo,
       isMockFeed: mockFeed,
       feedError,
     }),
@@ -371,6 +399,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       blockedIds,
       blockUser,
       bumpCommentCount,
+      repostVideo,
       mockFeed,
       feedError,
     ],

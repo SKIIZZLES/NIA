@@ -119,6 +119,18 @@ const mnk: TranslationKeys = {
     hoursAgo: 'waati %{count} tambita',
     daysAgo: 'luŋ %{count} tambita',
   },
+  feed: {
+    repost: 'Ka a samba kotenke',
+    repostedBy: 'a samba kotenke',
+    repostSuccess: 'A samba le kotenke',
+    repostSuccessBody: 'Widewo yitara i la profil ani feed to.',
+    repostSuccessMock: 'Samba kotenke a fara local feed to.',
+    repostAlready: 'I ye ñiŋ widewo samba kotenke fokabaŋ.',
+    repostFail: 'A ma soto ka a samba kotenke',
+    loginRequiredTitle: 'Donni ñanta',
+    loginRequired: 'Don fo i si widewo samba kotenke.',
+    share: 'Talaa',
+  },
   errors: {
     boundaryTitle: 'Filoo keta',
   },

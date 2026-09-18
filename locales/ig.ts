@@ -119,6 +119,18 @@ const ig: TranslationKeys = {
     hoursAgo: '%{count} awa gara aga',
     daysAgo: '%{count} ụbọchị gara aga',
   },
+  feed: {
+    repost: 'Tinyegharịa',
+    repostedBy: 'tinyegharịrị',
+    repostSuccess: 'Etinyegharịrị',
+    repostSuccessBody: 'Vidiyo ahụ pụtara na profaịlụ na feed gị.',
+    repostSuccessMock: 'Tinyegharịa agbakwunyere na feed mpaghara.',
+    repostAlready: 'Ị tinyegharịlarị vidiyo a.',
+    repostFail: 'Enweghị ike tinyegharịa',
+    loginRequiredTitle: 'Ịbanye dị mkpa',
+    loginRequired: 'Banye ka ị tinyegharịa vidiyo.',
+    share: 'Kekọrịta',
+  },
   errors: {
     boundaryTitle: 'Ihe mere njehie',
   },

@@ -62,6 +62,8 @@ export function FeedPager({ videos, bottomInset = 80 }: Props) {
     [itemH],
   );
 
+  const keyExtractor = useCallback((v: VideoItem) => v.id, []);
+
   if (!videos.length) {
     return (
       <View style={[styles.empty, { height: itemH }]}>
@@ -84,7 +86,7 @@ export function FeedPager({ videos, bottomInset = 80 }: Props) {
       ) : null}
       <FlatList
         data={videos}
-        keyExtractor={(v) => v.id}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         pagingEnabled
         showsVerticalScrollIndicator={false}
@@ -94,6 +96,10 @@ export function FeedPager({ videos, bottomInset = 80 }: Props) {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         windowSize={3}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
         style={styles.list}
       />
       <CommentsSheet

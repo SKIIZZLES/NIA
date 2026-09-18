@@ -119,6 +119,18 @@ const ff: TranslationKeys = {
     hoursAgo: '%{count} waktuuji ɓenni',
     daysAgo: '%{count} ñalɗi ɓenni',
   },
+  feed: {
+    repost: 'Bayyina kadi',
+    repostedBy: 'bayyini kadi',
+    repostSuccess: 'Bayyinaama kadi',
+    repostSuccessBody: 'Widewoo yiytee e profil maa e feed.',
+    repostSuccessMock: 'Bayyinal kadi ɓeydaama e feed nokkuure.',
+    repostAlready: 'A bayyinii ndee widewoo kadi.',
+    repostFail: 'Waawaa bayyinde kadi',
+    loginRequiredTitle: 'Naatgol ina haani',
+    loginRequired: 'Naatu ngam bayyinde widewoo kadi.',
+    share: 'Lollin',
+  },
   errors: {
     boundaryTitle: 'Juumre waɗii',
   },

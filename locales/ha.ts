@@ -129,6 +129,18 @@ const ha: TranslationKeys = {
     hoursAgo: 'awa %{count} da suka wuce',
     daysAgo: 'kwana %{count} da suka wuce',
   },
+  feed: {
+    repost: 'Sake wallafa',
+    repostedBy: 'ya sake wallafa',
+    repostSuccess: 'An sake wallafa',
+    repostSuccessBody: 'Bidiyon ya bayyana a bayanan martaba da feed.',
+    repostSuccessMock: 'An ƙara sake wallafa a feed na gida.',
+    repostAlready: 'Kun riga kun sake wallafa wannan bidiyo.',
+    repostFail: 'An kasa sake wallafa',
+    loginRequiredTitle: 'Shiga yana da bukata',
+    loginRequired: 'Shiga don sake wallafa bidiyo.',
+    share: 'Raba',
+  },
   errors: {
     boundaryTitle: 'Wani abu ya yi kuskure',
   },

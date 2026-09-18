@@ -61,6 +61,8 @@ export type Database = {
           region: string | null;
           tag: string | null;
           like_count: number;
+          share_count: number;
+          repost_of: string | null;
           created_at: string;
         };
         Insert: {
@@ -75,6 +77,8 @@ export type Database = {
           region?: string | null;
           tag?: string | null;
           like_count?: number;
+          share_count?: number;
+          repost_of?: string | null;
           created_at?: string;
         };
         Update: {
@@ -97,6 +101,13 @@ export type Database = {
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'videos_repost_of_fkey';
+            columns: ['repost_of'];
+            isOneToOne: false;
+            referencedRelation: 'videos';
             referencedColumns: ['id'];
           },
         ];
@@ -332,6 +343,39 @@ export type Database = {
           },
         ];
       };
+      reposts: {
+        Row: {
+          user_id: string;
+          video_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          video_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          video_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'reposts_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'reposts_video_id_fkey';
+            columns: ['video_id'];
+            isOneToOne: false;
+            referencedRelation: 'videos';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -356,3 +400,4 @@ export type FollowRow = Database['public']['Tables']['follows']['Row'];
 export type NotificationRow = Database['public']['Tables']['notifications']['Row'];
 export type ReportRow = Database['public']['Tables']['reports']['Row'];
 export type BlockRow = Database['public']['Tables']['blocks']['Row'];
+export type RepostRow = Database['public']['Tables']['reposts']['Row'];

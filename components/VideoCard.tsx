@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Fonts, Radii } from '@/constants/theme';
 import { formatCount, VideoItem } from '@/data/mockVideos';
 import { useFeed } from '@/context/FeedContext';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
 import { FollowButton } from '@/components/FollowButton';
 import { VideoMenuSheet } from '@/components/VideoMenuSheet';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -29,7 +30,15 @@ type Props = {
   onOpenComments?: (videoId: string) => void;
 };
 
-export function VideoCard({
+function formatClock(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+  const s = Math.floor(seconds);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2, '0')}`;
+}
+
+function VideoCardInner({
   item,
   isActive,
   bottomInset = 80,
@@ -38,11 +47,19 @@ export function VideoCard({
   const player = useVideoPlayer(item.videoUrl, (p) => {
     p.loop = true;
     p.muted = false;
+    p.timeUpdateEventInterval = 0.25;
   });
   const router = useRouter();
+  const { t } = useI18n();
   const { user } = useAuth();
-  const { toggleLike, likedIds, followingIds, toggleFollow, blockUser } =
-    useFeed();
+  const {
+    toggleLike,
+    likedIds,
+    followingIds,
+    toggleFollow,
+    blockUser,
+    repostVideo,
+  } = useFeed();
   const liked = likedIds.has(item.id);
   const authorId = item.userId;
   const following = authorId ? followingIds.has(authorId) : false;
@@ -54,6 +71,8 @@ export function VideoCard({
   const [muted, setMuted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [repostBusy, setRepostBusy] = useState(false);
+  const [timeLabel, setTimeLabel] = useState('0:00');
 
   const openProfile = () => {
     const handle = item.handle.replace(/^@/, '');
@@ -70,17 +89,71 @@ export function VideoCard({
       if (isActive) {
         player.play();
       } else {
+        // Pause off-screen without seek — faster resume / less rebuffer
         player.pause();
-        player.currentTime = 0;
       }
     } catch {
       // ignore playback race
     }
   }, [isActive, player]);
 
+  useEffect(() => {
+    if (!isActive) return;
+    const sub = player.addListener('timeUpdate', ({ currentTime }) => {
+      const duration = player.duration;
+      if (duration > 0 && Number.isFinite(duration)) {
+        // Instagram Reels-style remaining time
+        const remaining = Math.max(0, duration - currentTime);
+        setTimeLabel(formatClock(remaining));
+      } else {
+        setTimeLabel(formatClock(currentTime));
+      }
+    });
+    return () => {
+      try {
+        sub.remove();
+      } catch {
+        // ignore
+      }
+    };
+  }, [isActive, player]);
+
   const onShare = async () => {
     await shareVideo(item);
   };
+
+  const onRepost = useCallback(async () => {
+    if (!user) {
+      Alert.alert(t('feed.loginRequiredTitle'), t('feed.loginRequired'));
+      return;
+    }
+    if (repostBusy) return;
+    setRepostBusy(true);
+    try {
+      const result = await repostVideo(item);
+      if (!result.ok) {
+        if (result.message === 'login_required') {
+          Alert.alert(t('feed.loginRequiredTitle'), t('feed.loginRequired'));
+        } else if (result.message === 'already') {
+          Alert.alert(t('feed.repost'), t('feed.repostAlready'));
+        } else {
+          Alert.alert(
+            t('feed.repostFail'),
+            result.message === 'repost_fail'
+              ? t('feed.repostFail')
+              : result.message,
+          );
+        }
+        return;
+      }
+      Alert.alert(
+        t('feed.repostSuccess'),
+        result.mock ? t('feed.repostSuccessMock') : t('feed.repostSuccessBody'),
+      );
+    } finally {
+      setRepostBusy(false);
+    }
+  }, [user, repostBusy, repostVideo, item, t]);
 
   const onBlock = () => {
     if (!authorId || isOwn) return;
@@ -112,6 +185,9 @@ export function VideoCard({
     );
   };
 
+  const isRepost = !!item.repostOf;
+  const originalHandle = item.originalHandle;
+
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
       <VideoView
@@ -121,6 +197,12 @@ export function VideoCard({
         nativeControls={false}
       />
       <View style={styles.gradient} pointerEvents="none" />
+
+      {isActive ? (
+        <View style={styles.durationPill} pointerEvents="none">
+          <Text style={styles.durationText}>{timeLabel}</Text>
+        </View>
+      ) : null}
 
       <Pressable
         style={styles.menuBtn}
@@ -134,7 +216,11 @@ export function VideoCard({
       <View style={styles.rail}>
         <View style={styles.avatarWrap}>
           <Pressable onPress={openProfile}>
-            <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+            <Image
+              source={{ uri: item.avatarUrl }}
+              style={styles.avatar}
+              // RN default disk/memory cache for remote URIs
+            />
           </Pressable>
           {authorId && !isOwn ? (
             <View style={styles.followBadge}>
@@ -161,6 +247,14 @@ export function VideoCard({
           icon="arrow-redo-outline"
           label={formatCount(item.shares)}
           onPress={() => void onShare()}
+          accessibilityLabel={t('feed.share')}
+        />
+        <RailAction
+          icon="repeat-outline"
+          label={t('feed.repost')}
+          onPress={() => void onRepost()}
+          color={Colors.or}
+          accessibilityLabel={t('feed.repost')}
         />
         <Pressable onPress={() => setMuted((m) => !m)} style={styles.muteBtn}>
           <Ionicons
@@ -172,6 +266,16 @@ export function VideoCard({
       </View>
 
       <View style={styles.meta}>
+        {isRepost ? (
+          <Text style={styles.repostLine} numberOfLines={1}>
+            <Text style={styles.repostHandle}>{item.handle}</Text>
+            {' '}
+            {t('feed.repostedBy')}
+            {originalHandle ? (
+              <Text style={styles.repostOrig}> {originalHandle}</Text>
+            ) : null}
+          </Text>
+        ) : null}
         <Pressable onPress={openProfile}>
           <Text style={styles.handle}>{item.handle}</Text>
         </Pressable>
@@ -210,19 +314,27 @@ function RailAction({
   label,
   onPress,
   color = Colors.sable,
+  accessibilityLabel,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress?: () => void;
   color?: string;
+  accessibilityLabel?: string;
 }) {
   return (
-    <Pressable onPress={onPress} style={styles.railItem}>
+    <Pressable
+      onPress={onPress}
+      style={styles.railItem}
+      accessibilityLabel={accessibilityLabel || label}
+    >
       <Ionicons name={icon} size={28} color={color} />
       <Text style={styles.railLabel}>{label}</Text>
     </Pressable>
   );
 }
+
+export const VideoCard = memo(VideoCardInner);
 
 const styles = StyleSheet.create({
   container: {
@@ -235,6 +347,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderBottomWidth: 180,
     borderBottomColor: Colors.overlay,
+  },
+  durationPill: {
+    position: 'absolute',
+    top: 56,
+    left: 14,
+    zIndex: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radii.pill,
+    backgroundColor: 'rgba(10, 10, 10, 0.62)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(201, 162, 39, 0.55)',
+  },
+  durationText: {
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+    letterSpacing: 0.3,
+    fontVariant: ['tabular-nums'],
   },
   menuBtn: {
     position: 'absolute',
@@ -250,7 +381,7 @@ const styles = StyleSheet.create({
     right: 12,
     bottom: 100,
     alignItems: 'center',
-    gap: 18,
+    gap: 16,
   },
   avatarWrap: {
     alignItems: 'center',
@@ -270,7 +401,7 @@ const styles = StyleSheet.create({
   railLabel: {
     color: Colors.sable,
     fontFamily: Fonts.medium,
-    fontSize: 12,
+    fontSize: 11,
   },
   muteBtn: {
     marginTop: 4,
@@ -283,6 +414,20 @@ const styles = StyleSheet.create({
     left: 16,
     right: 80,
     bottom: 28,
+  },
+  repostLine: {
+    color: Colors.textSecondary,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  repostHandle: {
+    color: Colors.or,
+    fontFamily: Fonts.bold,
+  },
+  repostOrig: {
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
   },
   handle: {
     color: Colors.sable,

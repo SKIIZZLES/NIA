@@ -119,6 +119,18 @@ const yo: TranslationKeys = {
     hoursAgo: '%{count} wákàtí sẹ́yìn',
     daysAgo: '%{count} ọjọ́ sẹ́yìn',
   },
+  feed: {
+    repost: 'Tún tẹjade',
+    repostedBy: 'túntẹ jade',
+    repostSuccess: 'A ti tún tẹjade',
+    repostSuccessBody: 'Fídíò náà farahàn lórí prófáìlì àti feed rẹ.',
+    repostSuccessMock: 'Àtúnṣe ti fi kún feed agbègbè.',
+    repostAlready: 'O ti tún tẹ fídíò yìí jáde tẹ́lẹ̀.',
+    repostFail: 'Kò ṣeéṣe láti tún tẹjade',
+    loginRequiredTitle: 'Wọlé ṣe pàtàkì',
+    loginRequired: 'Wọlé láti tún tẹ fídíò jáde.',
+    share: 'Pín',
+  },
   errors: {
     boundaryTitle: 'Nkankan ti ṣẹlẹ̀',
   },

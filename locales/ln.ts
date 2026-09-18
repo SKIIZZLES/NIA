@@ -119,6 +119,18 @@ const ln: TranslationKeys = {
     hoursAgo: 'ngonga %{count} eleki',
     daysAgo: 'mokolo %{count} eleki',
   },
+  feed: {
+    repost: 'Kotángola lisúsu',
+    repostedBy: 'atangoli lisúsu',
+    repostSuccess: 'Esilí kotángola lisúsu',
+    repostSuccessBody: 'Vidéo ekomí na profil na yo mpe na feed.',
+    repostSuccessMock: 'Kotángola lisúsu ebakísámí na feed ya mboka.',
+    repostAlready: 'Osili otángola vidéo oyo lisúsu.',
+    repostFail: 'Ekoki te kotángola lisúsu',
+    loginRequiredTitle: 'Kokɔta esengeli',
+    loginRequired: 'Kɔtá mpo na kotángola vidéo lisúsu.',
+    share: 'Kabola',
+  },
   errors: {
     boundaryTitle: 'Libunga moko esalemi',
   },

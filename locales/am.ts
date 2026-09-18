@@ -119,6 +119,18 @@ const am: TranslationKeys = {
     hoursAgo: 'ከ%{count} ሰዓት በፊት',
     daysAgo: 'ከ%{count} ቀን በፊት',
   },
+  feed: {
+    repost: 'እንደገና አጋራ',
+    repostedBy: 'እንደገና አጋርቷል',
+    repostSuccess: 'እንደገና ተጋርቷል',
+    repostSuccessBody: 'ቪዲዮው በመገለጫዎ እና በፊድ ላይ ይታያል።',
+    repostSuccessMock: 'እንደገና ማጋራት ወደ አካባቢያዊ ፊድ ተጨምሯል።',
+    repostAlready: 'ይህን ቪዲዮ አስቀድመው እንደገና አጋርተዋል።',
+    repostFail: 'እንደገና ማጋራት አልተሳካም',
+    loginRequiredTitle: 'መግባት ያስፈልጋል',
+    loginRequired: 'ቪዲዮ እንደገና ለማጋራት ይግቡ።',
+    share: 'አጋራ',
+  },
   errors: {
     boundaryTitle: 'የሆነ ችግር ተፈጥሯል',
   },

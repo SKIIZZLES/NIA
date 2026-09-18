@@ -119,6 +119,18 @@ const ak: TranslationKeys = {
     hoursAgo: 'dɔnhwere %{count} a atwam',
     daysAgo: 'da %{count} a atwam',
   },
+  feed: {
+    repost: 'San post bio',
+    repostedBy: 'asan post',
+    repostSuccess: 'Wɔasan post',
+    repostSuccessBody: 'Video no da wʼprofile ne feed so.',
+    repostSuccessMock: 'Wɔde san-post no aka local feed no ho.',
+    repostAlready: 'Woasan post video yi dedaw.',
+    repostFail: 'Antumi ansan post',
+    loginRequiredTitle: 'Ɛsɛ sɛ wɔbɛkɔ mu',
+    loginRequired: 'Kɔ mu na san post video.',
+    share: 'Kyɛ',
+  },
   errors: {
     boundaryTitle: 'Biribi ayɛ mfomsoɔ',
   },

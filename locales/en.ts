@@ -129,6 +129,18 @@ const en: TranslationKeys = {
     hoursAgo: '%{count} h ago',
     daysAgo: '%{count} d ago',
   },
+  feed: {
+    repost: 'Repost',
+    repostedBy: 'reposted',
+    repostSuccess: 'Reposted',
+    repostSuccessBody: 'The video appears on your profile and feed.',
+    repostSuccessMock: 'Repost added to the local feed.',
+    repostAlready: 'You already reposted this video.',
+    repostFail: 'Could not repost',
+    loginRequiredTitle: 'Sign in required',
+    loginRequired: 'Sign in to repost a video.',
+    share: 'Share',
+  },
   errors: {
     boundaryTitle: 'Something went wrong',
   },

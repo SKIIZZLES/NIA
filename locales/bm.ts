@@ -119,6 +119,18 @@ const bm: TranslationKeys = {
     hoursAgo: 'lɛrɛ %{count} tɛmɛnen',
     daysAgo: 'tile %{count} tɛmɛnen',
   },
+  feed: {
+    repost: 'Ka bila kura la',
+    repostedBy: 'bila kura la',
+    repostSuccess: 'Bila kura la',
+    repostSuccessBody: 'Widewo bɛ jira i ka profil ani feed la.',
+    repostSuccessMock: 'Bila kura fara local feed kan.',
+    repostAlready: 'I ye nin widewo bila kura la kaban.',
+    repostFail: 'A ma se ka bila kura la',
+    loginRequiredTitle: 'Donni ka kan',
+    loginRequired: 'Don walasa ka widewo bila kura la.',
+    share: 'Tilala',
+  },
   errors: {
     boundaryTitle: 'Filili kɛra',
   },

@@ -132,6 +132,18 @@ const arMA: TranslationKeys = {
     hoursAgo: 'هادي %{count} س',
     daysAgo: 'هادي %{count} ي',
   },
+  feed: {
+    repost: 'عاود نشر',
+    repostedBy: 'عاود نشر',
+    repostSuccess: 'تمّت إعادة النشر',
+    repostSuccessBody: 'الفيديو بان ف البروفيل و الفيد.',
+    repostSuccessMock: 'إعادة النشر تزادت ف الفيد المحلي.',
+    repostAlready: 'سبق ليك عاودتي نشر هاد الفيديو.',
+    repostFail: 'ماقدرتش تعاود النشر',
+    loginRequiredTitle: 'خاصك تدخل',
+    loginRequired: 'دخل باش تعاود تنشر فيديو.',
+    share: 'شارك',
+  },
   errors: {
     boundaryTitle: 'وقع شي خطأ',
   },

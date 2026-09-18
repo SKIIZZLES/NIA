@@ -119,6 +119,18 @@ const zu: TranslationKeys = {
     hoursAgo: 'amahora angu-%{count} edlule',
     daysAgo: 'izinsuku ezingu-%{count} ezedlule',
   },
+  feed: {
+    repost: 'Phinda postha',
+    repostedBy: 'uphinde wathumela',
+    repostSuccess: 'Kuphinde kwathunyelwa',
+    repostSuccessBody: 'Ividiyo ibonakala kuphrofayela nakufeedi yakho.',
+    repostSuccessMock: 'Ukuphinda kufakwe kufeedi yendawo.',
+    repostAlready: 'Usuvele waphinda wathumela le vidiyo.',
+    repostFail: 'Ayikwazanga ukuphinda ithunyelwe',
+    loginRequiredTitle: 'Kudingeka ungene',
+    loginRequired: 'Ngena ukuze uphinde uthumele ividiyo.',
+    share: 'Yabelana',
+  },
   errors: {
     boundaryTitle: 'Kukhona okungahambanga kahle',
   },

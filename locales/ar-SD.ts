@@ -131,6 +131,18 @@ const arSD: TranslationKeys = {
     hoursAgo: 'قبل %{count} س',
     daysAgo: 'قبل %{count} ي',
   },
+  feed: {
+    repost: 'إعادة نشر',
+    repostedBy: 'أعاد نشر',
+    repostSuccess: 'تمت إعادة النشر',
+    repostSuccessBody: 'الفيديو ظاهر في بروفايلك والفيد.',
+    repostSuccessMock: 'إعادة النشر أُضيفت للفيد المحلي.',
+    repostAlready: 'سبق ليك أعدت نشر الفيديو ده.',
+    repostFail: 'ما قدرت تعيد النشر',
+    loginRequiredTitle: 'لازم تسجّل دخول',
+    loginRequired: 'سجّل دخول عشان تعيد نشر فيديو.',
+    share: 'شارك',
+  },
   errors: {
     boundaryTitle: 'حصل خطأ',
   },

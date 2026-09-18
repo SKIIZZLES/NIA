@@ -129,6 +129,18 @@ const pt: TranslationKeys = {
     hoursAgo: 'há %{count} h',
     daysAgo: 'há %{count} d',
   },
+  feed: {
+    repost: 'Republicar',
+    repostedBy: 'republicou',
+    repostSuccess: 'Republicado',
+    repostSuccessBody: 'O vídeo aparece no seu perfil e no feed.',
+    repostSuccessMock: 'Republicação adicionada ao feed local.',
+    repostAlready: 'Já republicou este vídeo.',
+    repostFail: 'Não foi possível republicar',
+    loginRequiredTitle: 'Login necessário',
+    loginRequired: 'Inicie sessão para republicar um vídeo.',
+    share: 'Partilhar',
+  },
   errors: {
     boundaryTitle: 'Algo correu mal',
   },

@@ -51,6 +51,10 @@ function resolveCategory(
   if (hay.includes('tech')) return 'tech';
   if (hay.includes('food') || hay.includes('gastro')) return 'food';
   if (hay.includes('sport')) return 'sport';
+  if (hay.includes('maghreb') || hay.includes('maroc') || hay.includes('morocco') || hay.includes('algér') || hay.includes('alger') || hay.includes('tunis'))
+    return 'maghreb';
+  if (hay.includes('actus') || hay.includes('actu') || hay.includes('news') || hay.includes('info'))
+    return 'actus';
   return undefined;
 }
 
@@ -65,7 +69,7 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     caption: row.caption || '',
     likes: row.like_count ?? 0,
     comments: 0,
-    shares: 0,
+    shares: row.share_count ?? 0,
     avatarUrl:
       row.profiles?.avatar_url ||
       `https://i.pravatar.cc/150?u=${encodeURIComponent(username)}`,
@@ -73,6 +77,7 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     country: row.region || undefined,
     category: resolveCategory(row.category, row.tag, row.region),
     userId: row.user_id,
+    repostOf: row.repost_of || undefined,
   };
 }
 
@@ -88,7 +93,7 @@ export async function fetchVideosFromSupabase(options?: {
     .select(VIDEO_PROFILE_SELECT)
     .eq('status', 'published')
     .order('created_at', { ascending: false })
-    .limit(options?.limit ?? 50);
+    .limit(options?.limit ?? 20);
 
   if (options?.category) {
     query = query.eq('category', options.category);
@@ -103,7 +108,7 @@ export async function fetchVideosFromSupabase(options?: {
         .from('videos')
         .select(VIDEO_PROFILE_SELECT_LEGACY)
         .order('created_at', { ascending: false })
-        .limit(options?.limit ?? 50);
+        .limit(options?.limit ?? 20);
       if (fallback.error) throw fallback.error;
       const rows = (fallback.data || []) as unknown as VideoWithProfile[];
       return rows
@@ -117,9 +122,48 @@ export async function fetchVideosFromSupabase(options?: {
   }
 
   const rows = (data || []) as unknown as VideoWithProfile[];
-  return rows.map((row) => {
+  const items = rows.map((row) => {
     const { data: urlData } = sb.storage.from('videos').getPublicUrl(row.storage_path);
     return mapRowToVideoItem(row, urlData.publicUrl);
+  });
+  return enrichRepostOriginalHandles(sb, items, rows);
+}
+
+async function enrichRepostOriginalHandles(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  items: VideoItem[],
+  rows: VideoWithProfile[],
+): Promise<VideoItem[]> {
+  const originalIds = [
+    ...new Set(
+      rows
+        .map((r) => r.repost_of)
+        .filter((id): id is string => typeof id === 'string' && !!id),
+    ),
+  ];
+  if (!originalIds.length) return items;
+
+  const { data: originals } = await sb
+    .from('videos')
+    .select('id, profiles!videos_user_id_fkey(username)')
+    .in('id', originalIds);
+
+  if (!originals?.length) return items;
+
+  const handleById = new Map<string, string>();
+  for (const o of originals as unknown as {
+    id: string;
+    profiles: { username: string | null } | null;
+  }[]) {
+    if (o.profiles?.username) {
+      handleById.set(o.id, `@${o.profiles.username}`);
+    }
+  }
+
+  return items.map((item) => {
+    if (!item.repostOf) return item;
+    const h = handleById.get(item.repostOf);
+    return h ? { ...item, originalHandle: h } : item;
   });
 }
 

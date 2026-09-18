@@ -119,6 +119,18 @@ const wo: TranslationKeys = {
     hoursAgo: '%{count} waxtu ci gannaaw',
     daysAgo: '%{count} bés ci gannaaw',
   },
+  feed: {
+    repost: 'Dellu yónnee',
+    repostedBy: 'dellu na yónnee',
+    repostSuccess: 'Dellu nañu yónnee',
+    repostSuccessBody: 'Widewoo bi feeñ na ci sa profil ak feed.',
+    repostSuccessMock: 'Dellu yónnee bi yokk na ci feed bi ci biir.',
+    repostAlready: 'Dellu nga yónnee widewoo bi ba noppi.',
+    repostFail: 'Mënuloo dellu yónnee',
+    loginRequiredTitle: 'Dugg bi am na njariñ',
+    loginRequired: 'Duggal ngir dellu yónnee widewoo.',
+    share: 'Séddoo',
+  },
   errors: {
     boundaryTitle: 'Am na njumte',
   },

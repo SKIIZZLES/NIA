@@ -129,6 +129,18 @@ const sw: TranslationKeys = {
     hoursAgo: 'saa %{count} zilizopita',
     daysAgo: 'siku %{count} zilizopita',
   },
+  feed: {
+    repost: 'Chapisha tena',
+    repostedBy: 'amechapisha tena',
+    repostSuccess: 'Imechapishwa tena',
+    repostSuccessBody: 'Video inaonekana kwenye wasifu na feed yako.',
+    repostSuccessMock: 'Uchapishaji umeongezwa kwenye feed ya ndani.',
+    repostAlready: 'Tayari umechapisha tena video hii.',
+    repostFail: 'Imeshindwa kuchapisha tena',
+    loginRequiredTitle: 'Ingia inahitajika',
+    loginRequired: 'Ingia ili uchapishe tena video.',
+    share: 'Shiriki',
+  },
   errors: {
     boundaryTitle: 'Hitilafu imetokea',
   },

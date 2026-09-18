@@ -1,18 +1,20 @@
 /**
- * Univers Découvrir — IDs alignés sur `videos.category` (migration 002).
+ * Univers Découvrir — IDs alignés sur `videos.category` (migration 002+).
  */
 import type { ComponentProps } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 export type CategoryId =
   | 'afrique'
+  | 'maghreb'
   | 'diaspora'
   | 'culture'
   | 'musique'
   | 'mode'
   | 'tech'
   | 'food'
-  | 'sport';
+  | 'sport'
+  | 'actus';
 
 export type DiscoverCategory = {
   id: CategoryId;
@@ -27,6 +29,12 @@ export const DISCOVER_CATEGORIES: DiscoverCategory[] = [
     label: 'Afrique',
     blurb: 'Créations nées sur le continent',
     icon: 'globe-outline',
+  },
+  {
+    id: 'maghreb',
+    label: 'Maghreb',
+    blurb: 'Voix du Maroc, Algérie, Tunisie & voisinage',
+    icon: 'sunny-outline',
   },
   {
     id: 'diaspora',
@@ -69,6 +77,12 @@ export const DISCOVER_CATEGORIES: DiscoverCategory[] = [
     label: 'Sport',
     blurb: 'Talents, clubs & moments forts',
     icon: 'football-outline',
+  },
+  {
+    id: 'actus',
+    label: 'Actus',
+    blurb: 'Infos, débats & moments d’actualité',
+    icon: 'newspaper-outline',
   },
 ];
 

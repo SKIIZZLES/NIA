@@ -119,6 +119,18 @@ const arEG: TranslationKeys = {
     hoursAgo: 'من %{count} س',
     daysAgo: 'من %{count} ي',
   },
+  feed: {
+    repost: 'إعادة نشر',
+    repostedBy: 'عمل ريبوست',
+    repostSuccess: 'اتعمل ريبوست',
+    repostSuccessBody: 'الفيديو ظاهر على بروفايلك والفيد.',
+    repostSuccessMock: 'الريبوست اتضاف للفيد المحلي.',
+    repostAlready: 'أنت عملت ريبوست للفيديو ده قبل كده.',
+    repostFail: 'مقدرناش نعمل ريبوست',
+    loginRequiredTitle: 'لازم تسجّل دخول',
+    loginRequired: 'سجّل دخول عشان تعمل ريبوست.',
+    share: 'شارك',
+  },
   errors: {
     boundaryTitle: 'حصل خطأ',
   },
