@@ -1,11 +1,13 @@
 /**
  * Lightweight i18n for NIA (expo-localization + i18n-js).
  * Pattern: add keys to locales/*.ts (same structure as fr.ts), then t('section.key').
- * Supported: fr, en, es, pt, sw, ha, ar-MA (Darija), ar-SD (Sudanese).
  *
- * RTL: Arabic dialect strings are shown, but layout stays LTR so the vertical
- * video UI is not mirrored. Full I18nManager RTL is intentionally not enabled —
- * see README.
+ * Supported: fr, en, es, pt, sw, ha, ar-MA (Darija), ar-SD (Sudanese),
+ * yo, zu, am, wo, ln, ar-EG (Egyptian), ig, ff, bm, ak, mnk (Mandinka), dyo (Diola).
+ *
+ * RTL: Arabic dialect / Amharic strings are shown, but layout stays LTR so the
+ * vertical video UI is not mirrored. Full I18nManager RTL is intentionally not
+ * enabled — see README. Amharic (Ge'ez) is an LTR script.
  */
 import { I18n } from 'i18n-js';
 import * as Localization from 'expo-localization';
@@ -17,6 +19,18 @@ import sw from '@/locales/sw';
 import ha from '@/locales/ha';
 import arMA from '@/locales/ar-MA';
 import arSD from '@/locales/ar-SD';
+import yo from '@/locales/yo';
+import zu from '@/locales/zu';
+import am from '@/locales/am';
+import wo from '@/locales/wo';
+import ln from '@/locales/ln';
+import arEG from '@/locales/ar-EG';
+import ig from '@/locales/ig';
+import ff from '@/locales/ff';
+import bm from '@/locales/bm';
+import ak from '@/locales/ak';
+import mnk from '@/locales/mnk';
+import dyo from '@/locales/dyo';
 
 export const APP_LOCALES = [
   'fr',
@@ -27,6 +41,18 @@ export const APP_LOCALES = [
   'ha',
   'ar-MA',
   'ar-SD',
+  'yo',
+  'zu',
+  'am',
+  'wo',
+  'ln',
+  'ar-EG',
+  'ig',
+  'ff',
+  'bm',
+  'ak',
+  'mnk',
+  'dyo',
 ] as const;
 export type AppLocale = (typeof APP_LOCALES)[number];
 
@@ -37,7 +63,7 @@ const LOCALE_SET = new Set<string>(APP_LOCALES);
 /** Maghrebi countries → Darija (ar-MA). */
 const MAGHREB_REGIONS = new Set(['MA', 'DZ', 'TN', 'LY', 'EH', 'MR']);
 
-/** Map device language prefixes (fr, en, es, pt, sw, ha, ar) → AppLocale; else French. */
+/** Map device language tags → AppLocale; else French. */
 export function resolveDeviceLocale(): AppLocale {
   const locales = Localization.getLocales();
   for (const loc of locales) {
@@ -47,11 +73,13 @@ export function resolveDeviceLocale(): AppLocale {
 
     if (tag === 'ar-ma' || tag.startsWith('ar-ma-')) return 'ar-MA';
     if (tag === 'ar-sd' || tag.startsWith('ar-sd-')) return 'ar-SD';
+    if (tag === 'ar-eg' || tag.startsWith('ar-eg-')) return 'ar-EG';
 
     if (code === 'ar') {
       if (region === 'SD') return 'ar-SD';
+      if (region === 'EG') return 'ar-EG';
       if (MAGHREB_REGIONS.has(region)) return 'ar-MA';
-      // Prefer dialectal Arabic over MSA fallback → Maghrebi Darija
+      // Prefer dialectal Arabic over MSA → Maghrebi Darija default
       return 'ar-MA';
     }
 
@@ -61,6 +89,19 @@ export function resolveDeviceLocale(): AppLocale {
     if (code === 'pt' || tag.startsWith('pt-')) return 'pt';
     if (code === 'sw' || tag.startsWith('sw-')) return 'sw';
     if (code === 'ha' || tag.startsWith('ha-')) return 'ha';
+    if (code === 'yo' || tag.startsWith('yo-')) return 'yo';
+    if (code === 'zu' || tag.startsWith('zu-')) return 'zu';
+    if (code === 'am' || tag.startsWith('am-')) return 'am';
+    if (code === 'wo' || tag.startsWith('wo-')) return 'wo';
+    if (code === 'ln' || tag.startsWith('ln-')) return 'ln';
+    if (code === 'ig' || tag.startsWith('ig-')) return 'ig';
+    if (code === 'ff' || code === 'fuf' || code === 'ful' || tag.startsWith('ff-') || tag.startsWith('fuf-') || tag.startsWith('ful-'))
+      return 'ff';
+    if (code === 'bm' || tag.startsWith('bm-')) return 'bm';
+    if (code === 'ak' || code === 'tw' || tag.startsWith('ak-') || tag.startsWith('tw-')) return 'ak';
+    if (code === 'mnk' || tag.startsWith('mnk-') || tag === 'man' || tag.startsWith('man-'))
+      return 'mnk';
+    if (code === 'dyo' || tag.startsWith('dyo-')) return 'dyo';
   }
   return 'fr';
 }
@@ -78,6 +119,18 @@ const i18n = new I18n({
   ha,
   'ar-MA': arMA,
   'ar-SD': arSD,
+  yo,
+  zu,
+  am,
+  wo,
+  ln,
+  'ar-EG': arEG,
+  ig,
+  ff,
+  bm,
+  ak,
+  mnk,
+  dyo,
 });
 i18n.enableFallback = true;
 i18n.defaultLocale = 'fr';

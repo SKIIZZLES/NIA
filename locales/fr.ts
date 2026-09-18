@@ -133,6 +133,18 @@ const fr = {
     ha: 'HA',
     'ar-MA': 'Darija',
     'ar-SD': 'SD',
+    yo: 'YO',
+    zu: 'ZU',
+    am: 'AM',
+    wo: 'WO',
+    ln: 'LN',
+    'ar-EG': 'EG',
+    ig: 'IG',
+    ff: 'FF',
+    bm: 'BM',
+    ak: 'AK',
+    mnk: 'MNK',
+    dyo: 'DYO',
   },
 };
 

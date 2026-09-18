@@ -18,14 +18,18 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 
 
 
-## Internationalisation (FR / EN / ES / PT / SW / HA / Darija / SD)
+## Internationalisation
 
-- Stack légère : **`expo-localization`** + **`i18n-js`**. Chaînes dans `locales/{fr,en,es,pt,sw,ha,ar-MA,ar-SD}.ts` ; helper `lib/i18n.ts` + `context/I18nContext.tsx`.
-- **Langues supportées** : français (FR), anglais (EN), espagnol (ES), portugais (PT), swahili (SW), haoussa (HA), **darija maghrébine** (`ar-MA`, label **Darija**), **arabe soudanais** (`ar-SD`, label **SD**). Pas de MSA générique — dialects prioritaires.
-- Toggle **FR | EN | ES | PT | SW | HA | Darija | SD** (accueil / Profil, chips qui wrap), persisté AsyncStorage `@nia/locale`.
-- Défaut : langue appareil si `fr*` / `en*` / `es*` / `pt*` / `sw*` / `ha*` ; pour `ar*` → Maghreb (`MA/DZ/TN/LY/…`) = Darija, `SD` = soudanais, sinon Darija ; sinon **français**.
-- **RTL** : chaînes arabes (Darija / SD) affichées, layout reste **LTR** (pas de `I18nManager.forceRTL`) pour ne pas casser le feed vidéo vertical. RTL natif possible plus tard si le layout est adapté.
-- Pour ajouter une langue : créer `locales/xx.ts` (mêmes clés que `fr.ts`), l’enregistrer dans `lib/i18n.ts`, étendre `APP_LOCALES`.
+- Stack légère : **`expo-localization`** + **`i18n-js`**. Chaînes dans `locales/*.ts` ; helper `lib/i18n.ts` + `context/I18nContext.tsx`.
+- **Langues supportées (20)** :
+  - Europe / internationales : **FR**, **EN**, **ES**, **PT**
+  - Est / Sahel / Afrique du Nord : **SW** (swahili), **HA** (haoussa), **Darija** (`ar-MA`), **SD** (`ar-SD` soudanais), **EG** (`ar-EG` égyptien), **AM** (amharique)
+  - Afrique de l’Ouest (MVP haute portée) : **YO** (yoruba), **ZU** (zoulou), **WO** (wolof), **LN** (lingala), **IG** (igbo), **FF** (fulfulde), **BM** (bambara), **AK** (akan/twi), **MNK** (mandinka / mandingue), **DYO** (diola / jola-fonyi)
+- **Note** : « toutes les langues d’Afrique de l’Ouest » n’est **pas** couvert — ce pack est un **MVP haute portée**. D’autres langues s’ajoutent en copiant un fichier `locales/xx.ts` (mêmes clés que `fr.ts`) puis en l’enregistrant dans `lib/i18n.ts` / `APP_LOCALES`.
+- Toggle chips courts (**FR EN ES PT SW HA Darija SD YO ZU AM WO LN EG IG FF BM AK MNK DYO**) — scrollable + wrap (accueil / Profil), persisté AsyncStorage `@nia/locale`.
+- Défaut appareil : `fr*` / `en*` / `es*` / `pt*` / `sw*` / `ha*` / `yo*` / `zu*` / `am*` / `wo*` / `ln*` / `ig*` / `ff*`/`fuf*`/`ful*` / `bm*` / `ak*`/`tw*` / `mnk*` / `dyo*` ; pour `ar*` → Maghreb = Darija, `SD` = soudanais, `EG` = égyptien, sinon Darija ; sinon **français**.
+- **RTL** : chaînes arabes (Darija / SD / EG) et amharique affichées ; layout reste **LTR** (pas de `I18nManager.forceRTL`) pour ne pas casser le feed vidéo vertical. L’amharique (Ge’ez) est déjà LTR. RTL natif possible plus tard si le layout est adapté.
+- Pour ajouter une langue : créer `locales/xx.ts` (mêmes clés que `fr.ts`), l’enregistrer dans `lib/i18n.ts`, étendre `APP_LOCALES` et les labels `language.*`.
 - Plugin `expo-localization` dans `app.json` → déjà présent ; **pas de nouveau build EAS** requis pour ces locales JS (rebuild seulement si vous activez RTL natif / changez des plugins natifs).
 
 

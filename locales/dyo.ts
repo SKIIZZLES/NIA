@@ -1,0 +1,153 @@
+import type { TranslationKeys } from './fr';
+
+/** Diola / Jola-Fonyi — keys in sync with fr.ts. */
+const dyo: TranslationKeys = {
+  common: {
+    error: 'Bujom',
+    or: 'walla',
+    email: 'Email',
+    password: 'Kafuken suuru',
+    username: 'Karama kafanken',
+    guest: 'Atiken',
+    loading: 'A man load…',
+  },
+  brand: {
+    tagline: 'WIDEO · AADA · TALENT · BUTEMBURE TE',
+    heroPrimary: 'BUKE, TALENT AFRIKA MAN DEM KA KANAM',
+    heroSecondary: 'WIDEO BA — AFRIKA MAN WAX A BOPA',
+  },
+  tabs: {
+    home: 'Élup',
+    discover: 'Kajum',
+    create: 'Kajeken',
+    notifications: 'Kibaar',
+    profile: 'Karama',
+  },
+  welcome: {
+    createAccount: 'Kajeken kont',
+    signIn: 'Kaj',
+    mockHint:
+      'Expo Go bu asli = auth mock · Supabase bu matale ci web walla build bu asli',
+    supabaseHint: 'Auth Supabase jàppandoo na',
+    authMockBadge: 'AUTH MOCK MVP',
+  },
+  auth: {
+    loginTitle: 'Kaj',
+    registerTitle: 'Kajeken kont',
+    signIn: 'Kaj',
+    createAccount: 'Kajeken sama kont',
+    emailPlaceholder: 'yaw@email.com',
+    usernamePlaceholder: 'sa_tur',
+    loginFail: 'Mënul kaj',
+    registerFail: 'Mënul bindu',
+    mockLoginHint:
+      'Nangu na bépp email / kafuken suuru. Session bi dañu koy denc ci lokal (AsyncStorage). Defar EXPO_PUBLIC_SUPABASE_* ci .env ngir ubbi Supabase.',
+    supabaseLoginHint:
+      'Email / kafuken suuru ci Supabase Auth. Kajeken kont ci seetukaayu Bindu.',
+    mockRegisterHint:
+      'Formulaire mock — amul kontrollu serveur. Dafay def session bu lokal.',
+    supabaseRegisterHint:
+      'Bindu ci Supabase Auth. Karama bi dañu koy def automatik (SQL trigger). Tëj «Confirm email» ci Auth → Providers ngir natt te amul email.',
+    authMockBadge: 'AUTH MOCK MVP',
+    authSupabaseBadge: 'AUTH SUPABASE',
+  },
+  google: {
+    continue: 'Kontine ak Google',
+    fail: 'Kaj ak Google lajj na',
+    alertTitle: 'Google',
+    hintWeb: 'Google bu asli = build EAS Android/iOS',
+    hintMock: 'Mode mock: session bu lokal (Expo Go walla env yu ñàkk)',
+    hintMissingId: 'Defar EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
+  },
+  create: {
+    title: 'Kajeken',
+    subtitleMock:
+      'Mode mock — média, legende, #hashtags ak kategori. Day publie ci feed bu lokal.',
+    subtitleSupabase:
+      'Mode Supabase — yebbi Storage + rëw videos (estatut published).',
+    pickMedia: 'Tànn média (galeri)',
+    noMedia: 'Amul média bu ñu tànn',
+    video: 'Wideo',
+    image: 'Nataal',
+    captionLabel: 'Legende & hashtags',
+    captionPlaceholder: 'Waxal sa talent… Yokk #africa #culture',
+    hashtagHint: '#baat yi ci legende dañuy doon hashtags bi ngay publie.',
+    categoryLabel: 'Kategori',
+    limits: 'Max %{minutes} min · %{mb} MB',
+    publish: 'Publie',
+    publishedMockTitle: 'Publie na (mock)',
+    publishedTitle: 'Publie na',
+    publishedMockBody: 'Yokk nañu ko ci feed bu lokal «Ngir yaw».',
+    publishedBody:
+      'Wideo yebbi nañu ko ci Supabase Storage + table videos (estatut published).',
+    publishFail: 'Publie bi lajj na',
+    alertTooLarge: 'Fichier bi mag na lool',
+    alertTooLong: 'Wideo bi gudd na lool',
+    alertMediaRequired: 'Média war na',
+    alertCategory: 'Kategori',
+    errNoMedia: 'Tànn wideo walla nataal ngir publie.',
+    errTooLarge: 'Fichier bi wees na magg bi (%{mb} MB).',
+    errTooLong: 'Wideo bi wees na diir bi (%{minutes} min).',
+    errCategoryRequired: 'Tànn kategori ngir sa publikaasiyoŋ.',
+  },
+  profile: {
+    defaultBio: 'Karama NIA',
+    posts: 'Publikaasiyoŋ',
+    followers: 'Topptoo',
+    following: 'Topp',
+    editProfile: 'Soppi karama',
+    viewPublic: 'Kajum sama karama bu ëllëg',
+    signOut: 'Génn',
+    signIn: 'Kaj',
+    empty: 'Amagul publikaasiyoŋ.',
+    language: 'Kasa',
+  },
+  notifications: {
+    title: 'Kibaar',
+    subtitle: 'Jëf yu aju ci sa karama ak sa publikaasiyoŋ.',
+    emptyTitle: 'Amul dara leegi',
+    emptyBody:
+      'Bu mbooloo bi jëflanteek sa contenu, dina feeñ fii — bu leer, te amul riir.',
+    note:
+      'Kaj ak Supabase ngir jot likes, kàddu ak topptoo yu bees. Messagerie privée mooy phase 2.',
+    someone: 'Kenn',
+    liked: 'bëgg na sa wideo',
+    commented: 'wax na ci sa wideo',
+    followed: 'topp na la',
+    system: 'Kibaaru système',
+    interacted: 'jëflante na ak yaw',
+    justNow: 'leegi',
+    minutesAgo: '%{count} min ci gannaaw',
+    hoursAgo: '%{count} waxtu ci gannaaw',
+    daysAgo: '%{count} bés ci gannaaw',
+  },
+  errors: {
+    boundaryTitle: 'Am na bujom',
+  },
+  language: {
+    label: 'Kasa / Language',
+    fr: 'FR',
+    en: 'EN',
+    es: 'ES',
+    pt: 'PT',
+    sw: 'SW',
+    ha: 'HA',
+    'ar-MA': 'Darija',
+    'ar-SD': 'SD',
+    yo: 'YO',
+    zu: 'ZU',
+    am: 'AM',
+    wo: 'WO',
+    ln: 'LN',
+    'ar-EG': 'EG',
+    ig: 'IG',
+    ff: 'FF',
+    bm: 'BM',
+    ak: 'AK',
+    mnk: 'MNK',
+    dyo: 'DYO',
+  },
+
+};
+
+export default dyo;
