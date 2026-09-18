@@ -7,14 +7,14 @@
     "icon": "./assets/images/icon.png",
     "scheme": "nia",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.nia.mobile",
       "infoPlist": {
-        "NSCameraUsageDescription": "NIA utilise la caméra pour créer des vidéos.",
-        "NSMicrophoneUsageDescription": "NIA utilise le micro pour enregistrer des vidéos.",
-        "NSPhotoLibraryUsageDescription": "NIA accède à vos médias pour publier."
+        "NSCameraUsageDescription": "NIA utilise la cam\u00e9ra pour cr\u00e9er des vid\u00e9os.",
+        "NSMicrophoneUsageDescription": "NIA utilise le micro pour enregistrer des vid\u00e9os.",
+        "NSPhotoLibraryUsageDescription": "NIA acc\u00e8de \u00e0 vos m\u00e9dias pour publier."
       }
     },
     "android": {
@@ -52,7 +52,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "NIA accède à vos médias pour publier."
+          "photosPermission": "NIA acc\u00e8de \u00e0 vos m\u00e9dias pour publier."
         }
       ]
     ],

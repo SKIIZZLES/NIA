@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import { Buffer } from 'buffer';
-import React, { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import React, { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -16,9 +16,57 @@ import { AuthProvider } from '@/context/AuthContext';
 import { FeedProvider } from '@/context/FeedContext';
 import { Colors } from '@/constants/theme';
 
-global.Buffer = global.Buffer || Buffer;
+(globalThis as typeof globalThis & { Buffer?: typeof Buffer }).Buffer ??= Buffer;
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+type EBProps = { children: ReactNode };
+type EBState = { error: Error | null };
+
+/** Catch JS render errors so the APK shows a screen instead of exiting silently. */
+class ErrorBoundary extends Component<EBProps, EBState> {
+  state: EBState = { error: null };
+
+  static getDerivedStateFromError(error: Error): EBState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary]', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: Colors.noir,
+            padding: 24,
+            justifyContent: 'center',
+          }}
+        >
+          <Text
+            style={{
+              color: Colors.or,
+              fontSize: 18,
+              fontWeight: '700',
+              marginBottom: 12,
+            }}
+          >
+            Une erreur est survenue
+          </Text>
+          <ScrollView style={{ maxHeight: 240 }}>
+            <Text style={{ color: '#ccc', fontSize: 13 }}>
+              {this.state.error.message}
+            </Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function RootNavigator() {
   return (
@@ -70,10 +118,12 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <FeedProvider>
-        <RootNavigator />
-      </FeedProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <FeedProvider>
+          <RootNavigator />
+        </FeedProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

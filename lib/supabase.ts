@@ -2,6 +2,9 @@
  * Client Supabase NIA.
  * Expo Go : mock auth (évite crashs Node ws/stream dans le client store).
  * EAS / standalone / bare / web : client réel si EXPO_PUBLIC_SUPABASE_* sont définies.
+ *
+ * Lazy-init only — never createClient at module top-level (publishable keys /
+ * older SDKs / storage quirks can throw and crash the APK on open).
  */
 import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -30,8 +33,9 @@ const envLooksValid =
 /**
  * false in Expo Go (mock auth).
  * Elsewhere: true when EXPO_PUBLIC_SUPABASE_* are set (incl. EAS preview/production).
+ * Mutated to false if createClient throws so the app stays in mock mode.
  */
-export const isSupabaseConfigured = !isExpoGo && envLooksValid;
+export let isSupabaseConfigured = !isExpoGo && envLooksValid;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
@@ -113,27 +117,34 @@ const ExpoAuthStorage = {
 let client: SupabaseClient<Database> | null = null;
 /** Rebuild if the cached client was created in the wrong environment (SSR vs browser). */
 let clientBuiltForBrowser: boolean | null = null;
+let initFailed = false;
 
+/**
+ * Lazy Supabase client. Returns null in mock mode or if createClient fails.
+ * Do not call at module load — only via this getter.
+ */
 export function getSupabase(): SupabaseClient<Database> | null {
-  if (!isSupabaseConfigured) return null;
+  if (!isSupabaseConfigured || initFailed) return null;
   const browser = isBrowser();
   if (!client || clientBuiltForBrowser !== browser) {
-    clientBuiltForBrowser = browser;
-    client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage: browser ? ExpoAuthStorage : MemoryAuthStorage,
-        autoRefreshToken: browser,
-        persistSession: browser,
-        detectSessionInUrl: false,
-      },
-    });
+    try {
+      clientBuiltForBrowser = browser;
+      client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          storage: browser ? ExpoAuthStorage : MemoryAuthStorage,
+          autoRefreshToken: browser,
+          persistSession: browser,
+          detectSessionInUrl: false,
+        },
+      });
+    } catch (err) {
+      console.warn('[supabase] createClient failed — falling back to mock mode', err);
+      initFailed = true;
+      isSupabaseConfigured = false;
+      client = null;
+      clientBuiltForBrowser = null;
+      return null;
+    }
   }
   return client;
 }
-
-/**
- * Alias pratique — null en mode mock (Expo Go, ou env manquantes).
- */
-export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
-  ? getSupabase()
-  : null;
