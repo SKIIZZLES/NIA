@@ -179,6 +179,7 @@ data/mockVideos.ts        # Feed démo (fallback)
 - **Auth** : Supabase si `EXPO_PUBLIC_SUPABASE_URL` + `ANON_KEY` ; sinon mock AsyncStorage.
 - **Session** : SecureStore (natif, petites valeurs) + AsyncStorage (web / JWT longs).
 - **Feed / Créer** : lecture `videos` + upload Storage quand configuré ; sinon mock local.
+- **Durée max vidéo** : `MAX_VIDEO_DURATION_SEC` = **600 s (10 min)** dans `constants/publish.ts` (picker + validation). Pas de transcoder payant ; les longues vidéos consomment plus de Storage / bande passante sur **Supabase Free**.
 - **Engagement** : likes persistés (`likes` + optimistic UI), helpers comments/follows/notifications prêts ; Découvrir filtre `videos.category`.
 - **Nav** : Accueil · Découvrir · Publier (+) · Notifications · Profil (Messages = phase 2).
 - **Thème** : dark brand, typo **Plus Jakarta Sans**, UI en français.

@@ -1,10 +1,14 @@
 /**
  * Limites client-side pour la publication (MVP, budget 0 €).
  * Ajustables sans toucher à Supabase.
+ *
+ * Note Free tier : pas de transcoding payant. Les vidéos longues (jusqu’à
+ * MAX_VIDEO_DURATION_SEC) consomment plus de Storage / bande passante sur
+ * le plan Supabase Free — surveiller le quota.
  */
 
-/** Durée max vidéo (secondes) — ImagePicker fournit `duration` en ms */
-export const MAX_VIDEO_DURATION_SEC = 60;
+/** Durée max vidéo (secondes) — ImagePicker fournit `duration` en ms. MVP = 10 min. */
+export const MAX_VIDEO_DURATION_SEC = 600;
 
 /** Taille max fichier (octets) — ~50 Mo, aligné Free Storage confort */
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
@@ -18,7 +22,7 @@ export const PROCESSING_STATUS = 'processing' as const;
 export const PUBLISH_ERRORS = {
   noMedia: 'Sélectionnez une vidéo ou une image à publier.',
   tooLarge: `Le fichier dépasse la taille maximale (${Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))} Mo).`,
-  tooLong: `La vidéo dépasse la durée maximale (${MAX_VIDEO_DURATION_SEC} s).`,
+  tooLong: `La vidéo dépasse la durée maximale (${Math.round(MAX_VIDEO_DURATION_SEC / 60)} min).`,
   categoryRequired: 'Choisissez une catégorie pour votre publication.',
 } as const;
 

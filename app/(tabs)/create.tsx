@@ -222,7 +222,7 @@ export default function CreateScreen() {
           })}
         </View>
         <Text style={styles.hint}>
-          Max {MAX_VIDEO_DURATION_SEC} s ·{' '}
+          Max {Math.round(MAX_VIDEO_DURATION_SEC / 60)} min ·{' '}
           {Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))} Mo
         </Text>
 
