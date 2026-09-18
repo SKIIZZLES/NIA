@@ -1,21 +1,26 @@
 /**
  * Client Supabase NIA.
- * Sur Expo Go iOS/Android : toujours désactivé (mock auth) — Metro résout
- * @supabase/supabase-js vers shims/supabase-js-native.js pour éviter le crash
- * ws → stream. Sur web : client réel si env présentes.
+ * Expo Go : mock auth (évite crashs Node ws/stream dans le client store).
+ * EAS / standalone / bare / web : client réel si EXPO_PUBLIC_SUPABASE_* sont définies.
  */
 import 'react-native-url-polyfill/auto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import type { Database } from '@/types/database';
 
 const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
-/** Expo Go native cannot safely load real @supabase/supabase-js (Node ws/stream). */
-const isExpoGoNative = Platform.OS === 'ios' || Platform.OS === 'android';
+/**
+ * Expo Go only (store client / appOwnership expo).
+ * Standalone EAS APK, bare, and web are NOT Expo Go → real Supabase when env set.
+ */
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient ||
+  Constants.appOwnership === 'expo';
 
 const envLooksValid =
   supabaseUrl.length > 0 &&
@@ -23,10 +28,10 @@ const envLooksValid =
   supabaseUrl.startsWith('http');
 
 /**
- * false on iOS/Android always (mock auth).
- * On web: true only when EXPO_PUBLIC_SUPABASE_* are set.
+ * false in Expo Go (mock auth).
+ * Elsewhere: true when EXPO_PUBLIC_SUPABASE_* are set (incl. EAS preview/production).
  */
-export const isSupabaseConfigured = !isExpoGoNative && envLooksValid;
+export const isSupabaseConfigured = !isExpoGo && envLooksValid;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
@@ -127,7 +132,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
 }
 
 /**
- * Alias pratique — null en mode mock (toujours sur iOS/Android Expo Go).
+ * Alias pratique — null en mode mock (Expo Go, ou env manquantes).
  */
 export const supabase: SupabaseClient<Database> | null = isSupabaseConfigured
   ? getSupabase()

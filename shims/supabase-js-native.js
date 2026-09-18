@@ -1,7 +1,9 @@
 /**
- * Minimal stub for @supabase/supabase-js (and realtime-js) on Expo Go iOS/Android.
- * Prevents Metro from bundling Node `ws` → `stream` that red-screens Expo Go.
- * Auth falls through to mock via isSupabaseConfigured=false in lib/supabase.ts.
+ * OPTIONAL full stub for @supabase/supabase-js (unused by metro.config.js).
+ * Kept for emergency Expo Go debugging only — do NOT re-alias the whole package
+ * on android/ios or EAS preview/production builds lose real auth.
+ * Prefer: realtime stub + ws/stream/zlib shims; mock only in Expo Go via
+ * Constants.executionEnvironment / appOwnership in lib/supabase.ts.
  */
 'use strict';
 

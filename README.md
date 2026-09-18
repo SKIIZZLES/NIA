@@ -11,11 +11,11 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 
 ## Expo Go Android / iOS (important)
 
-Sur **Expo Go** (Android & iOS), `@supabase/supabase-js` est **désactivé** et remplacé par un shim Metro (`shims/supabase-js-native.js`) pour éviter le crash Node `ws` → `stream`. L’auth est donc **toujours en mode mock** sur le natif Expo Go, même si `.env` contient des clés.
+Sur **Expo Go** uniquement (`Constants.executionEnvironment === StoreClient` ou `appOwnership === 'expo'`), Supabase est **désactivé** → auth **mock**, même si `.env` contient des clés. Metro **ne remplace plus** `@supabase/supabase-js` sur android/ios (sinon les builds EAS n’auraient plus d’auth réelle) : shims `ws` / `zlib` / `stream`, et stub optionnel `@supabase/realtime-js` seulement. `shims/supabase-js-native.js` reste dans le repo mais **n’est pas** branché par Metro.
 
 - **Mock auth (Expo Go)** : `npx expo start` → scanner le QR → badge **AUTH MOCK MVP**
-- **Supabase réel** : `npx expo start --web`, ou un futur **EAS / dev client** natif
-- Après `git pull` : vérifier `dir metro.config.js` (Windows) ou `ls metro.config.js`, puis `npx expo start -c`
+- **Supabase réel** : `npx expo start --web`, ou **EAS preview / production** (APK/IPA standalone) avec secrets `EXPO_PUBLIC_SUPABASE_*`
+- Après `git pull` : `npx expo start -c`
 
 ## Prérequis
 
@@ -178,12 +178,26 @@ data/mockVideos.ts        # Feed démo (fallback)
 
 ## EAS (stores)
 
-Fichier stub : `eas.json`.
+Fichier : `eas.json` (profil **preview** → APK Android `buildType: apk`).  
+`app.json` : `"owner": "nia-corp"` ; `extra.eas.projectId` est un placeholder — lancer `eas init` pour le lier (ne pas inventer d’UUID).
 
-1. `npm i -g eas-cli` puis `eas login`
-2. `eas init` — remplacer `extra.eas.projectId` dans `app.json`
-3. Builds preview / production via profils `eas.json`
-4. Définir aussi les secrets EAS `EXPO_PUBLIC_SUPABASE_*` pour les builds stores
+### EAS Android preview
+
+```bash
+npm i -g eas-cli
+cd NIA
+git pull
+npm install
+npx expo login   # compte nia-corp
+eas init         # lie le projectId si pas encore fait
+eas build:configure
+# secrets (ne pas committer):
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value https://odlmbiaocdonlovjepxn.supabase.co
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon>
+eas build -p android --profile preview
+```
+
+Puis installer l’APK depuis le lien du dashboard Expo.
 
 ## Après le MVP (hors scope Sprint 1)
 
