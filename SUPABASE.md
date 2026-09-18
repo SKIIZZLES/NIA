@@ -17,14 +17,28 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 1. `supabase/migrations/001_nia_init.sql` — `profiles`, `videos`, RLS, Storage bucket `videos`
 2. `supabase/migrations/002_sprint1_engagement.sql` — likes, comments, follows, notifications, reports, blocks + video/profile columns
 3. `supabase/migrations/003_reposts.sql` — `reposts` table + RLS, `videos.repost_of`, `videos.share_count`, share_count trigger
+4. `supabase/migrations/004_saves.sql` — `saves` bookmarks + RLS, `videos.save_count` + trigger
+5. `supabase/migrations/005_archive_delete.sql` — status `deleted`, tighten SELECT RLS (published public; owner sees own non-deleted)
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005).
 
 ### Apply 003 (reposts) on the live project
 
 Dashboard → **SQL Editor** → paste / run `supabase/migrations/003_reposts.sql` once.
 
 Until 003 is applied, the in-app **Republier** button will surface a migration error (table/column missing). After apply, republications insert into `reposts` and create a lightweight `videos` row (`repost_of` → original) for the feed « a republié » UI.
+
+### Apply 004 (saves / bookmarks)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/004_saves.sql` once.
+
+Creates `public.saves` (PK `user_id`, `video_id`) + RLS + `videos.save_count` trigger. Until applied, the bookmark button falls back to AsyncStorage local saves.
+
+### Apply 005 (archive / soft-delete)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/005_archive_delete.sql` once.
+
+Extends `videos.status` with `'deleted'` ( `'archived'` already from 002). Replaces `videos_select_public` so anon/public only see `published`; owners still SELECT their own non-deleted rows (archived included). Soft delete / archive are UPDATEs via `videos_update_own`.
 
 ## Storage bucket `videos` (required for publish)
 
@@ -55,7 +69,7 @@ Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 - [ ] **API**: Project URL + anon (publishable) key match EAS `EXPO_PUBLIC_*` / local `.env`
 - [ ] **Auth → Providers**: Email (+ Google if used). For email MVP, disable “Confirm email”
 - [ ] **Auth → Google**: Web client ID matches `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (see `GOOGLE_AUTH.md`)
-- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`
+- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`
 - [ ] **RLS**: enabled on those tables; policies from 001/002 present
 - [ ] **Storage**: bucket `videos` exists, **Public**, policies as above
 - [ ] Empty `videos` table ⇒ empty in-app feed **without** « Connexion limitée » (by design — not demo injection)

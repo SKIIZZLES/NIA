@@ -69,15 +69,8 @@ export default function CreateScreen() {
   const maxMinutes = Math.round(MAX_VIDEO_DURATION_SEC / 60);
   const maxMb = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
-  const pick = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['videos', 'images'],
-      quality: 0.8,
-      videoMaxDuration: MAX_VIDEO_DURATION_SEC,
-    });
-    if (res.canceled || !res.assets[0]) return;
 
-    const asset = res.assets[0];
+  const applyAsset = (asset: ImagePicker.ImagePickerAsset) => {
     const fileSize = asset.fileSize ?? null;
     const durationMs =
       typeof asset.duration === 'number' ? asset.duration : null;
@@ -119,6 +112,35 @@ export default function CreateScreen() {
       durationMs,
       type,
     });
+  };
+
+  const pick = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos', 'images'],
+      quality: 0.8,
+      videoMaxDuration: MAX_VIDEO_DURATION_SEC,
+    });
+    if (res.canceled || !res.assets[0]) return;
+    applyAsset(res.assets[0]);
+  };
+
+  const film = async () => {
+    const cam = await ImagePicker.requestCameraPermissionsAsync();
+    if (!cam.granted) {
+      Alert.alert(
+        t('create.alertCamera'),
+        t('create.errCameraDenied'),
+      );
+      return;
+    }
+    const res = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['videos'],
+      quality: 0.8,
+      videoMaxDuration: MAX_VIDEO_DURATION_SEC,
+      allowsEditing: false,
+    });
+    if (res.canceled || !res.assets[0]) return;
+    applyAsset(res.assets[0]);
   };
 
   const publish = async () => {
@@ -211,11 +233,23 @@ export default function CreateScreen() {
           )}
         </View>
 
-        <Button
-          title={t('create.pickMedia')}
-          variant="outline"
-          onPress={pick}
-        />
+        <View style={styles.mediaRow}>
+          <View style={styles.mediaBtn}>
+            <Button
+              title={t('create.pickMedia')}
+              variant="outline"
+              onPress={pick}
+            />
+          </View>
+          <View style={styles.mediaBtn}>
+            <Button
+              title={t('create.film')}
+              variant="gold"
+              onPress={() => void film()}
+            />
+          </View>
+        </View>
+        <Text style={styles.hint}>{t('create.filmHint')}</Text>
 
         <Text style={styles.label}>{t('create.captionLabel')}</Text>
         <TextInput
@@ -304,6 +338,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.md,
     overflow: 'hidden',
+  },
+  mediaRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  mediaBtn: {
+    flex: 1,
   },
   thumb: { width: '100%', height: '100%' },
   previewHint: {

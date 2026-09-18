@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -22,6 +22,8 @@ import { shareVideo } from '@/lib/share';
 import { useRouter } from 'expo-router';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
+const REWIND_SEC = 5;
+const DOUBLE_TAP_MS = 280;
 
 type Props = {
   item: VideoItem;
@@ -55,12 +57,17 @@ function VideoCardInner({
   const {
     toggleLike,
     likedIds,
+    savedIds,
+    toggleSave,
     followingIds,
     toggleFollow,
     blockUser,
     repostVideo,
+    archiveOwnVideoInFeed,
+    deleteOwnVideoInFeed,
   } = useFeed();
   const liked = likedIds.has(item.id);
+  const saved = savedIds.has(item.id);
   const authorId = item.userId;
   const following = authorId ? followingIds.has(authorId) : false;
   const isOwn =
@@ -69,10 +76,14 @@ function VideoCardInner({
       ? authorId === user.id
       : item.handle === `@${user.username}`);
   const [muted, setMuted] = useState(false);
+  const [pausedByUser, setPausedByUser] = useState(false);
+  const [showPauseIcon, setShowPauseIcon] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [repostBusy, setRepostBusy] = useState(false);
   const [timeLabel, setTimeLabel] = useState('0:00');
+  const lastTapRef = useRef(0);
+  const pauseIconTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openProfile = () => {
     const handle = item.handle.replace(/^@/, '');
@@ -86,23 +97,28 @@ function VideoCardInner({
 
   useEffect(() => {
     try {
-      if (isActive) {
+      if (isActive && !pausedByUser) {
         player.play();
       } else {
-        // Pause off-screen without seek — faster resume / less rebuffer
         player.pause();
       }
     } catch {
       // ignore playback race
     }
-  }, [isActive, player]);
+  }, [isActive, pausedByUser, player]);
+
+  useEffect(() => {
+    if (!isActive) {
+      setPausedByUser(false);
+      setShowPauseIcon(false);
+    }
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive) return;
     const sub = player.addListener('timeUpdate', ({ currentTime }) => {
       const duration = player.duration;
       if (duration > 0 && Number.isFinite(duration)) {
-        // Instagram Reels-style remaining time
         const remaining = Math.max(0, duration - currentTime);
         setTimeLabel(formatClock(remaining));
       } else {
@@ -118,9 +134,65 @@ function VideoCardInner({
     };
   }, [isActive, player]);
 
+  useEffect(() => {
+    return () => {
+      if (pauseIconTimer.current) clearTimeout(pauseIconTimer.current);
+    };
+  }, []);
+
+  const flashPauseIcon = useCallback((paused: boolean) => {
+    setShowPauseIcon(true);
+    if (pauseIconTimer.current) clearTimeout(pauseIconTimer.current);
+    pauseIconTimer.current = setTimeout(() => setShowPauseIcon(false), 700);
+    void paused;
+  }, []);
+
+  const rewind = useCallback(() => {
+    try {
+      const next = Math.max(0, player.currentTime - REWIND_SEC);
+      player.currentTime = next;
+      // seekBy is also available; currentTime is reliable across platforms
+    } catch {
+      try {
+        player.seekBy(-REWIND_SEC);
+      } catch {
+        // ignore
+      }
+    }
+  }, [player]);
+
+  const onVideoPress = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < DOUBLE_TAP_MS) {
+      lastTapRef.current = 0;
+      rewind();
+      return;
+    }
+    lastTapRef.current = now;
+    const tapAt = now;
+    setTimeout(() => {
+      // Only fire pause/play if no second tap arrived
+      if (lastTapRef.current !== tapAt) return;
+      setPausedByUser((prev) => {
+        const next = !prev;
+        flashPauseIcon(next);
+        return next;
+      });
+      lastTapRef.current = 0;
+    }, DOUBLE_TAP_MS);
+  }, [rewind, flashPauseIcon]);
+
   const onShare = async () => {
     await shareVideo(item);
   };
+
+  const onSave = useCallback(() => {
+    if (!user) {
+      Alert.alert(t('feed.loginRequiredTitle'), t('feed.saveLoginRequired'));
+      return;
+    }
+    toggleSave(item.id);
+  }, [user, toggleSave, item.id, t]);
 
   const onRepost = useCallback(async () => {
     if (!user) {
@@ -155,6 +227,52 @@ function VideoCardInner({
     }
   }, [user, repostBusy, repostVideo, item, t]);
 
+
+  const onArchive = useCallback(() => {
+    Alert.alert(t('feed.archiveConfirmTitle'), t('feed.archiveConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('feed.archive'),
+        onPress: () => {
+          void (async () => {
+            const result = await archiveOwnVideoInFeed(item.id);
+            if (!result.ok) {
+              Alert.alert(t('common.error'), result.message);
+              return;
+            }
+            Alert.alert(
+              t('feed.archiveSuccess'),
+              result.mock ? t('feed.archiveSuccessMock') : t('feed.archiveSuccessBody'),
+            );
+          })();
+        },
+      },
+    ]);
+  }, [archiveOwnVideoInFeed, item.id, t]);
+
+  const onDelete = useCallback(() => {
+    Alert.alert(t('feed.deleteConfirmTitle'), t('feed.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('feed.delete'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            const result = await deleteOwnVideoInFeed(item.id);
+            if (!result.ok) {
+              Alert.alert(t('common.error'), result.message);
+              return;
+            }
+            Alert.alert(
+              t('feed.deleteSuccess'),
+              result.mock ? t('feed.deleteSuccessMock') : t('feed.deleteSuccessBody'),
+            );
+          })();
+        },
+      },
+    ]);
+  }, [deleteOwnVideoInFeed, item.id, t]);
+
   const onBlock = () => {
     if (!authorId || isOwn) return;
     Alert.alert(
@@ -187,6 +305,7 @@ function VideoCardInner({
 
   const isRepost = !!item.repostOf;
   const originalHandle = item.originalHandle;
+  const saveCount = item.saves ?? 0;
 
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
@@ -198,9 +317,39 @@ function VideoCardInner({
       />
       <View style={styles.gradient} pointerEvents="none" />
 
+      {/* Tap zone: pause/play + double-tap rewind (left-biased) */}
+      <Pressable
+        style={styles.tapZone}
+        onPress={onVideoPress}
+        accessibilityLabel={pausedByUser ? t('feed.play') : t('feed.pause')}
+      />
+
+      {showPauseIcon || (isActive && pausedByUser) ? (
+        <View style={styles.pauseOverlay} pointerEvents="none">
+          <View style={styles.pauseBadge}>
+            <Ionicons
+              name={pausedByUser ? 'play' : 'pause'}
+              size={36}
+              color={Colors.sable}
+            />
+          </View>
+        </View>
+      ) : null}
+
       {isActive ? (
-        <View style={styles.durationPill} pointerEvents="none">
-          <Text style={styles.durationText}>{timeLabel}</Text>
+        <View style={styles.topLeftControls}>
+          <View style={styles.durationPill} pointerEvents="none">
+            <Text style={styles.durationText}>{timeLabel}</Text>
+          </View>
+          <Pressable
+            style={styles.rewindBtn}
+            onPress={rewind}
+            hitSlop={10}
+            accessibilityLabel={t('feed.rewind')}
+          >
+            <Ionicons name="play-back" size={16} color={Colors.sable} />
+            <Text style={styles.rewindLabel}>{REWIND_SEC}s</Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -216,11 +365,7 @@ function VideoCardInner({
       <View style={styles.rail}>
         <View style={styles.avatarWrap}>
           <Pressable onPress={openProfile}>
-            <Image
-              source={{ uri: item.avatarUrl }}
-              style={styles.avatar}
-              // RN default disk/memory cache for remote URIs
-            />
+            <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
           </Pressable>
           {authorId && !isOwn ? (
             <View style={styles.followBadge}>
@@ -234,23 +379,32 @@ function VideoCardInner({
         </View>
         <RailAction
           icon={liked ? 'heart' : 'heart-outline'}
-          color={liked ? '#E74C3C' : Colors.sable}
+          color={liked ? Colors.rougeTerre : Colors.sable}
           label={formatCount(item.likes)}
           onPress={() => toggleLike(item.id)}
         />
         <RailAction
-          icon="chatbubble-outline"
+          icon="chatbubble-ellipses"
+          color={Colors.sable}
           label={formatCount(item.comments)}
           onPress={() => onOpenComments?.(item.id)}
+          accessibilityLabel={t('feed.comments')}
         />
         <RailAction
-          icon="arrow-redo-outline"
+          icon={saved ? 'bookmark' : 'bookmark-outline'}
+          color={saved ? Colors.or : Colors.sable}
+          label={formatCount(saveCount)}
+          onPress={onSave}
+          accessibilityLabel={t('feed.save')}
+        />
+        <RailAction
+          icon="paper-plane-outline"
           label={formatCount(item.shares)}
           onPress={() => void onShare()}
           accessibilityLabel={t('feed.share')}
         />
         <RailAction
-          icon="repeat-outline"
+          icon="sync-outline"
           label={t('feed.repost')}
           onPress={() => void onRepost()}
           color={Colors.or}
@@ -292,9 +446,12 @@ function VideoCardInner({
         onClose={() => setMenuOpen(false)}
         canReport={!isOwn}
         canBlock={!!authorId && !isOwn}
+        canManage={isOwn}
         onReport={() => setReportOpen(true)}
         onBlock={onBlock}
         onShare={() => void onShare()}
+        onArchive={onArchive}
+        onDelete={onDelete}
       />
 
       <ReportSheet
@@ -348,17 +505,46 @@ const styles = StyleSheet.create({
     borderBottomWidth: 180,
     borderBottomColor: Colors.overlay,
   },
-  durationPill: {
+  tapZone: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 72,
+    bottom: 120,
+    zIndex: 2,
+  },
+  pauseOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+  },
+  pauseBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(11, 11, 11, 0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(209, 127, 42, 0.55)',
+  },
+  topLeftControls: {
     position: 'absolute',
     top: 56,
     left: 14,
     zIndex: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  durationPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: Radii.pill,
-    backgroundColor: 'rgba(10, 10, 10, 0.62)',
+    backgroundColor: 'rgba(11, 11, 11, 0.62)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(201, 162, 39, 0.55)',
+    borderColor: 'rgba(209, 127, 42, 0.55)',
   },
   durationText: {
     color: Colors.sable,
@@ -366,6 +552,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.3,
     fontVariant: ['tabular-nums'],
+  },
+  rewindBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radii.pill,
+    backgroundColor: 'rgba(11, 11, 11, 0.62)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(209, 127, 42, 0.4)',
+  },
+  rewindLabel: {
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
   },
   menuBtn: {
     position: 'absolute',
@@ -381,7 +583,8 @@ const styles = StyleSheet.create({
     right: 12,
     bottom: 100,
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
+    zIndex: 4,
   },
   avatarWrap: {
     alignItems: 'center',
@@ -414,6 +617,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 80,
     bottom: 28,
+    zIndex: 4,
   },
   repostLine: {
     color: Colors.textSecondary,

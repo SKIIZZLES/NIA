@@ -13,6 +13,9 @@ import {
   fetchVideosFromSupabase,
   formatFeedLoadError,
   uploadVideoToSupabase,
+  archiveOwnVideo,
+  softDeleteOwnVideo,
+  type OwnerVideoActionResult,
 } from '@/lib/videos';
 import {
   MAX_UPLOAD_BYTES,
@@ -21,6 +24,7 @@ import {
   parseHashtags,
 } from '@/constants/publish';
 import { fetchLikedVideoIds, toggleLike as persistToggleLike } from '@/lib/likes';
+import { fetchSavedVideoIds, toggleSave as persistToggleSave } from '@/lib/saves';
 import {
   fetchFollowingIds,
   toggleFollow as persistToggleFollow,
@@ -55,12 +59,16 @@ type FeedContextValue = {
   addLocalPost: (caption: string, thumbnailUrl?: string) => void;
   toggleLike: (id: string) => void;
   likedIds: Set<string>;
+  savedIds: Set<string>;
+  toggleSave: (id: string) => void;
   followingIds: Set<string>;
   toggleFollow: (targetUserId: string) => void;
   blockedIds: Set<string>;
   blockUser: (targetUserId: string) => Promise<BlockResult>;
   bumpCommentCount: (videoId: string, delta?: number) => void;
   repostVideo: (item: VideoItem) => Promise<RepostResult>;
+  archiveOwnVideoInFeed: (videoId: string) => Promise<OwnerVideoActionResult>;
+  deleteOwnVideoInFeed: (videoId: string) => Promise<OwnerVideoActionResult>;
   isMockFeed: boolean;
   feedError: string | null;
 };
@@ -86,6 +94,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     isSupabaseConfigured ? [] : DEMO_VIDEOS,
   );
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(isSupabaseConfigured);
@@ -101,6 +110,12 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       setRawVideos(DEMO_VIDEOS);
       setFeedError(null);
       setLoading(false);
+      try {
+        const saved = await fetchSavedVideoIds(user?.id || 'mock_anon');
+        setSavedIds(new Set(saved));
+      } catch {
+        // ignore
+      }
       return;
     }
     setLoading(true);
@@ -111,12 +126,14 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       setRawVideos(remote);
       if (user && !user.id.startsWith('mock_')) {
         try {
-          const [liked, following, blocked] = await Promise.all([
+          const [liked, saved, following, blocked] = await Promise.all([
             fetchLikedVideoIds(user.id),
+            fetchSavedVideoIds(user.id),
             fetchFollowingIds(user.id),
             fetchBlockedIds(user.id),
           ]);
           setLikedIds(new Set(liked));
+          setSavedIds(new Set(saved));
           setFollowingIds(new Set(following));
           setBlockedIds(new Set(blocked));
         } catch {
@@ -275,6 +292,51 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     [user, likedIds],
   );
 
+
+  const toggleSave = useCallback(
+    (id: string) => {
+      const wasSaved = savedIds.has(id);
+
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (wasSaved) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      setRawVideos((vids) =>
+        vids.map((v) =>
+          v.id === id
+            ? {
+                ...v,
+                saves: Math.max(0, (v.saves ?? 0) + (wasSaved ? -1 : 1)),
+              }
+            : v,
+        ),
+      );
+
+      const uid = user?.id || 'mock_anon';
+      void persistToggleSave(uid, id, wasSaved).catch(() => {
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          if (wasSaved) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        setRawVideos((vids) =>
+          vids.map((v) =>
+            v.id === id
+              ? {
+                  ...v,
+                  saves: Math.max(0, (v.saves ?? 0) + (wasSaved ? 1 : -1)),
+                }
+              : v,
+          ),
+        );
+      });
+    },
+    [user, savedIds],
+  );
+
   const toggleFollow = useCallback(
     (targetUserId: string) => {
       if (!targetUserId || (user && targetUserId === user.id)) return;
@@ -358,6 +420,31 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
     [user],
   );
 
+
+  const archiveOwnVideoInFeed = useCallback(
+    async (videoId: string): Promise<OwnerVideoActionResult> => {
+      if (!user) return { ok: false, message: 'login_required' };
+      const result = await archiveOwnVideo(user.id, videoId);
+      if (result.ok) {
+        setRawVideos((prev) => prev.filter((v) => v.id !== videoId));
+      }
+      return result;
+    },
+    [user],
+  );
+
+  const deleteOwnVideoInFeed = useCallback(
+    async (videoId: string): Promise<OwnerVideoActionResult> => {
+      if (!user) return { ok: false, message: 'login_required' };
+      const result = await softDeleteOwnVideo(user.id, videoId);
+      if (result.ok) {
+        setRawVideos((prev) => prev.filter((v) => v.id !== videoId));
+      }
+      return result;
+    },
+    [user],
+  );
+
   const bumpCommentCount = useCallback((videoId: string, delta = 1) => {
     setRawVideos((vids) =>
       vids.map((v) =>
@@ -377,12 +464,16 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       addLocalPost,
       toggleLike,
       likedIds,
+      savedIds,
+      toggleSave,
       followingIds,
       toggleFollow,
       blockedIds,
       blockUser,
       bumpCommentCount,
       repostVideo,
+      archiveOwnVideoInFeed,
+      deleteOwnVideoInFeed,
       isMockFeed: mockFeed,
       feedError,
     }),
@@ -394,12 +485,16 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       addLocalPost,
       toggleLike,
       likedIds,
+      savedIds,
+      toggleSave,
       followingIds,
       toggleFollow,
       blockedIds,
       blockUser,
       bumpCommentCount,
       repostVideo,
+      archiveOwnVideoInFeed,
+      deleteOwnVideoInFeed,
       mockFeed,
       feedError,
     ],

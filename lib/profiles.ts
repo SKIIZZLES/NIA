@@ -129,19 +129,29 @@ export async function countFollowing(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-export async function fetchVideosByUserId(userId: string): Promise<VideoItem[]> {
+export async function fetchVideosByUserId(
+  userId: string,
+  options?: { includeArchived?: boolean },
+): Promise<VideoItem[]> {
   const sb = getSupabase();
   if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
     return DEMO_VIDEOS.filter((v) => v.userId === userId);
   }
 
-  const { data, error } = await sb
+  let query = sb
     .from('videos')
     .select(VIDEO_PROFILE_SELECT)
     .eq('user_id', userId)
-    .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(60);
+
+  if (options?.includeArchived) {
+    query = query.in('status', ['published', 'archived']);
+  } else {
+    query = query.eq('status', 'published');
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     const fallback = await sb
@@ -152,10 +162,17 @@ export async function fetchVideosByUserId(userId: string): Promise<VideoItem[]> 
       .limit(60);
     if (fallback.error) throw fallback.error;
     const rows = (fallback.data || []) as unknown as VideoWithProfile[];
-    return rows.map((row) => {
-      const { data: urlData } = sb.storage.from('videos').getPublicUrl(row.storage_path);
-      return mapRowToVideoItem(row, urlData.publicUrl);
-    });
+    return rows
+      .map((row) => {
+        const { data: urlData } = sb.storage.from('videos').getPublicUrl(row.storage_path);
+        return mapRowToVideoItem(row, urlData.publicUrl);
+      })
+      .filter((v) => {
+        if (options?.includeArchived) {
+          return v.status !== 'deleted';
+        }
+        return !v.status || v.status === 'published';
+      });
   }
 
   const rows = (data || []) as unknown as VideoWithProfile[];

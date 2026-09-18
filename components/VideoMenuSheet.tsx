@@ -9,15 +9,20 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { useI18n } from '@/context/I18nContext';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   canBlock: boolean;
   canReport: boolean;
+  /** Owner: show archive + delete */
+  canManage?: boolean;
   onReport: () => void;
   onBlock: () => void;
   onShare?: () => void;
+  onArchive?: () => void;
+  onDelete?: () => void;
 };
 
 export function VideoMenuSheet({
@@ -25,11 +30,15 @@ export function VideoMenuSheet({
   onClose,
   canBlock,
   canReport,
+  canManage = false,
   onReport,
   onBlock,
   onShare,
+  onArchive,
+  onDelete,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   return (
     <Modal
@@ -41,7 +50,7 @@ export function VideoMenuSheet({
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.md }]}>
         <View style={styles.handle} />
-        <Text style={styles.title}>Options</Text>
+        <Text style={styles.title}>{t('feed.menuTitle')}</Text>
         {onShare ? (
           <Pressable
             style={styles.row}
@@ -51,7 +60,31 @@ export function VideoMenuSheet({
             }}
           >
             <Ionicons name="share-outline" size={22} color={Colors.sable} />
-            <Text style={styles.rowLabel}>Partager</Text>
+            <Text style={styles.rowLabel}>{t('feed.share')}</Text>
+          </Pressable>
+        ) : null}
+        {canManage && onArchive ? (
+          <Pressable
+            style={styles.row}
+            onPress={() => {
+              onClose();
+              onArchive();
+            }}
+          >
+            <Ionicons name="archive-outline" size={22} color={Colors.or} />
+            <Text style={styles.rowLabel}>{t('feed.archive')}</Text>
+          </Pressable>
+        ) : null}
+        {canManage && onDelete ? (
+          <Pressable
+            style={styles.row}
+            onPress={() => {
+              onClose();
+              onDelete();
+            }}
+          >
+            <Ionicons name="trash-outline" size={22} color={Colors.danger} />
+            <Text style={[styles.rowLabel, styles.danger]}>{t('feed.delete')}</Text>
           </Pressable>
         ) : null}
         {canReport ? (
@@ -63,7 +96,7 @@ export function VideoMenuSheet({
             }}
           >
             <Ionicons name="flag-outline" size={22} color={Colors.sable} />
-            <Text style={styles.rowLabel}>Signaler</Text>
+            <Text style={styles.rowLabel}>{t('feed.report')}</Text>
           </Pressable>
         ) : null}
         {canBlock ? (
@@ -75,11 +108,11 @@ export function VideoMenuSheet({
             }}
           >
             <Ionicons name="hand-left-outline" size={22} color={Colors.danger} />
-            <Text style={[styles.rowLabel, styles.danger]}>Bloquer l’utilisateur</Text>
+            <Text style={[styles.rowLabel, styles.danger]}>{t('feed.blockUser')}</Text>
           </Pressable>
         ) : null}
         <Pressable style={styles.cancel} onPress={onClose}>
-          <Text style={styles.cancelText}>Annuler</Text>
+          <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </Pressable>
       </View>
     </Modal>

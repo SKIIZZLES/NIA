@@ -70,6 +70,8 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     likes: row.like_count ?? 0,
     comments: 0,
     shares: row.share_count ?? 0,
+    saves: (row as { save_count?: number }).save_count ?? 0,
+    status: row.status || 'published',
     avatarUrl:
       row.profiles?.avatar_url ||
       `https://i.pravatar.cc/150?u=${encodeURIComponent(username)}`,
@@ -397,3 +399,56 @@ export function formatFeedLoadError(err: unknown): string {
 }
 
 export { isSupabaseConfigured, parseHashtags };
+
+
+export type OwnerVideoActionResult =
+  | { ok: true; mock?: boolean; status: 'archived' | 'deleted' | 'published' }
+  | { ok: false; message: string };
+
+/**
+ * Owner-only soft status change (archive / soft-delete / restore publish).
+ * Requires videos_update_own RLS + status check including archived|deleted (005).
+ */
+export async function setVideoStatus(
+  userId: string,
+  videoId: string,
+  status: 'archived' | 'deleted' | 'published',
+): Promise<OwnerVideoActionResult> {
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
+    return { ok: true, mock: true, status };
+  }
+  if (!userId || !videoId) {
+    return { ok: false, message: 'missing_ids' };
+  }
+
+  const { data, error } = await sb
+    .from('videos')
+    .update({ status })
+    .eq('id', videoId)
+    .eq('user_id', userId)
+    .select('id, status')
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, message: error.message || 'update_fail' };
+  }
+  if (!data) {
+    return { ok: false, message: 'not_owner_or_missing' };
+  }
+  return { ok: true, status: data.status as 'archived' | 'deleted' | 'published' };
+}
+
+export async function archiveOwnVideo(
+  userId: string,
+  videoId: string,
+): Promise<OwnerVideoActionResult> {
+  return setVideoStatus(userId, videoId, 'archived');
+}
+
+export async function softDeleteOwnVideo(
+  userId: string,
+  videoId: string,
+): Promise<OwnerVideoActionResult> {
+  return setVideoStatus(userId, videoId, 'deleted');
+}

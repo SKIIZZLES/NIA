@@ -11,7 +11,8 @@ export type VideoStatus =
   | 'processing'
   | 'published'
   | 'rejected'
-  | 'archived';
+  | 'archived'
+  | 'deleted';
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'system' | string;
 
@@ -62,6 +63,7 @@ export type Database = {
           tag: string | null;
           like_count: number;
           share_count: number;
+          save_count: number;
           repost_of: string | null;
           created_at: string;
         };
@@ -78,6 +80,7 @@ export type Database = {
           tag?: string | null;
           like_count?: number;
           share_count?: number;
+          save_count?: number;
           repost_of?: string | null;
           created_at?: string;
         };
@@ -93,6 +96,7 @@ export type Database = {
           region?: string | null;
           tag?: string | null;
           like_count?: number;
+          save_count?: number;
           created_at?: string;
         };
         Relationships: [
@@ -138,6 +142,40 @@ export type Database = {
           },
           {
             foreignKeyName: 'likes_video_id_fkey';
+            columns: ['video_id'];
+            isOneToOne: false;
+            referencedRelation: 'videos';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+      saves: {
+        Row: {
+          user_id: string;
+          video_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          video_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          video_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'saves_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'saves_video_id_fkey';
             columns: ['video_id'];
             isOneToOne: false;
             referencedRelation: 'videos';

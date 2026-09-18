@@ -56,7 +56,7 @@ export default function ProfileScreen() {
       const [f1, f2, remote] = await Promise.all([
         countFollowers(user.id),
         countFollowing(user.id),
-        fetchVideosByUserId(user.id),
+        fetchVideosByUserId(user.id, { includeArchived: true }),
       ]);
       setFollowerCount(f1);
       setFollowingCount(f2);
@@ -140,10 +140,33 @@ export default function ProfileScreen() {
           <Text style={styles.empty}>{t('profile.empty')}</Text>
         }
         renderItem={({ item }) => (
-          <Image
-            source={{ uri: item.thumbnailUrl }}
-            style={{ width: size, height: size * 1.35, backgroundColor: Colors.noirSoft }}
-          />
+          <Pressable
+            onPress={() => router.push(`/video/${item.id}`)}
+            accessibilityRole="button"
+            accessibilityLabel={t('feed.play')}
+          >
+            <Image
+              source={{ uri: item.thumbnailUrl }}
+              style={{ width: size, height: size * 1.35, backgroundColor: Colors.noirSoft }}
+            />
+            {item.status === 'archived' ? (
+              <View
+                style={{
+                  position: 'absolute',
+                  left: 6,
+                  bottom: 6,
+                  backgroundColor: 'rgba(11,11,11,0.7)',
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: Colors.or, fontFamily: Fonts.medium, fontSize: 10 }}>
+                  {t('feed.archivedBadge')}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
         )}
       />
     </SafeAreaView>

@@ -205,14 +205,19 @@ export default function PublicProfileScreen() {
             <Text style={styles.empty}>Aucune publication pour l’instant.</Text>
           }
           renderItem={({ item }) => (
-            <Image
-              source={{ uri: item.thumbnailUrl }}
-              style={{
-                width: size,
-                height: size * 1.35,
-                backgroundColor: Colors.noirSoft,
-              }}
-            />
+            <Pressable
+              onPress={() => router.push(`/video/${item.id}`)}
+              accessibilityRole="button"
+            >
+              <Image
+                source={{ uri: item.thumbnailUrl }}
+                style={{
+                  width: size,
+                  height: size * 1.35,
+                  backgroundColor: Colors.noirSoft,
+                }}
+              />
+            </Pressable>
           )}
         />
       )}

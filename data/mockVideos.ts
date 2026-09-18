@@ -9,6 +9,10 @@ export type VideoItem = {
   likes: number;
   comments: number;
   shares: number;
+  /** Bookmark count (videos.save_count) */
+  saves?: number;
+  /** published | archived | deleted (owner) */
+  status?: 'published' | 'archived' | 'deleted' | string;
   avatarUrl: string;
   tab: 'pour-toi' | 'abonnements' | 'afrique' | 'decouvrir';
   country?: string;

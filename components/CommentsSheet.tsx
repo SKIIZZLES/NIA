@@ -22,6 +22,8 @@ import {
   type CommentWithAuthor,
 } from '@/lib/comments';
 
+const QUICK_EMOJI = ['😂', '🔥', '❤️', '👏', '😮', '🙌', '✨', '😍'] as const;
+
 type Props = {
   visible: boolean;
   videoId: string | null;
@@ -160,7 +162,7 @@ export function CommentsSheet({ visible, videoId, onClose, onCommentAdded }: Pro
               }
               ListEmptyComponent={
                 <View style={styles.empty}>
-                  <Ionicons name="chatbubbles-outline" size={40} color={Colors.or} />
+                  <Ionicons name="chatbubble-ellipses" size={40} color={Colors.or} />
                   <Text style={styles.emptyTitle}>Aucun commentaire</Text>
                   <Text style={styles.emptyBody}>
                     Soyez le premier à réagir — partagez votre avis avec respect.
@@ -180,6 +182,21 @@ export function CommentsSheet({ visible, videoId, onClose, onCommentAdded }: Pro
           )}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {user ? (
+            <View style={styles.emojiRow}>
+              {QUICK_EMOJI.map((e) => (
+                <Pressable
+                  key={e}
+                  onPress={() => setDraft((d) => (d + e).slice(0, 500))}
+                  style={styles.emojiChip}
+                  hitSlop={4}
+                >
+                  <Text style={styles.emojiText}>{e}</Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
 
           <View style={styles.composer}>
             <TextInput
@@ -313,6 +330,22 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 12,
     marginBottom: 6,
+  },
+  emojiRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingTop: Spacing.sm,
+    paddingBottom: 4,
+  },
+  emojiChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: Radii.pill,
+    backgroundColor: Colors.noirSoft,
+  },
+  emojiText: {
+    fontSize: 18,
   },
   composer: {
     flexDirection: 'row',
