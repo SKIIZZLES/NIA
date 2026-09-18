@@ -1,0 +1,140 @@
+import type { TranslationKeys } from './fr';
+
+/** Swahili — keys in sync with fr.ts. */
+const sw: TranslationKeys = {
+  common: {
+    error: 'Hitilafu',
+    or: 'au',
+    email: 'Barua pepe',
+    password: 'Nenosiri',
+    username: 'Jina la mtumiaji',
+    guest: 'Mgeni',
+    loading: 'Inapakia…',
+  },
+  brand: {
+    tagline: 'VIDEO · TAMADUNI · VIPAJI · BILA MIPOAKA',
+    heroPrimary: 'HAPA, VIPAJI VYA AFRIKA VINAENDA MBALI ZAIDI',
+    heroSecondary: 'ZAIDI YA VIDEO — AFRIKA INAYOJIELEZA',
+  },
+  tabs: {
+    home: 'Nyumbani',
+    discover: 'Gundua',
+    create: 'Unda',
+    notifications: 'Arifa',
+    profile: 'Wasifu',
+  },
+  welcome: {
+    createAccount: 'Fungua akaunti',
+    signIn: 'Ingia',
+    mockHint:
+      'Expo Go asilia = auth ya bandia · Supabase kamili kupitia wavuti au build asilia',
+    supabaseHint: 'Auth ya Supabase imeunganishwa',
+    authMockBadge: 'AUTH MOCK MVP',
+  },
+  auth: {
+    loginTitle: 'Ingia',
+    registerTitle: 'Fungua akaunti',
+    signIn: 'Ingia',
+    createAccount: 'Fungua akaunti yangu',
+    emailPlaceholder: 'wewe@email.com',
+    usernamePlaceholder: 'jina_lako',
+    loginFail: 'Imeshindikana kuingia',
+    registerFail: 'Imeshindikana kujiandikisha',
+    mockLoginHint:
+      'Inakubali barua pepe / nenosiri lolote. Kipindi kinahifadhiwa ndani (AsyncStorage). Weka EXPO_PUBLIC_SUPABASE_* katika .env ili kuwezesha Supabase.',
+    supabaseLoginHint:
+      'Barua pepe / nenosiri kupitia Supabase Auth. Fungua akaunti kwenye skrini ya Usajili.',
+    mockRegisterHint:
+      'Fomu ya majaribio — hakuna uthibitishaji wa seva. Inaunda kipindi cha ndani.',
+    supabaseRegisterHint:
+      'Usajili wa Supabase Auth. Wasifu unaundwa kiotomatiki (kichocheo cha SQL). Zima «Confirm email» katika Auth → Providers ili kujaribu bila barua.',
+    authMockBadge: 'AUTH MOCK MVP',
+    authSupabaseBadge: 'AUTH SUPABASE',
+  },
+  google: {
+    continue: 'Endelea na Google',
+    fail: 'Kuingia kwa Google kumeshindikana',
+    alertTitle: 'Google',
+    hintWeb: 'Google asilia = build ya EAS Android/iOS',
+    hintMock: 'Hali ya bandia: kipindi cha ndani (Expo Go au env zinakosekana)',
+    hintMissingId: 'Weka EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
+  },
+  create: {
+    title: 'Unda',
+    subtitleMock:
+      'Hali ya bandia — midia, maelezo, #hashtags na kategoria. Inachapisha kwenye feed ya ndani.',
+    subtitleSupabase:
+      'Hali ya Supabase — upakiaji Storage + safu ya videos (hali published).',
+    pickMedia: 'Chagua midia (galeri)',
+    noMedia: 'Hakuna midia iliyochaguliwa',
+    video: 'Video',
+    image: 'Picha',
+    captionLabel: 'Maelezo na hashtags',
+    captionPlaceholder: 'Eleza kipaji chako… Ongeza #africa #culture',
+    hashtagHint: '#maneno katika maelezo yanakuwa hashtags wakati wa kuchapisha.',
+    categoryLabel: 'Kategoria',
+    limits: 'Upeo %{minutes} dak · %{mb} MB',
+    publish: 'Chapisha',
+    publishedMockTitle: 'Imechapishwa (bandia)',
+    publishedTitle: 'Imechapishwa',
+    publishedMockBody: 'Imeongezwa kwenye feed ya ndani «Kwa ajili yako».',
+    publishedBody:
+      'Video imepakiwa kwenye Supabase Storage + jedwali videos (hali published).',
+    publishFail: 'Uchapishaji umeshindikana',
+    alertTooLarge: 'Faili kubwa mno',
+    alertTooLong: 'Video ndefu mno',
+    alertMediaRequired: 'Midia inahitajika',
+    alertCategory: 'Kategoria',
+    errNoMedia: 'Chagua video au picha kuchapisha.',
+    errTooLarge: 'Faili inazidi ukubwa wa juu (%{mb} MB).',
+    errTooLong: 'Video inazidi muda wa juu (%{minutes} dak).',
+    errCategoryRequired: 'Chagua kategoria ya chapisho lako.',
+  },
+  profile: {
+    defaultBio: 'Wasifu wa NIA',
+    posts: 'Machapisho',
+    followers: 'Wafuasi',
+    following: 'Unaofuata',
+    editProfile: 'Hariri wasifu',
+    viewPublic: 'Angalia wasifu wangu wa umma',
+    signOut: 'Toka',
+    signIn: 'Ingia',
+    empty: 'Bado hakuna machapisho.',
+    language: 'Lugha',
+  },
+  notifications: {
+    title: 'Arifa',
+    subtitle: 'Shughuli kuhusu wasifu na machapisho yako.',
+    emptyTitle: 'Bado hakuna',
+    emptyBody:
+      'Wakati jamii itakapoingiliana na maudhui yako, itaonekana hapa — wazi, bila kelele.',
+    note:
+      'Ingia na Supabase kupokea likes, maoni na wafuasi wapya. Ujumbe wa faragha ni awamu ya 2.',
+    someone: 'Mtu',
+    liked: 'amependa video yako',
+    commented: 'ametoa maoni kwenye video yako',
+    followed: 'amekufuata',
+    system: 'Arifa ya mfumo',
+    interacted: 'ameingiliana nawe',
+    justNow: 'sasa hivi',
+    minutesAgo: 'dak %{count} zilizopita',
+    hoursAgo: 'saa %{count} zilizopita',
+    daysAgo: 'siku %{count} zilizopita',
+  },
+  errors: {
+    boundaryTitle: 'Hitilafu imetokea',
+  },
+  language: {
+    label: 'Lugha / Language',
+    fr: 'FR',
+    en: 'EN',
+    es: 'ES',
+    pt: 'PT',
+    sw: 'SW',
+    ha: 'HA',
+    'ar-MA': 'Darija',
+    'ar-SD': 'SD',
+  },
+};
+
+export default sw;

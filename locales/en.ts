@@ -128,6 +128,12 @@ const en: TranslationKeys = {
     label: 'Language / Langue',
     fr: 'FR',
     en: 'EN',
+    es: 'ES',
+    pt: 'PT',
+    sw: 'SW',
+    ha: 'HA',
+    'ar-MA': 'Darija',
+    'ar-SD': 'SD',
   },
 };
 

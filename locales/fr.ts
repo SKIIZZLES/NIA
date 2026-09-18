@@ -127,6 +127,12 @@ const fr = {
     label: 'Langue / Language',
     fr: 'FR',
     en: 'EN',
+    es: 'ES',
+    pt: 'PT',
+    sw: 'SW',
+    ha: 'HA',
+    'ar-MA': 'Darija',
+    'ar-SD': 'SD',
   },
 };
 

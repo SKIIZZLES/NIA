@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
-import type { AppLocale } from '@/lib/i18n';
+import { APP_LOCALES, type AppLocale } from '@/lib/i18n';
 
 type Props = {
   /** Compact row for welcome; fuller for profile. */
@@ -23,7 +23,7 @@ export function LanguageToggle({ compact, style }: Props) {
         <Text style={styles.label}>{t('language.label')}</Text>
       ) : null}
       <View style={styles.row}>
-        {(['fr', 'en'] as const).map((code) => {
+        {APP_LOCALES.map((code) => {
           const on = locale === code;
           return (
             <Pressable
@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
   wrap: {
     marginTop: Spacing.md,
     alignItems: 'center',
+    alignSelf: 'stretch',
   },
   wrapCompact: {
     marginTop: Spacing.sm,
@@ -61,12 +62,15 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    maxWidth: '100%',
   },
   chip: {
-    minWidth: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    minWidth: 44,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     borderRadius: Radii.pill,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -80,7 +84,7 @@ const styles = StyleSheet.create({
   chipText: {
     color: Colors.textSecondary,
     fontFamily: Fonts.bold,
-    fontSize: 13,
+    fontSize: 12,
   },
   chipTextOn: {
     color: Colors.or,

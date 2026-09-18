@@ -1,0 +1,140 @@
+import type { TranslationKeys } from './fr';
+
+/** Portuguese (African Portuguese OK) — keys in sync with fr.ts. */
+const pt: TranslationKeys = {
+  common: {
+    error: 'Erro',
+    or: 'ou',
+    email: 'Email',
+    password: 'Palavra-passe',
+    username: 'Nome de utilizador',
+    guest: 'Convidado',
+    loading: 'A carregar…',
+  },
+  brand: {
+    tagline: 'VÍDEOS · CULTURAS · TALENTOS · SEM FRONTEIRAS',
+    heroPrimary: 'AQUI, OS TALENTOS AFRICANOS VÃO MAIS LONGE',
+    heroSecondary: 'MAIS DO QUE VÍDEOS — UMA ÁFRICA QUE CONTA A SUA HISTÓRIA',
+  },
+  tabs: {
+    home: 'Início',
+    discover: 'Descobrir',
+    create: 'Criar',
+    notifications: 'Notificações',
+    profile: 'Perfil',
+  },
+  welcome: {
+    createAccount: 'Criar uma conta',
+    signIn: 'Entrar',
+    mockHint:
+      'Expo Go nativo = auth mock · Supabase completo via web ou build nativo',
+    supabaseHint: 'Auth Supabase ligada',
+    authMockBadge: 'AUTH MOCK MVP',
+  },
+  auth: {
+    loginTitle: 'Entrar',
+    registerTitle: 'Criar uma conta',
+    signIn: 'Entrar',
+    createAccount: 'Criar a minha conta',
+    emailPlaceholder: 'voce@email.com',
+    usernamePlaceholder: 'seu_handle',
+    loginFail: 'Não foi possível entrar',
+    registerFail: 'Não foi possível registar',
+    mockLoginHint:
+      'Aceita qualquer email / palavra-passe. Sessão guardada localmente (AsyncStorage). Defina EXPO_PUBLIC_SUPABASE_* no .env para ativar o Supabase.',
+    supabaseLoginHint:
+      'Email / palavra-passe via Supabase Auth. Crie uma conta no ecrã de Registo.',
+    mockRegisterHint:
+      'Formulário stub — sem validação no servidor. Cria uma sessão local.',
+    supabaseRegisterHint:
+      'Registo Supabase Auth. Um perfil é criado automaticamente (trigger SQL). Desative «Confirm email» em Auth → Providers para testar sem email.',
+    authMockBadge: 'AUTH MOCK MVP',
+    authSupabaseBadge: 'AUTH SUPABASE',
+  },
+  google: {
+    continue: 'Continuar com Google',
+    fail: 'Falha no início de sessão com Google',
+    alertTitle: 'Google',
+    hintWeb: 'Google nativo = build EAS Android/iOS',
+    hintMock: 'Modo mock: sessão local (Expo Go ou env em falta)',
+    hintMissingId: 'Defina EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
+  },
+  create: {
+    title: 'Criar',
+    subtitleMock:
+      'Modo mock — média, legenda, #hashtags e categoria. Publica no feed local.',
+    subtitleSupabase:
+      'Modo Supabase — upload Storage + linha videos (estado published).',
+    pickMedia: 'Escolher média (galeria)',
+    noMedia: 'Nenhuma média selecionada',
+    video: 'Vídeo',
+    image: 'Imagem',
+    captionLabel: 'Legenda e hashtags',
+    captionPlaceholder: 'Descreva o seu talento… Adicione #africa #cultura',
+    hashtagHint: 'As #palavras na legenda tornam-se hashtags na publicação.',
+    categoryLabel: 'Categoria',
+    limits: 'Máx. %{minutes} min · %{mb} MB',
+    publish: 'Publicar',
+    publishedMockTitle: 'Publicado (mock)',
+    publishedTitle: 'Publicado',
+    publishedMockBody: 'Adicionado ao feed local «Para ti».',
+    publishedBody:
+      'Vídeo enviado para Supabase Storage + tabela videos (estado published).',
+    publishFail: 'Falha na publicação',
+    alertTooLarge: 'Ficheiro demasiado grande',
+    alertTooLong: 'Vídeo demasiado longo',
+    alertMediaRequired: 'Média necessária',
+    alertCategory: 'Categoria',
+    errNoMedia: 'Selecione um vídeo ou uma imagem para publicar.',
+    errTooLarge: 'O ficheiro excede o tamanho máximo (%{mb} MB).',
+    errTooLong: 'O vídeo excede a duração máxima (%{minutes} min).',
+    errCategoryRequired: 'Escolha uma categoria para a sua publicação.',
+  },
+  profile: {
+    defaultBio: 'Perfil NIA',
+    posts: 'Publicações',
+    followers: 'Seguidores',
+    following: 'A seguir',
+    editProfile: 'Editar perfil',
+    viewPublic: 'Ver o meu perfil público',
+    signOut: 'Terminar sessão',
+    signIn: 'Entrar',
+    empty: 'Ainda sem publicações.',
+    language: 'Idioma',
+  },
+  notifications: {
+    title: 'Notificações',
+    subtitle: 'Atividade em torno do seu perfil e publicações.',
+    emptyTitle: 'Nada por agora',
+    emptyBody:
+      'Quando a comunidade interagir com o seu conteúdo, aparecerá aqui — com clareza, sem ruído.',
+    note:
+      'Inicie sessão com Supabase para receber gostos, comentários e novos seguidores. Mensagens privadas na fase 2.',
+    someone: 'Alguém',
+    liked: 'gostou do seu vídeo',
+    commented: 'comentou o seu vídeo',
+    followed: 'seguiu-o',
+    system: 'Notificação do sistema',
+    interacted: 'interagiu consigo',
+    justNow: 'agora mesmo',
+    minutesAgo: 'há %{count} min',
+    hoursAgo: 'há %{count} h',
+    daysAgo: 'há %{count} d',
+  },
+  errors: {
+    boundaryTitle: 'Algo correu mal',
+  },
+  language: {
+    label: 'Idioma / Language',
+    fr: 'FR',
+    en: 'EN',
+    es: 'ES',
+    pt: 'PT',
+    sw: 'SW',
+    ha: 'HA',
+    'ar-MA': 'Darija',
+    'ar-SD': 'SD',
+  },
+};
+
+export default pt;

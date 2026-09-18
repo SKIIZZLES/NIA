@@ -18,12 +18,16 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 
 
 
-## Internationalisation (FR / EN)
+## Internationalisation (FR / EN / ES / PT / SW / HA / Darija / SD)
 
-- Stack légère : **`expo-localization`** + **`i18n-js`**. Chaînes dans `locales/fr.ts` et `locales/en.ts` ; helper `lib/i18n.ts` + `context/I18nContext.tsx`.
-- Défaut : langue de l’appareil si `fr` / `en`, sinon **français**. Basculer manuellement via **FR | EN** sur l’écran d’accueil ou le **Profil** (persisté AsyncStorage `@nia/locale`).
-- Pour ajouter une langue africaine plus tard : créer `locales/xx.ts`, l’enregistrer dans `lib/i18n.ts`, étendre `APP_LOCALES`.
-- Plugin `expo-localization` dans `app.json` → **nouveau build EAS** recommandé pour les binaires natifs (Expo Go SDK 57 inclut déjà le module).
+- Stack légère : **`expo-localization`** + **`i18n-js`**. Chaînes dans `locales/{fr,en,es,pt,sw,ha,ar-MA,ar-SD}.ts` ; helper `lib/i18n.ts` + `context/I18nContext.tsx`.
+- **Langues supportées** : français (FR), anglais (EN), espagnol (ES), portugais (PT), swahili (SW), haoussa (HA), **darija maghrébine** (`ar-MA`, label **Darija**), **arabe soudanais** (`ar-SD`, label **SD**). Pas de MSA générique — dialects prioritaires.
+- Toggle **FR | EN | ES | PT | SW | HA | Darija | SD** (accueil / Profil, chips qui wrap), persisté AsyncStorage `@nia/locale`.
+- Défaut : langue appareil si `fr*` / `en*` / `es*` / `pt*` / `sw*` / `ha*` ; pour `ar*` → Maghreb (`MA/DZ/TN/LY/…`) = Darija, `SD` = soudanais, sinon Darija ; sinon **français**.
+- **RTL** : chaînes arabes (Darija / SD) affichées, layout reste **LTR** (pas de `I18nManager.forceRTL`) pour ne pas casser le feed vidéo vertical. RTL natif possible plus tard si le layout est adapté.
+- Pour ajouter une langue : créer `locales/xx.ts` (mêmes clés que `fr.ts`), l’enregistrer dans `lib/i18n.ts`, étendre `APP_LOCALES`.
+- Plugin `expo-localization` dans `app.json` → déjà présent ; **pas de nouveau build EAS** requis pour ces locales JS (rebuild seulement si vous activez RTL natif / changez des plugins natifs).
+
 
 ## Expo Go Android / iOS (important)
 
