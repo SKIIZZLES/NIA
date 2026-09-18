@@ -11,11 +11,13 @@ import {
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function RegisterScreen() {
   const { signUp, isMockAuth } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -28,8 +30,8 @@ export default function RegisterScreen() {
       await signUp(email || 'nouveau@nia.app', password || 'nia', username);
       router.replace('/(tabs)');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Inscription impossible';
-      Alert.alert('Erreur', msg);
+      const msg = e instanceof Error ? e.message : t('auth.registerFail');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -47,37 +49,37 @@ export default function RegisterScreen() {
         ]}
       >
         <Text style={styles.badge}>
-          {isMockAuth ? 'AUTH MOCK MVP' : 'AUTH SUPABASE'}
+          {isMockAuth ? t('auth.authMockBadge') : t('auth.authSupabaseBadge')}
         </Text>
       </View>
       <Text style={styles.hint}>
         {isMockAuth
-          ? 'Formulaire stub — aucune validation serveur. Créera une session locale.'
-          : 'Inscription Supabase Auth. Un profil est créé automatiquement (trigger SQL). Désactivez « Confirm email » dans Auth → Providers pour tester sans mail.'}
+          ? t('auth.mockRegisterHint')
+          : t('auth.supabaseRegisterHint')}
       </Text>
 
-      <Text style={styles.label}>Nom d&apos;utilisateur</Text>
+      <Text style={styles.label}>{t('common.username')}</Text>
       <TextInput
         style={styles.input}
         autoCapitalize="none"
         value={username}
         onChangeText={setUsername}
-        placeholder="votre_handle"
+        placeholder={t('auth.usernamePlaceholder')}
         placeholderTextColor={Colors.textMuted}
       />
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={styles.label}>{t('common.email')}</Text>
       <TextInput
         style={styles.input}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
-        placeholder="vous@email.com"
+        placeholder={t('auth.emailPlaceholder')}
         placeholderTextColor={Colors.textMuted}
       />
 
-      <Text style={styles.label}>Mot de passe</Text>
+      <Text style={styles.label}>{t('common.password')}</Text>
       <TextInput
         style={styles.input}
         secureTextEntry
@@ -88,7 +90,7 @@ export default function RegisterScreen() {
       />
 
       <Button
-        title="Créer mon compte"
+        title={t('auth.createAccount')}
         variant="filled"
         loading={loading}
         onPress={onSubmit}

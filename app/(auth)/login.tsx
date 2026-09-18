@@ -11,11 +11,13 @@ import {
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function LoginScreen() {
   const { signIn, isMockAuth } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState(isMockAuth ? 'demo@nia.app' : '');
   const [password, setPassword] = useState(isMockAuth ? 'nia123' : '');
@@ -27,8 +29,8 @@ export default function LoginScreen() {
       await signIn(email, password);
       router.replace('/(tabs)');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Connexion impossible';
-      Alert.alert('Erreur', msg);
+      const msg = e instanceof Error ? e.message : t('auth.loginFail');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
     }
@@ -46,27 +48,25 @@ export default function LoginScreen() {
         ]}
       >
         <Text style={styles.badge}>
-          {isMockAuth ? 'AUTH MOCK MVP' : 'AUTH SUPABASE'}
+          {isMockAuth ? t('auth.authMockBadge') : t('auth.authSupabaseBadge')}
         </Text>
       </View>
       <Text style={styles.hint}>
-        {isMockAuth
-          ? 'Accepte n’importe quel email / mot de passe. Session stockée localement (AsyncStorage). Remplissez EXPO_PUBLIC_SUPABASE_* dans .env pour activer Supabase.'
-          : 'Connexion email / mot de passe via Supabase Auth. Créez un compte sur l’écran Inscription.'}
+        {isMockAuth ? t('auth.mockLoginHint') : t('auth.supabaseLoginHint')}
       </Text>
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={styles.label}>{t('common.email')}</Text>
       <TextInput
         style={styles.input}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
         onChangeText={setEmail}
-        placeholder="vous@email.com"
+        placeholder={t('auth.emailPlaceholder')}
         placeholderTextColor={Colors.textMuted}
       />
 
-      <Text style={styles.label}>Mot de passe</Text>
+      <Text style={styles.label}>{t('common.password')}</Text>
       <TextInput
         style={styles.input}
         secureTextEntry
@@ -77,7 +77,7 @@ export default function LoginScreen() {
       />
 
       <Button
-        title="Se connecter"
+        title={t('auth.signIn')}
         variant="filled"
         loading={loading}
         onPress={onSubmit}

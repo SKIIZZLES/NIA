@@ -4,13 +4,16 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NiaWordmark } from '@/components/NiaWordmark';
 import { Button } from '@/components/Button';
-import { Colors, Fonts, HeroLines, Spacing } from '@/constants/theme';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { isMockAuth } = useAuth();
+  const { t } = useI18n();
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -18,33 +21,32 @@ export default function WelcomeScreen() {
         <NiaWordmark size={72} showTagline />
         {isMockAuth ? (
           <View style={[styles.badge, { backgroundColor: Colors.terre }]}>
-            <Text style={styles.badgeText}>AUTH MOCK MVP</Text>
+            <Text style={styles.badgeText}>{t('welcome.authMockBadge')}</Text>
           </View>
         ) : null}
       </View>
 
       <View style={styles.hero}>
-        <Text style={styles.heroPrimary}>{HeroLines.primary}</Text>
-        <Text style={styles.heroSecondary}>{HeroLines.secondary}</Text>
+        <Text style={styles.heroPrimary}>{t('brand.heroPrimary')}</Text>
+        <Text style={styles.heroSecondary}>{t('brand.heroSecondary')}</Text>
       </View>
 
       <View style={styles.actions}>
         <Button
-          title="Créer un compte"
+          title={t('welcome.createAccount')}
           variant="filled"
           onPress={() => router.push('/(auth)/register')}
         />
         <Button
-          title="Se connecter"
+          title={t('welcome.signIn')}
           variant="outline"
           onPress={() => router.push('/(auth)/login')}
           style={{ marginTop: Spacing.md }}
         />
         <GoogleSignInButton />
+        <LanguageToggle compact />
         <Text style={styles.mockHint}>
-          {isMockAuth
-            ? 'Expo Go natif = auth mock · Supabase complet via web ou build natif'
-            : 'Auth Supabase connectée'}
+          {isMockAuth ? t('welcome.mockHint') : t('welcome.supabaseHint')}
         </Text>
       </View>
     </SafeAreaView>

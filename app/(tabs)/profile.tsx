@@ -10,8 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
+import { LanguageToggle } from '@/components/LanguageToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
+import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import {
@@ -24,6 +26,7 @@ import { formatCount } from '@/data/mockVideos';
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { videos } = useFeed();
+  const { t } = useI18n();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const gap = 2;
@@ -84,31 +87,32 @@ export default function ProfileScreen() {
               style={styles.avatar}
             />
             <Text style={styles.displayName}>
-              {user?.displayName || user?.username || 'Invité'}
+              {user?.displayName || user?.username || t('common.guest')}
             </Text>
             <Text style={styles.username}>@{user?.username || 'invite'}</Text>
-            <Text style={styles.bio}>{user?.bio || 'Profil NIA'}</Text>
+            <Text style={styles.bio}>{user?.bio || t('profile.defaultBio')}</Text>
             <View style={styles.stats}>
-              <Stat label="Publications" value={String(grid.length)} />
-              <Stat label="Abonnés" value={formatCount(followerCount)} />
-              <Stat label="Abonnements" value={formatCount(followingCount)} />
+              <Stat label={t('profile.posts')} value={String(grid.length)} />
+              <Stat label={t('profile.followers')} value={formatCount(followerCount)} />
+              <Stat label={t('profile.following')} value={formatCount(followingCount)} />
             </View>
+            <LanguageToggle />
             {user ? (
               <>
                 <Pressable
                   style={styles.editBtn}
                   onPress={() => router.push('/edit-profile')}
                 >
-                  <Text style={styles.editBtnText}>Modifier le profil</Text>
+                  <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
                 </Pressable>
                 <Pressable
                   style={styles.linkBtn}
                   onPress={() => router.push(`/user/${user.username}`)}
                 >
-                  <Text style={styles.linkText}>Voir mon profil public</Text>
+                  <Text style={styles.linkText}>{t('profile.viewPublic')}</Text>
                 </Pressable>
                 <Button
-                  title="Se déconnecter"
+                  title={t('profile.signOut')}
                   variant="outline"
                   onPress={async () => {
                     await signOut();
@@ -119,7 +123,7 @@ export default function ProfileScreen() {
               </>
             ) : (
               <Button
-                title="Se connecter"
+                title={t('profile.signIn')}
                 variant="gold"
                 onPress={() => router.push('/(auth)/login')}
                 style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
@@ -133,7 +137,7 @@ export default function ProfileScreen() {
         columnWrapperStyle={{ gap }}
         contentContainerStyle={{ gap }}
         ListEmptyComponent={
-          <Text style={styles.empty}>Aucune publication pour l’instant.</Text>
+          <Text style={styles.empty}>{t('profile.empty')}</Text>
         }
         renderItem={({ item }) => (
           <Image

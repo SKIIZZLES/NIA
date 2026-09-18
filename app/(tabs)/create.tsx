@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { useFeed } from '@/context/FeedContext';
+import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import {
   DISCOVER_CATEGORIES,
@@ -22,7 +23,6 @@ import {
 import {
   MAX_UPLOAD_BYTES,
   MAX_VIDEO_DURATION_SEC,
-  PUBLISH_ERRORS,
   parseHashtags,
 } from '@/constants/publish';
 
@@ -36,6 +36,7 @@ type PickedMedia = {
 
 export default function CreateScreen() {
   const { publishPost, isMockFeed } = useFeed();
+  const { t } = useI18n();
   const router = useRouter();
   const [caption, setCaption] = useState('');
   const [media, setMedia] = useState<PickedMedia | null>(null);
@@ -43,6 +44,8 @@ export default function CreateScreen() {
   const [busy, setBusy] = useState(false);
 
   const hashtags = useMemo(() => parseHashtags(caption), [caption]);
+  const maxMinutes = Math.round(MAX_VIDEO_DURATION_SEC / 60);
+  const maxMb = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
   const pick = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -68,7 +71,10 @@ export default function CreateScreen() {
               : 'unknown';
 
     if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
-      Alert.alert('Fichier trop volumineux', PUBLISH_ERRORS.tooLarge);
+      Alert.alert(
+        t('create.alertTooLarge'),
+        t('create.errTooLarge', { mb: maxMb }),
+      );
       return;
     }
     if (
@@ -76,7 +82,10 @@ export default function CreateScreen() {
       durationMs != null &&
       durationMs > MAX_VIDEO_DURATION_SEC * 1000
     ) {
-      Alert.alert('Vidéo trop longue', PUBLISH_ERRORS.tooLong);
+      Alert.alert(
+        t('create.alertTooLong'),
+        t('create.errTooLong', { minutes: maxMinutes }),
+      );
       return;
     }
 
@@ -91,15 +100,18 @@ export default function CreateScreen() {
 
   const publish = async () => {
     if (!media?.uri && !isMockFeed) {
-      Alert.alert('Média requis', PUBLISH_ERRORS.noMedia);
+      Alert.alert(t('create.alertMediaRequired'), t('create.errNoMedia'));
       return;
     }
     if (!category) {
-      Alert.alert('Catégorie', PUBLISH_ERRORS.categoryRequired);
+      Alert.alert(t('create.alertCategory'), t('create.errCategoryRequired'));
       return;
     }
     if (media?.fileSize != null && media.fileSize > MAX_UPLOAD_BYTES) {
-      Alert.alert('Fichier trop volumineux', PUBLISH_ERRORS.tooLarge);
+      Alert.alert(
+        t('create.alertTooLarge'),
+        t('create.errTooLarge', { mb: maxMb }),
+      );
       return;
     }
     if (
@@ -107,7 +119,10 @@ export default function CreateScreen() {
       media.durationMs != null &&
       media.durationMs > MAX_VIDEO_DURATION_SEC * 1000
     ) {
-      Alert.alert('Vidéo trop longue', PUBLISH_ERRORS.tooLong);
+      Alert.alert(
+        t('create.alertTooLong'),
+        t('create.errTooLong', { minutes: maxMinutes }),
+      );
       return;
     }
 
@@ -126,15 +141,13 @@ export default function CreateScreen() {
       setMedia(null);
       setCategory(null);
       Alert.alert(
-        isMockFeed ? 'Publié (mock)' : 'Publié',
-        isMockFeed
-          ? 'Ajouté au fil local « Pour toi ».'
-          : 'Vidéo envoyée sur Supabase Storage + table videos (statut published).',
+        isMockFeed ? t('create.publishedMockTitle') : t('create.publishedTitle'),
+        isMockFeed ? t('create.publishedMockBody') : t('create.publishedBody'),
       );
       router.push('/(tabs)');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Échec de la publication';
-      Alert.alert('Erreur', msg);
+      const msg = e instanceof Error ? e.message : t('create.publishFail');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setBusy(false);
     }
@@ -147,11 +160,9 @@ export default function CreateScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Créer</Text>
+        <Text style={styles.title}>{t('create.title')}</Text>
         <Text style={styles.subtitle}>
-          {isMockFeed
-            ? 'Mode mock — média, légende, #hashtags et catégorie. Publication dans le feed local.'
-            : 'Mode Supabase — upload Storage + ligne videos (statut published).'}
+          {isMockFeed ? t('create.subtitleMock') : t('create.subtitleSupabase')}
         </Text>
 
         <View style={styles.preview}>
@@ -160,7 +171,7 @@ export default function CreateScreen() {
               <Image source={{ uri: media.uri }} style={styles.thumb} />
               <View style={styles.previewBadge}>
                 <Text style={styles.previewBadgeText}>
-                  {media.type === 'video' ? 'Vidéo' : 'Image'}
+                  {media.type === 'video' ? t('create.video') : t('create.image')}
                   {media.durationMs != null
                     ? ` · ${Math.round(media.durationMs / 1000)} s`
                     : ''}
@@ -171,40 +182,38 @@ export default function CreateScreen() {
               </View>
             </>
           ) : (
-            <Text style={styles.previewHint}>Aucun média sélectionné</Text>
+            <Text style={styles.previewHint}>{t('create.noMedia')}</Text>
           )}
         </View>
 
         <Button
-          title="Choisir un média (galerie)"
+          title={t('create.pickMedia')}
           variant="outline"
           onPress={pick}
         />
 
-        <Text style={styles.label}>Légende & hashtags</Text>
+        <Text style={styles.label}>{t('create.captionLabel')}</Text>
         <TextInput
           style={styles.input}
           multiline
           value={caption}
           onChangeText={setCaption}
-          placeholder="Décrivez votre talent… Ajoutez #afrique #culture"
+          placeholder={t('create.captionPlaceholder')}
           placeholderTextColor={Colors.textMuted}
         />
         {hashtags.length > 0 ? (
           <View style={styles.tagRow}>
-            {hashtags.map((t) => (
-              <View key={t} style={styles.tagChip}>
-                <Text style={styles.tagText}>#{t}</Text>
+            {hashtags.map((tag) => (
+              <View key={tag} style={styles.tagChip}>
+                <Text style={styles.tagText}>#{tag}</Text>
               </View>
             ))}
           </View>
         ) : (
-          <Text style={styles.hint}>
-            Les #mots dans la légende deviennent des hashtags à la publication.
-          </Text>
+          <Text style={styles.hint}>{t('create.hashtagHint')}</Text>
         )}
 
-        <Text style={styles.label}>Catégorie</Text>
+        <Text style={styles.label}>{t('create.categoryLabel')}</Text>
         <View style={styles.catRow}>
           {DISCOVER_CATEGORIES.map((c) => {
             const selected = category === c.id;
@@ -222,12 +231,11 @@ export default function CreateScreen() {
           })}
         </View>
         <Text style={styles.hint}>
-          Max {Math.round(MAX_VIDEO_DURATION_SEC / 60)} min ·{' '}
-          {Math.round(MAX_UPLOAD_BYTES / (1024 * 1024))} Mo
+          {t('create.limits', { minutes: maxMinutes, mb: maxMb })}
         </Text>
 
         <Button
-          title="Publier"
+          title={t('create.publish')}
           variant="gold"
           loading={busy}
           onPress={publish}

@@ -17,6 +17,14 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 ---
 
 
+
+## Internationalisation (FR / EN)
+
+- Stack légère : **`expo-localization`** + **`i18n-js`**. Chaînes dans `locales/fr.ts` et `locales/en.ts` ; helper `lib/i18n.ts` + `context/I18nContext.tsx`.
+- Défaut : langue de l’appareil si `fr` / `en`, sinon **français**. Basculer manuellement via **FR | EN** sur l’écran d’accueil ou le **Profil** (persisté AsyncStorage `@nia/locale`).
+- Pour ajouter une langue africaine plus tard : créer `locales/xx.ts`, l’enregistrer dans `lib/i18n.ts`, étendre `APP_LOCALES`.
+- Plugin `expo-localization` dans `app.json` → **nouveau build EAS** recommandé pour les binaires natifs (Expo Go SDK 57 inclut déjà le module).
+
 ## Expo Go Android / iOS (important)
 
 Sur **Expo Go** uniquement (`Constants.executionEnvironment === StoreClient` ou `appOwnership === 'expo'`), Supabase est **désactivé** → auth **mock**, même si `.env` contient des clés. Metro **ne remplace plus** `@supabase/supabase-js` sur android/ios (sinon les builds EAS n’auraient plus d’auth réelle) : shims `ws` / `zlib` / `stream`, et stub optionnel `@supabase/realtime-js` seulement. `shims/supabase-js-native.js` reste dans le repo mais **n’est pas** branché par Metro.

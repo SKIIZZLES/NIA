@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
+import { t as tStatic } from '@/lib/i18n';
 import {
   fetchNotifications,
   markNotificationRead,
@@ -24,7 +26,7 @@ import {
 function actorName(n: NotificationWithActor): string {
   const u = n.profiles?.username || n.profiles?.display_name;
   if (u) return `@${u.replace(/^@/, '')}`;
-  return 'Quelqu’un';
+  return tStatic('notifications.someone');
 }
 
 function actorAvatar(n: NotificationWithActor): string {
@@ -37,15 +39,15 @@ function notifLabel(n: NotificationWithActor): string {
   if (n.body) return n.body;
   switch (n.type) {
     case 'like':
-      return 'a aimé votre vidéo';
+      return tStatic('notifications.liked');
     case 'comment':
-      return 'a commenté votre vidéo';
+      return tStatic('notifications.commented');
     case 'follow':
-      return 's’est abonné·e à vous';
+      return tStatic('notifications.followed');
     case 'system':
-      return 'Notification système';
+      return tStatic('notifications.system');
     default:
-      return 'a interagi avec vous';
+      return tStatic('notifications.interacted');
   }
 }
 
@@ -65,16 +67,17 @@ function notifIcon(type: string): keyof typeof Ionicons.glyphMap {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return 'à l’instant';
-  if (m < 60) return `il y a ${m} min`;
+  if (m < 1) return tStatic('notifications.justNow');
+  if (m < 60) return tStatic('notifications.minutesAgo', { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h} h`;
+  if (h < 24) return tStatic('notifications.hoursAgo', { count: h });
   const d = Math.floor(h / 24);
-  return `il y a ${d} j`;
+  return tStatic('notifications.daysAgo', { count: d });
 }
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const [items, setItems] = useState<NotificationWithActor[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -128,20 +131,15 @@ export default function NotificationsScreen() {
       <View style={styles.iconRing}>
         <Ionicons name="notifications-outline" size={36} color={Colors.or} />
       </View>
-      <Text style={styles.emptyTitle}>Rien pour l’instant</Text>
-      <Text style={styles.emptyBody}>
-        Quand la communauté interagit avec vos contenus, tout apparaîtra ici —
-        clairement, sans bruit inutile.
-      </Text>
+      <Text style={styles.emptyTitle}>{t('notifications.emptyTitle')}</Text>
+      <Text style={styles.emptyBody}>{t('notifications.emptyBody')}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.title}>Notifications</Text>
-      <Text style={styles.subtitle}>
-        Activité autour de votre profil et de vos publications.
-      </Text>
+      <Text style={styles.title}>{t('notifications.title')}</Text>
+      <Text style={styles.subtitle}>{t('notifications.subtitle')}</Text>
 
       {loading && items.length === 0 ? (
         <View style={styles.center}>
@@ -191,10 +189,7 @@ export default function NotificationsScreen() {
       {!canFetch ? (
         <View style={styles.note}>
           <Ionicons name="information-circle-outline" size={14} color={Colors.textMuted} />
-          <Text style={styles.noteText}>
-            Connectez-vous avec Supabase pour recevoir likes, commentaires et
-            nouveaux abonnés. Messagerie privée reportée en phase 2.
-          </Text>
+          <Text style={styles.noteText}>{t('notifications.note')}</Text>
         </View>
       ) : null}
     </SafeAreaView>

@@ -14,7 +14,9 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { AuthProvider } from '@/context/AuthContext';
 import { FeedProvider } from '@/context/FeedContext';
+import { I18nProvider } from '@/context/I18nContext';
 import { Colors } from '@/constants/theme';
+import { t } from '@/lib/i18n';
 
 (globalThis as typeof globalThis & { Buffer?: typeof Buffer }).Buffer ??= Buffer;
 
@@ -54,7 +56,7 @@ class ErrorBoundary extends Component<EBProps, EBState> {
               marginBottom: 12,
             }}
           >
-            Une erreur est survenue
+            {t('errors.boundaryTitle')}
           </Text>
           <ScrollView style={{ maxHeight: 240 }}>
             <Text style={{ color: '#ccc', fontSize: 13 }}>
@@ -130,11 +132,13 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <FeedProvider>
-          <RootNavigator />
-        </FeedProvider>
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <FeedProvider>
+            <RootNavigator />
+          </FeedProvider>
+        </AuthProvider>
+      </I18nProvider>
     </ErrorBoundary>
   );
 }

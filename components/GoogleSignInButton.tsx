@@ -3,6 +3,7 @@ import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { isGoogleAuthConfigured } from '@/lib/googleAuth';
 
@@ -17,6 +18,7 @@ type Props = {
  */
 export function GoogleSignInButton({ showDivider = true, style }: Props) {
   const { signInWithGoogle, isMockAuth } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +32,7 @@ export function GoogleSignInButton({ showDivider = true, style }: Props) {
       if (err?.code === 'CANCELLED' || err?.message?.includes('annulée')) {
         return;
       }
-      Alert.alert('Google', err?.message || 'Connexion Google impossible');
+      Alert.alert(t('google.alertTitle'), err?.message || t('google.fail'));
     } finally {
       setLoading(false);
     }
@@ -38,11 +40,11 @@ export function GoogleSignInButton({ showDivider = true, style }: Props) {
 
   const hint =
     Platform.OS === 'web'
-      ? 'Google natif = build EAS Android/iOS'
+      ? t('google.hintWeb')
       : isMockAuth
-        ? 'Mode mock : session locale (Expo Go ou env manquantes)'
+        ? t('google.hintMock')
         : !isGoogleAuthConfigured()
-          ? 'Définissez EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)'
+          ? t('google.hintMissingId')
           : null;
 
   return (
@@ -50,12 +52,12 @@ export function GoogleSignInButton({ showDivider = true, style }: Props) {
       {showDivider ? (
         <View style={styles.dividerRow}>
           <View style={styles.line} />
-          <Text style={styles.ou}>ou</Text>
+          <Text style={styles.ou}>{t('common.or')}</Text>
           <View style={styles.line} />
         </View>
       ) : null}
       <Button
-        title="Continuer avec Google"
+        title={t('google.continue')}
         variant="outline"
         loading={loading}
         onPress={onPress}
