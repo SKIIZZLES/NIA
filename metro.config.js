@@ -12,6 +12,7 @@ const config = getDefaultConfig(__dirname);
 const emptyShim = path.resolve(__dirname, 'shims/empty.js');
 const realtimeStub = path.resolve(__dirname, 'shims/supabase-realtime-stub.js');
 const readableStream = require.resolve('readable-stream');
+const projectRoot = __dirname;
 
 // Prefer classic resolution; package "exports" often pick Node entrypoints.
 config.resolver.unstable_enablePackageExports = false;
@@ -58,9 +59,17 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     return { type: 'sourceFile', filePath: emptyShim };
   }
 
+  // Restore tsconfig paths alias: "@/*" → "./*"
+  // Custom resolveRequest bypasses Expo's default alias handling, so rewrite here.
+  let nameToResolve = moduleName;
+  if (moduleName.startsWith('@/')) {
+    nameToResolve = path.resolve(projectRoot, moduleName.slice(2));
+  }
+
+  // Use metro-resolver directly (clear resolveRequest) to avoid infinite recursion.
   return metroResolve(
     { ...context, resolveRequest: undefined },
-    moduleName,
+    nameToResolve,
     platform
   );
 };
