@@ -1,5 +1,7 @@
-// Metro: on android/ios, stub ALL @supabase/* so the real client never ships
-// in the APK (guaranteed-open preview). Web keeps the real packages.
+// Metro shims for Node builtins pulled by Supabase on React Native.
+// Keep real @supabase/supabase-js on android/ios (needed for EAS preview/production).
+// Stub @supabase/realtime-js only (ws → stream crash mitigation).
+// shims/supabase-js-native.js is kept in repo but NOT wired here.
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 const { resolve: metroResolve } = require('metro-resolver');
@@ -8,7 +10,6 @@ const { resolve: metroResolve } = require('metro-resolver');
 const config = getDefaultConfig(__dirname);
 
 const emptyShim = path.resolve(__dirname, 'shims/empty.js');
-const supabaseJsNative = path.resolve(__dirname, 'shims/supabase-js-native.js');
 const realtimeStub = path.resolve(__dirname, 'shims/supabase-realtime-stub.js');
 const readableStream = require.resolve('readable-stream');
 const projectRoot = __dirname;
@@ -37,26 +38,8 @@ config.resolver.blockList = Array.isArray(prevBlockList)
     ? [prevBlockList, ...nestedWsBlock]
     : nestedWsBlock;
 
-function isNativePlatform(platform) {
-  return platform === 'android' || platform === 'ios';
-}
-
-function isSupabasePackage(moduleName) {
-  return (
-    moduleName === '@supabase/supabase-js' ||
-    moduleName.startsWith('@supabase/supabase-js/') ||
-    moduleName === '@supabase/realtime-js' ||
-    moduleName.startsWith('@supabase/realtime-js/')
-  );
-}
-
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  // Native: replace entire supabase client + realtime with local shim.
-  if (isNativePlatform(platform) && isSupabasePackage(moduleName)) {
-    return { type: 'sourceFile', filePath: supabaseJsNative };
-  }
-
-  // Web / other: still stub realtime + node builtins that break RN tooling.
+  // Optional stub: realtime only (never replace entire @supabase/supabase-js).
   if (
     moduleName === '@supabase/realtime-js' ||
     moduleName.startsWith('@supabase/realtime-js/')
@@ -83,7 +66,6 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     nameToResolve = path.resolve(projectRoot, moduleName.slice(2));
   }
 
-  // Use metro-resolver directly (clear resolveRequest) to avoid infinite recursion.
   return metroResolve(
     { ...context, resolveRequest: undefined },
     nameToResolve,

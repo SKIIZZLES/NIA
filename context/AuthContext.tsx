@@ -10,12 +10,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow } from '@/types/database';
 import { updateProfile as persistProfile } from '@/lib/profiles';
+import {
+  getGoogleIdToken,
+  signInWithGoogleIdToken,
+} from '@/lib/googleAuth';
 
 /** Local auth shapes — no runtime/value import from @supabase/supabase-js. */
 type AuthUser = {
   id: string;
   email?: string | null;
-  user_metadata?: { username?: string };
+  user_metadata?: {
+    username?: string;
+    full_name?: string;
+    name?: string;
+    avatar_url?: string;
+    picture?: string;
+  };
 };
 type AuthSession = { user: AuthUser } | null;
 
@@ -35,6 +45,7 @@ type AuthContextValue = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username?: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   /** Met à jour bio / display_name (mock local ou profiles) */
   updateProfile: (patch: { displayName?: string; bio?: string }) => Promise<void>;
@@ -59,24 +70,32 @@ function mockUserFromEmail(email: string, username?: string): NiaUser {
 }
 
 function profileToUser(sessionUser: AuthUser, profile: ProfileRow | null): NiaUser {
+  const meta = sessionUser.user_metadata || {};
   const metaHandle =
-    typeof sessionUser.user_metadata?.username === 'string'
-      ? sessionUser.user_metadata.username
-      : undefined;
+    typeof meta.username === 'string' ? meta.username : undefined;
   const email = sessionUser.email || '';
   const handle =
     profile?.username ||
     metaHandle ||
     email.split('@')[0] ||
     'createur';
+  const metaName =
+    (typeof meta.full_name === 'string' && meta.full_name) ||
+    (typeof meta.name === 'string' && meta.name) ||
+    undefined;
+  const metaAvatar =
+    (typeof meta.avatar_url === 'string' && meta.avatar_url) ||
+    (typeof meta.picture === 'string' && meta.picture) ||
+    undefined;
   return {
     id: sessionUser.id,
     email,
     username: handle,
-    displayName: profile?.display_name || handle,
+    displayName: profile?.display_name || metaName || handle,
     bio: profile?.bio || 'Créateur·rice sur NIA · cultures & talents 🌍',
     avatarUrl:
       profile?.avatar_url ||
+      metaAvatar ||
       `https://i.pravatar.cc/200?u=${encodeURIComponent(handle)}`,
   };
 }
@@ -86,6 +105,83 @@ async function loadProfile(userId: string): Promise<ProfileRow | null> {
   if (!sb) return null;
   const { data } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
   return data;
+}
+
+/**
+ * Après Google (ou email) : crée / enrichit le profil si le trigger n'a pas tout rempli.
+ */
+async function ensureProfileRow(
+  sessionUser: AuthUser,
+  extras?: { name?: string | null; photo?: string | null },
+): Promise<ProfileRow | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+
+  const existing = await loadProfile(sessionUser.id);
+  const meta = sessionUser.user_metadata || {};
+  const email = sessionUser.email || '';
+  const handleBase =
+    existing?.username ||
+    (typeof meta.username === 'string' && meta.username) ||
+    email.split('@')[0] ||
+    'createur';
+  const handle =
+    handleBase.replace(/[^a-zA-Z0-9._]/g, '').toLowerCase() || 'createur';
+
+  const displayName =
+    existing?.display_name ||
+    extras?.name ||
+    (typeof meta.full_name === 'string' && meta.full_name) ||
+    (typeof meta.name === 'string' && meta.name) ||
+    handle;
+
+  const avatarUrl =
+    existing?.avatar_url ||
+    extras?.photo ||
+    (typeof meta.avatar_url === 'string' && meta.avatar_url) ||
+    (typeof meta.picture === 'string' && meta.picture) ||
+    `https://i.pravatar.cc/200?u=${encodeURIComponent(handle)}`;
+
+  if (!existing) {
+    const { data, error } = await sb
+      .from('profiles')
+      .upsert(
+        {
+          id: sessionUser.id,
+          username: handle,
+          display_name: displayName,
+          bio: 'Créateur·rice sur NIA · cultures & talents 🌍',
+          avatar_url: avatarUrl,
+        },
+        { onConflict: 'id' },
+      )
+      .select('*')
+      .maybeSingle();
+    if (error) {
+      // Trigger may have raced — reload
+      return loadProfile(sessionUser.id);
+    }
+    return data;
+  }
+
+  // Enrichir display_name / avatar si encore vides / génériques
+  const patch: { display_name?: string; avatar_url?: string } = {};
+  if (!existing.display_name && displayName) patch.display_name = displayName;
+  if (
+    extras?.photo &&
+    (!existing.avatar_url || existing.avatar_url.includes('i.pravatar.cc'))
+  ) {
+    patch.avatar_url = extras.photo;
+  }
+  if (Object.keys(patch).length === 0) return existing;
+
+  const { data } = await sb
+    .from('profiles')
+    .update(patch)
+    .eq('id', sessionUser.id)
+    .select('*')
+    .maybeSingle();
+  return data ?? existing;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -112,7 +208,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data } = await sb.auth.getSession();
         const session = data.session;
         if (session?.user && alive) {
-          const profile = await loadProfile(session.user.id);
+          const profile = await ensureProfileRow(session.user);
           if (alive) setUser(profileToUser(session.user, profile));
         }
       } catch {
@@ -132,7 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         return;
       }
-      const profile = await loadProfile(session.user.id);
+      const profile = await ensureProfileRow(session.user);
       if (alive) setUser(profileToUser(session.user, profile));
     });
 
@@ -196,6 +292,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [persistMock],
   );
 
+  const signInWithGoogle = useCallback(async () => {
+    const sb = getSupabase();
+    if (!sb || !isSupabaseConfigured) {
+      // Mock / Expo Go : session locale « Google »
+      const next = mockUserFromEmail(
+        `google_${Date.now()}@nia.app`,
+        `google${Date.now().toString(36).slice(-6)}`,
+      );
+      next.displayName = 'Google User';
+      await persistMock(next);
+      return;
+    }
+
+    const google = await getGoogleIdToken();
+    await signInWithGoogleIdToken(google.idToken);
+
+    // Enrichir profil avec nom / photo Google (trigger peut avoir créé le row)
+    const { data } = await sb.auth.getSession();
+    const sessionUser = data.session?.user;
+    if (sessionUser) {
+      const profile = await ensureProfileRow(sessionUser, {
+        name: google.name,
+        photo: google.photo,
+      });
+      setUser(profileToUser(sessionUser, profile));
+    }
+  }, [persistMock]);
+
   const updateProfile = useCallback(
     async (patch: { displayName?: string; bio?: string }) => {
       if (!user) throw new Error('Connectez-vous pour modifier le profil.');
@@ -232,6 +356,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await persistMock(null);
       return;
     }
+    try {
+      // Best-effort Google sign-out (ignore si module absent)
+      const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+      await GoogleSignin.signOut().catch(() => {});
+    } catch {
+      // ignore
+    }
     await sb.auth.signOut();
     setUser(null);
   }, [persistMock]);
@@ -242,11 +373,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut,
       updateProfile,
       isMockAuth: mockMode,
     }),
-    [user, loading, signIn, signUp, signOut, updateProfile, mockMode],
+    [user, loading, signIn, signUp, signInWithGoogle, signOut, updateProfile, mockMode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

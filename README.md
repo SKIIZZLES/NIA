@@ -10,7 +10,8 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 
 ## Android preview note
 
-- Preview APK builds keep **`lib/supabase.ts` forced mock** (`isSupabaseConfigured === false`) for native startup stability.
+- EAS preview/production : Supabase réel si `EXPO_PUBLIC_SUPABASE_*` sont définies (Expo Go reste en auth mock).
+- Google Sign-In : `@react-native-google-signin/google-signin` + `signInWithIdToken` — voir **GOOGLE_AUTH.md** (projet Google Cloud **NIA APP**). Nouveau build EAS requis.
 - Video playback uses **`expo-video`** (SDK 57); `expo-av` is not used.
 
 ---

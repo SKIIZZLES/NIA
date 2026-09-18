@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function RegisterScreen() {
   const { signUp, isMockAuth } = useAuth();
@@ -93,6 +94,7 @@ export default function RegisterScreen() {
         onPress={onSubmit}
         style={{ marginTop: Spacing.lg }}
       />
+      <GoogleSignInButton />
     </KeyboardAvoidingView>
   );
 }

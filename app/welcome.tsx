@@ -6,6 +6,7 @@ import { NiaWordmark } from '@/components/NiaWordmark';
 import { Button } from '@/components/Button';
 import { Colors, Fonts, HeroLines, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function WelcomeScreen() {
           onPress={() => router.push('/(auth)/login')}
           style={{ marginTop: Spacing.md }}
         />
+        <GoogleSignInButton />
         <Text style={styles.mockHint}>
           {isMockAuth
             ? 'Expo Go natif = auth mock · Supabase complet via web ou build natif'

@@ -1,7 +1,7 @@
 /**
- * Native stub for @supabase/supabase-js + realtime (wired by metro.config.js
- * on android/ios). Guaranteed-open preview: real client is NOT in the APK.
- * Auth/data use mock paths via isSupabaseConfigured === false.
+ * Optional native stub for @supabase/supabase-js + realtime.
+ * NOT wired by metro.config.js anymore (EAS needs the real client).
+ * Kept for emergency/manual Metro override only.
  */
 'use strict';
 

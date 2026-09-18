@@ -11,9 +11,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.nia.mobile",
       "infoPlist": {
-        "NSCameraUsageDescription": "NIA utilise la caméra pour créer des vidéos.",
-        "NSMicrophoneUsageDescription": "NIA utilise le micro pour enregistrer des vidéos.",
-        "NSPhotoLibraryUsageDescription": "NIA accède à vos médias pour publier."
+        "NSCameraUsageDescription": "NIA utilise la cam\u00e9ra pour cr\u00e9er des vid\u00e9os.",
+        "NSMicrophoneUsageDescription": "NIA utilise le micro pour enregistrer des vid\u00e9os.",
+        "NSPhotoLibraryUsageDescription": "NIA acc\u00e8de \u00e0 vos m\u00e9dias pour publier."
       }
     },
     "android": {
@@ -51,10 +51,16 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "NIA accède à vos médias pour publier."
+          "photosPermission": "NIA acc\u00e8de \u00e0 vos m\u00e9dias pour publier."
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.PLACEHOLDER_IOS_CLIENT_ID"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
