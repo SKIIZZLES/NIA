@@ -51,7 +51,9 @@ Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 - [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`
 - [ ] **RLS**: enabled on those tables; policies from 001/002 present
 - [ ] **Storage**: bucket `videos` exists, **Public**, policies as above
-- [ ] Empty `videos` table ⇒ empty in-app feed (by design — not demo injection)
+- [ ] Empty `videos` table ⇒ empty in-app feed **without** « Connexion limitée » (by design — not demo injection)
+- [ ] RLS: `videos_select_public` / `profiles_select_public` allow anon SELECT (`using (true)`)
+- [ ] If feed still errors: copy the message under « Aucune vidéo » (now includes PostgREST `code` + `message`)
 
 ## EAS
 
@@ -72,6 +74,7 @@ JS changes to `lib/supabase.ts` / feed require a **new EAS build** (or EAS Updat
 | Realtime features missing | Intentional — engagement uses REST; no live postgres_changes |
 | Storage missing / RLS deny | Publish throws; feed shows error string, not silent demo swap |
 | JWT too large for SecureStore | Falls back to AsyncStorage (&lt; 2000 chars use SecureStore) |
-| Offline / network | `feedError` set; previous remote list kept; ErrorBoundary still wraps root |
+| Offline / network | `feedError` set with mapped message (réseau / RLS / schéma / API); previous remote list kept; ErrorBoundary still wraps root |
+| Feed `PGRST201` (ambiguous embed) | Client uses `profiles!videos_user_id_fkey(...)` — required once `likes` exists (videos↔profiles many-to-many via likes) |
 
 Force mock anytime with `EXPO_PUBLIC_USE_MOCK=1` if a device still misbehaves.

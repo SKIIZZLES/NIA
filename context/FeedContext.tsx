@@ -11,6 +11,7 @@ import { useAuth } from './AuthContext';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import {
   fetchVideosFromSupabase,
+  formatFeedLoadError,
   uploadVideoToSupabase,
 } from '@/lib/videos';
 import {
@@ -120,11 +121,10 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           // ignore hydrate errors — ne pas crasher l'UI
         }
       }
-    } catch {
+    } catch (e) {
       // Keep previous remote list if any; never inject demo while configured.
-      setFeedError(
-        'Connexion limitée. Impossible de charger le feed Supabase.',
-      );
+      // Empty table is success → feedError stays null (handled above).
+      setFeedError(formatFeedLoadError(e));
     } finally {
       setLoading(false);
     }

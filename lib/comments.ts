@@ -16,7 +16,7 @@ export async function listComments(videoId: string): Promise<CommentWithAuthor[]
 
   const { data, error } = await sb
     .from('comments')
-    .select('*, profiles(username, avatar_url, display_name)')
+    .select('*, profiles!comments_user_id_fkey(username, avatar_url, display_name)')
     .eq('video_id', videoId)
     .order('created_at', { ascending: true })
     .limit(100);
@@ -52,7 +52,7 @@ export async function addComment(
       video_id: videoId,
       body: trimmed,
     })
-    .select('*, profiles(username, avatar_url, display_name)')
+    .select('*, profiles!comments_user_id_fkey(username, avatar_url, display_name)')
     .single();
 
   if (error) throw error;

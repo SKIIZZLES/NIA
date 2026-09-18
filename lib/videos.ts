@@ -8,6 +8,17 @@ import { isCategoryId } from '@/constants/categories';
 import { parseHashtags } from '@/constants/publish';
 import type { ProfileRow, VideoRow } from '@/types/database';
 
+/**
+ * Disambiguate videos→profiles embed.
+ * After `likes` exists, PostgREST also sees a many-to-many videos↔profiles
+ * path and returns PGRST201 unless the FK is named explicitly.
+ */
+export const VIDEO_PROFILE_SELECT =
+  '*, profiles!videos_user_id_fkey(username, avatar_url, display_name)';
+
+export const VIDEO_PROFILE_SELECT_LEGACY =
+  '*, profiles!videos_user_id_fkey(username, avatar_url)';
+
 type VideoWithProfile = VideoRow & {
   profiles: Pick<ProfileRow, 'username' | 'avatar_url' | 'display_name'> | null;
 };
@@ -74,7 +85,7 @@ export async function fetchVideosFromSupabase(options?: {
 
   let query = sb
     .from('videos')
-    .select('*, profiles(username, avatar_url, display_name)')
+    .select(VIDEO_PROFILE_SELECT)
     .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(options?.limit ?? 50);
@@ -90,7 +101,7 @@ export async function fetchVideosFromSupabase(options?: {
     if (options?.category || error.message?.includes('status')) {
       const fallback = await sb
         .from('videos')
-        .select('*, profiles(username, avatar_url)')
+        .select(VIDEO_PROFILE_SELECT_LEGACY)
         .order('created_at', { ascending: false })
         .limit(options?.limit ?? 50);
       if (fallback.error) throw fallback.error;
@@ -265,7 +276,7 @@ export async function uploadVideoToSupabase(
   const { data: inserted, error: insErr } = await sb
     .from('videos')
     .insert(insertPayload as never)
-    .select('*, profiles(username, avatar_url, display_name)')
+    .select(VIDEO_PROFILE_SELECT)
     .single();
 
   if (insErr) throw insErr;
@@ -277,6 +288,68 @@ export async function uploadVideoToSupabase(
     item.avatarUrl = input.avatarUrl || item.avatarUrl;
   }
   return item;
+}
+
+/**
+ * Map Supabase / network failures to UI copy.
+ * Empty successful responses must NOT use this — callers keep feedError null.
+ */
+export function formatFeedLoadError(err: unknown): string {
+  const anyErr = err as { message?: unknown; code?: unknown; details?: unknown } | null;
+  const msg =
+    typeof anyErr?.message === 'string' && anyErr.message.trim()
+      ? anyErr.message.trim()
+      : err instanceof Error && err.message
+        ? err.message
+        : 'Erreur inconnue';
+  const code = anyErr?.code != null ? String(anyErr.code) : '';
+  const lower = msg.toLowerCase();
+
+  if (
+    lower.includes('network request failed') ||
+    lower.includes('failed to fetch') ||
+    lower.includes('network error') ||
+    lower.includes('fetch failed') ||
+    code === 'ENOTFOUND' ||
+    code === 'ECONNREFUSED' ||
+    code === 'ETIMEDOUT'
+  ) {
+    return `Réseau indisponible. ${msg}`;
+  }
+
+  if (
+    code === '42501' ||
+    lower.includes('row-level security') ||
+    lower.includes('permission denied') ||
+    lower.includes('rls')
+  ) {
+    return `Accès refusé (RLS). ${msg}`;
+  }
+
+  if (
+    code === 'PGRST301' ||
+    lower.includes('jwt') ||
+    lower.includes('invalid api key') ||
+    lower.includes('invalid authentication')
+  ) {
+    return `Clé / session API. ${msg}`;
+  }
+
+  if (code === 'PGRST201' || lower.includes('more than one relationship')) {
+    return `Relation feed ambiguë. ${msg}`;
+  }
+
+  if (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    lower.includes('does not exist') ||
+    lower.includes('schema cache')
+  ) {
+    return `Schéma / migration manquante. ${msg}`;
+  }
+
+  const codePrefix = code ? `[${code}] ` : '';
+  return `Impossible de charger le feed. ${codePrefix}${msg}`;
 }
 
 export { isSupabaseConfigured, parseHashtags };

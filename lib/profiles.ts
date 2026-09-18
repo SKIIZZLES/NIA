@@ -4,7 +4,7 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow, VideoRow } from '@/types/database';
 import type { VideoItem } from '@/data/mockVideos';
-import { mapRowToVideoItem } from '@/lib/videos';
+import { mapRowToVideoItem, VIDEO_PROFILE_SELECT } from '@/lib/videos';
 import { DEMO_VIDEOS } from '@/data/mockVideos';
 
 export type PublicProfile = {
@@ -137,7 +137,7 @@ export async function fetchVideosByUserId(userId: string): Promise<VideoItem[]> 
 
   const { data, error } = await sb
     .from('videos')
-    .select('*, profiles(username, avatar_url, display_name)')
+    .select(VIDEO_PROFILE_SELECT)
     .eq('user_id', userId)
     .eq('status', 'published')
     .order('created_at', { ascending: false })
@@ -146,7 +146,7 @@ export async function fetchVideosByUserId(userId: string): Promise<VideoItem[]> 
   if (error) {
     const fallback = await sb
       .from('videos')
-      .select('*, profiles(username, avatar_url, display_name)')
+      .select(VIDEO_PROFILE_SELECT)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(60);
