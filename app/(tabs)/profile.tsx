@@ -147,7 +147,13 @@ export default function ProfileScreen() {
           >
             <Image
               source={{ uri: item.thumbnailUrl }}
-              style={{ width: size, height: size * 1.35, backgroundColor: Colors.noirSoft }}
+              resizeMode="cover"
+              style={{
+                width: size,
+                height: size * (16 / 9),
+                backgroundColor: Colors.noirSoft,
+                overflow: 'hidden',
+              }}
             />
             {item.status === 'archived' ? (
               <View

@@ -280,6 +280,17 @@ export async function uploadVideoToSupabase(
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase non configuré');
 
+  // RLS videos_insert_own requires user_id = auth.uid() — prefer live session.
+  const { data: sessionData } = await sb.auth.getSession();
+  const sessionUserId = sessionData.session?.user?.id;
+  if (!sessionUserId) {
+    throw new Error('Session expirée. Reconnectez-vous pour publier.');
+  }
+  if (input.userId && input.userId !== sessionUserId) {
+    throw new Error('Identifiant créateur incohérent avec la session.');
+  }
+  const creatorId = sessionUserId;
+
   const { contentType, ext } = resolveUploadContentType({
     mimeType: input.mimeType,
     localUri: input.localUri,
@@ -287,7 +298,7 @@ export async function uploadVideoToSupabase(
     mediaKind: input.mediaKind,
   });
 
-  const path = `${input.userId}/${Date.now()}.${ext}`;
+  const path = `${creatorId}/${Date.now()}.${ext}`;
 
   // Critical: do NOT upload a Blob from fetch(uri).blob() on RN Android.
   // Blob.type is often "text/plain", and @supabase/storage-js FormData path
@@ -308,7 +319,7 @@ export async function uploadVideoToSupabase(
   const { data: urlData } = sb.storage.from('videos').getPublicUrl(path);
 
   const insertPayload: Record<string, unknown> = {
-    user_id: input.userId,
+    user_id: creatorId,
     storage_path: path,
     caption: input.caption || 'Nouvelle vidéo NIA ✨',
     region: input.region || null,

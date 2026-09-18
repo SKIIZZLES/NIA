@@ -211,10 +211,12 @@ export default function PublicProfileScreen() {
             >
               <Image
                 source={{ uri: item.thumbnailUrl }}
+                resizeMode="cover"
                 style={{
                   width: size,
-                  height: size * 1.35,
+                  height: size * (16 / 9),
                   backgroundColor: Colors.noirSoft,
+                  overflow: 'hidden',
                 }}
               />
             </Pressable>

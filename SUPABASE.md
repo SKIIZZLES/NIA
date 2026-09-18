@@ -19,8 +19,9 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 3. `supabase/migrations/003_reposts.sql` — `reposts` table + RLS, `videos.repost_of`, `videos.share_count`, share_count trigger
 4. `supabase/migrations/004_saves.sql` — `saves` bookmarks + RLS, `videos.save_count` + trigger
 5. `supabase/migrations/005_archive_delete.sql` — status `deleted`, tighten SELECT RLS (published public; owner sees own non-deleted)
+6. `supabase/migrations/006_videos_rls_insert.sql` — **REQUIRED for publish** — recreate videos INSERT/SELECT/UPDATE/DELETE RLS
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006).
 
 ### Apply 003 (reposts) on the live project
 
@@ -39,6 +40,23 @@ Creates `public.saves` (PK `user_id`, `video_id`) + RLS + `videos.save_count` tr
 Dashboard → **SQL Editor** → run `supabase/migrations/005_archive_delete.sql` once.
 
 Extends `videos.status` with `'deleted'` ( `'archived'` already from 002). Replaces `videos_select_public` so anon/public only see `published`; owners still SELECT their own non-deleted rows (archived included). Soft delete / archive are UPDATEs via `videos_update_own`.
+
+
+### Apply 006 (videos RLS INSERT — publish fix)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/006_videos_rls_insert.sql` once.
+
+**Symptom fixed:** `new row violates row-level security policy for table "videos"` on publish.
+
+Recreates (does **not** disable RLS):
+
+- `videos_select_public` — same as 005: `published` public; owner sees own non-`deleted`
+- `videos_insert_own` — `TO authenticated` WITH CHECK `auth.uid() = user_id`
+- `videos_update_own` / `videos_delete_own` — owner only (`auth.uid() = user_id`)
+
+Creator column is **`user_id`** (not `creator_id`). Client insert uses `session.user.id` for `user_id` + Storage path `{user_id}/…`.
+
+Until 006 is applied on the live project, authenticated publish / repost row inserts into `videos` may keep failing with RLS 42501.
 
 ## Storage bucket `videos` (required for publish)
 
@@ -73,7 +91,7 @@ Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 - [ ] **RLS**: enabled on those tables; policies from 001/002 present
 - [ ] **Storage**: bucket `videos` exists, **Public**, policies as above
 - [ ] Empty `videos` table ⇒ empty in-app feed **without** « Connexion limitée » (by design — not demo injection)
-- [ ] RLS: `videos_select_public` / `profiles_select_public` allow anon SELECT (`using (true)`)
+- [ ] RLS: `profiles_select_public` anon OK; `videos` policies from **006** (INSERT own, SELECT published/owner, UPDATE/DELETE own)
 - [ ] If feed still errors: copy the message under « Aucune vidéo » (now includes PostgREST `code` + `message`)
 
 ## EAS
