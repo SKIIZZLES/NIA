@@ -36,6 +36,9 @@ import {
   MAX_VIDEO_DURATION_SEC,
   parseHashtags,
 } from '@/constants/publish';
+import { FilterCarousel } from '@/components/FilterCarousel';
+import { FilteredMediaPreview } from '@/components/FilteredMediaPreview';
+import type { FilterDefinition } from '@/constants/filters';
 
 type CreateMode = 'video' | 'photo';
 
@@ -133,6 +136,7 @@ export default function CreateScreen() {
   const [soundPickerOpen, setSoundPickerOpen] = useState(false);
   const [soundBusy, setSoundBusy] = useState(false);
   const [newSoundTitle, setNewSoundTitle] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<FilterDefinition | null>(null);
 
   const hashtags = useMemo(() => parseHashtags(caption), [caption]);
   const maxMinutes = Math.round(MAX_VIDEO_DURATION_SEC / 60);
@@ -145,6 +149,7 @@ export default function CreateScreen() {
     setCategory(null);
     setSelectedSound(null);
     setNewSoundTitle('');
+    setSelectedFilter(null);
   };
 
   const loadOwnSounds = useCallback(async () => {
@@ -404,6 +409,7 @@ export default function CreateScreen() {
         fileSize: media?.fileSize ?? undefined,
         durationMs: media?.durationMs ?? undefined,
         soundId: selectedSound?.id ?? null,
+        filterId: selectedFilter?.id ?? null,
       });
       resetForm();
       setMode(null);
@@ -814,7 +820,11 @@ export default function CreateScreen() {
         <View style={styles.preview}>
           {media?.uri ? (
             <>
-              <Image source={{ uri: media.uri }} style={styles.thumb} />
+              <FilteredMediaPreview
+                uri={media.uri}
+                filter={selectedFilter}
+                style={styles.thumb}
+              />
               <View style={styles.previewBadge}>
                 <Text style={styles.previewBadgeText}>
                   {media.type === 'video' ? t('create.video') : t('create.image')}
@@ -824,6 +834,7 @@ export default function CreateScreen() {
                   {media.fileSize != null
                     ? ` · ${(media.fileSize / (1024 * 1024)).toFixed(1)} Mo`
                     : ''}
+                  {selectedFilter ? ` · ${selectedFilter.name}` : ''}
                 </Text>
               </View>
             </>
@@ -851,6 +862,13 @@ export default function CreateScreen() {
         <Text style={styles.hint}>
           {isPhoto ? t('create.filmHintPhoto') : t('create.filmHintVideo')}
         </Text>
+
+        {media?.uri ? (
+          <FilterCarousel
+            selectedId={selectedFilter?.id ?? null}
+            onSelect={setSelectedFilter}
+          />
+        ) : null}
 
         {!isPhoto && media?.type === 'video' ? (
           <View style={styles.coverBlock}>

@@ -52,6 +52,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Découvrir (catégories) | ✅ UI shell |
 | Recherche unifiée (V2.4) | ✅ Personnes / Pubs / Sons / Events / Hashtags |
 | Séries (V2.5) | ✅ `series` + `series_items`, profil onglet Séries, menu vidéo |
+| Filtres caméra (V2.6) | ✅ Registry + carousel + preview overlay ; `filter_id` (012). **Pas** d’AR visage / LUT native (V3) |
 | Notifications (liste Supabase / empty) | ✅ Étape 4 |
 | Schéma SQL init + doc Sprint 1 | ✅ `001` + `002` + `docs/SCHEMA_SPRINT1.md` |
 | Helpers likes / comments / follows / notifications | ✅ Étape 2 |
@@ -97,6 +98,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 - Live / lives culturels — **préparation V2.3** (DB+UI) ; streaming réel = phase suivante
 - Duets / stitches
 - Challenges & hashtags géoculturels
+- Filtres LUT / AR visage natifs (V3) — au-delà des overlays MVP V2.6
 
 ### Phase 4 — Croissance & revenus
 - Publicités natives respectueuses de la marque
@@ -108,7 +110,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 ## Create Hub (+)
 
 L’onglet **+** ouvre d’abord un hub de création (noir / sable / ocre) :
-- **Actifs :** Vidéo, Photo → formulaire publish existant (`mode=video|photo`) avec picker / caméra adaptés, légende, hashtags, catégories (dont Maghreb / Actus), upload Supabase + `media_type`.
+- **Actifs :** Vidéo, Photo → formulaire publish existant (`mode=video|photo`) avec picker / caméra adaptés, **filtres NIA** (carousel post-capture), légende, hashtags, catégories (dont Maghreb / Actus), upload Supabase + `media_type` + `filter_id`.
 - **Actif :** Événement → `/events/create` (migration `009_events.sql`).
 - **Actif (préparation) :** Live → `/live/create` (migration `010_live_streams.sql`) — métadonnées + UI only ; **pas** de faux player WebRTC/Mux. Placeholder « Bientôt — infrastructure live à brancher ».
 - **Bientôt (désactivé) :** Texte — pas de compositeur texte.

@@ -514,6 +514,12 @@ function VideoCardInner({
             </Text>
           </Pressable>
         ) : null}
+        {item.filterId ? (
+          <View style={styles.filterBadge}>
+            <Ionicons name="color-filter-outline" size={12} color={colors.or} />
+            <Text style={styles.filterBadgeText}>{t('filter.feedBadge')}</Text>
+          </View>
+        ) : null}
         {item.country ? (
           <Text style={styles.country}>{item.country}</Text>
         ) : null}
@@ -735,5 +741,23 @@ const styles = StyleSheet.create({
     color: Colors.or,
     fontFamily: Fonts.medium,
     fontSize: 12,
+  },
+  filterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radii.pill,
+    backgroundColor: 'rgba(11, 11, 11, 0.55)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(209, 127, 42, 0.45)',
+  },
+  filterBadgeText: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
   },
 });

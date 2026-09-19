@@ -25,8 +25,9 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 9. `supabase/migrations/009_events.sql` — **REQUIRED for Événements** — `events` + `event_attendees` + optional `videos.event_id`
 10. `supabase/migrations/010_live_streams.sql` — **REQUIRED for Live (préparation)** — `live_streams` metadata only (no Mux/LiveKit yet)
 11. `supabase/migrations/011_series.sql` — **REQUIRED for Séries** — `series` + `series_items` (ordered episodes; no `videos.series_id`)
+12. `supabase/migrations/012_filters.sql` — **OPTIONAL for Filtres V2.6** — `videos.filter_id` text nullable (registry id; no binary assets)
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011 → 012).
 
 ### Apply 003 (reposts) on the live project
 
@@ -176,6 +177,22 @@ Creates:
 
 Until 011 is applied, series screens show empty / not-found states (no fake demo series).
 
+### Apply 012 (filters / Filtres V2.6)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/012_filters.sql` once.
+
+Creates:
+- `videos.filter_id` — nullable `text` (NIA filter registry id from `constants/filters.ts`)
+
+**No binary filter assets** in Storage. App preview uses color overlays / approximate matrices after capture (`expo-image-picker` + overlay). True LUT / face AR = V3 (native SDK — often paid).
+
+**App behaviour after 012:**
+- Create (Vidéo / Photo) → after media pick/capture, horizontal **FilterCarousel** by category (Beauté, Lumière, Portrait, Culture, Afrique, Diaspora, Fun, NIA Originals)
+- Publish stores `filter_id` when selected
+- Feed shows subtle badge « Filtre NIA » when `filter_id` is set
+
+Until 012 is applied, publish soft-retries without `filter_id` (column missing).
+
 ## Storage bucket `videos` (required for publish)
 
 If **Storage → Buckets** has no public `videos` bucket (or upload fails with bucket/policy errors):
@@ -205,7 +222,7 @@ Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 - [ ] **API**: Project URL + anon (publishable) key match EAS `EXPO_PUBLIC_*` / local `.env`
 - [ ] **Auth → Providers**: Email (+ Google if used). For email MVP, disable “Confirm email”
 - [ ] **Auth → Google**: Web client ID matches `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (see `GOOGLE_AUTH.md`)
-- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`, `sounds`, `events`, `event_attendees`, `live_streams`, `series`, `series_items`
+- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`, `sounds`, `events`, `event_attendees`, `live_streams`, `series`, `series_items` (+ `videos.filter_id` after **012**)
 - [ ] **RLS**: enabled on those tables; policies from 001/002 present
 - [ ] **Storage**: bucket `videos` exists, **Public**, policies as above
 - [ ] Empty `videos` table ⇒ empty in-app feed **without** « Connexion limitée » (by design — not demo injection)

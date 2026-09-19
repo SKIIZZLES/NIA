@@ -112,6 +112,7 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     soundCreatorHandle: row.sounds?.profiles?.username
       ? `@${row.sounds.profiles.username}`
       : undefined,
+    filterId: (row as { filter_id?: string | null }).filter_id || undefined,
   };
 }
 
@@ -337,6 +338,8 @@ export type UploadVideoInput = {
   status?: 'published' | 'processing' | 'draft';
   /** Optional linked sound (008) */
   soundId?: string | null;
+  /** Optional NIA filter registry id (012) */
+  filterId?: string | null;
 };
 
 export async function uploadVideoToSupabase(
@@ -442,6 +445,7 @@ export async function uploadVideoToSupabase(
     cover_path: coverPath,
     status: input.status || 'published',
     sound_id: input.soundId || null,
+    filter_id: input.filterId || null,
   };
 
   let { data: inserted, error: insErr } = await sb
@@ -462,6 +466,7 @@ export async function uploadVideoToSupabase(
     delete legacyPayload.media_type;
     delete legacyPayload.cover_path;
     delete legacyPayload.sound_id;
+    delete legacyPayload.filter_id;
     // Still never store a video URL as thumbnail_url.
     if (mediaType === 'video' && legacyPayload.thumbnail_url && isLikelyVideoUrl(String(legacyPayload.thumbnail_url))) {
       legacyPayload.thumbnail_url = null;
@@ -495,6 +500,26 @@ export async function uploadVideoToSupabase(
     }
   }
 
+  if (insErr) {
+    // Retry without filter_id if migration 012 not applied
+    if (
+      input.filterId &&
+      (insErr.message?.includes('filter_id') ||
+        insErr.code === 'PGRST204' ||
+        insErr.code === '42703')
+    ) {
+      const noFilter = { ...insertPayload };
+      delete noFilter.filter_id;
+      const retryFilter = await sb
+        .from('videos')
+        .insert(noFilter as never)
+        .select(VIDEO_PROFILE_SELECT_NO_SOUND)
+        .single();
+      inserted = retryFilter.data;
+      insErr = retryFilter.error;
+    }
+  }
+
   if (insErr) throw insErr;
 
   if (input.soundId && inserted) {
@@ -518,6 +543,9 @@ export async function uploadVideoToSupabase(
   item.mediaType = mediaType;
   if (input.soundId) {
     item.soundId = input.soundId;
+  }
+  if (input.filterId) {
+    item.filterId = input.filterId;
   }
   if (!row.profiles && input.username) {
     item.handle = `@${input.username}`;

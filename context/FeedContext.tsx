@@ -52,6 +52,7 @@ type PublishInput = {
   fileSize?: number;
   durationMs?: number;
   soundId?: string | null;
+  filterId?: string | null;
 };
 
 type FeedContextValue = {
@@ -221,6 +222,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           userId: user?.id,
           category: input.category as VideoItem['category'],
           soundId: input.soundId || undefined,
+          filterId: input.filterId || undefined,
         };
         setRawVideos((prev) => [item, ...prev]);
         return;
@@ -247,6 +249,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           avatarUrl: user.avatarUrl,
           status: 'published',
           soundId: input.soundId || null,
+          filterId: input.filterId || null,
         });
         setRawVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
       } catch (e) {

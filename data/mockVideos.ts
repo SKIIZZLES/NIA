@@ -30,6 +30,8 @@ export type VideoItem = {
   soundId?: string;
   soundTitle?: string;
   soundCreatorHandle?: string;
+  /** Filtre NIA (012_filters) — registry id */
+  filterId?: string;
 };
 
 /** Démos publiques (Big Buck Bunny / samples) — à remplacer par CDN NIA */

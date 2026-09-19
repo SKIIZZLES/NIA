@@ -69,6 +69,7 @@ export type Database = {
           repost_of: string | null;
           sound_id: string | null;
           event_id: string | null;
+          filter_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -90,6 +91,7 @@ export type Database = {
           repost_of?: string | null;
           sound_id?: string | null;
           event_id?: string | null;
+          filter_id?: string | null;
           created_at?: string;
         };
         Update: {
