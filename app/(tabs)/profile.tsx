@@ -26,10 +26,11 @@ import {
 } from '@/lib/profiles';
 import { fetchSavedVideos } from '@/lib/saves';
 import { updateVideoStatus } from '@/lib/videos';
+import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
 import type { VideoItem } from '@/data/mockVideos';
 import { formatCount } from '@/data/mockVideos';
 
-type ProfileTab = 'publications' | 'archives' | 'saves';
+type ProfileTab = 'publications' | 'archives' | 'saves' | 'series';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -48,6 +49,7 @@ export default function ProfileScreen() {
   const [published, setPublished] = useState<VideoItem[]>([]);
   const [archived, setArchived] = useState<VideoItem[]>([]);
   const [saved, setSaved] = useState<VideoItem[]>([]);
+  const [seriesList, setSeriesList] = useState<SeriesListItem[]>([]);
 
   const myFeedVideos = useMemo(
     () =>
@@ -68,14 +70,16 @@ export default function ProfileScreen() {
       setPublished([]);
       setArchived([]);
       setSaved([]);
+      setSeriesList([]);
       return;
     }
     try {
-      const [f1, f2, remote, savedRemote] = await Promise.all([
+      const [f1, f2, remote, savedRemote, seriesRemote] = await Promise.all([
         countFollowers(user.id),
         countFollowing(user.id),
         fetchVideosByUserId(user.id, { includeArchived: true }),
         fetchSavedVideos(user.id),
+        listSeriesByUser(user.id),
       ]);
       setFollowerCount(f1);
       setFollowingCount(f2);
@@ -95,11 +99,13 @@ export default function ProfileScreen() {
       } else {
         setSaved([]);
       }
+      setSeriesList(seriesRemote);
     } catch {
       const own = myFeedVideos.filter((v) => v.status !== 'deleted');
       setPublished(own.filter((v) => !v.status || v.status === 'published'));
       setArchived(own.filter((v) => v.status === 'archived'));
       setSaved(videos.filter((v) => savedIds.has(v.id)));
+      setSeriesList([]);
     }
   }, [user, myFeedVideos, videos, savedIds]);
 
@@ -112,14 +118,18 @@ export default function ProfileScreen() {
       ? published
       : activeTab === 'archives'
         ? archived
-        : saved;
+        : activeTab === 'saves'
+          ? saved
+          : [];
 
   const emptyMessage =
     activeTab === 'publications'
       ? t('profile.empty')
       : activeTab === 'archives'
         ? t('profile.emptyArchives')
-        : t('profile.emptySaves');
+        : activeTab === 'saves'
+          ? t('profile.emptySaves')
+          : t('profile.emptySeries');
 
   const onUnarchive = (item: VideoItem) => {
     if (!user) return;
@@ -176,9 +186,11 @@ export default function ProfileScreen() {
     { key: 'publications', label: t('profile.tabPublications') },
     { key: 'archives', label: t('profile.tabArchives') },
     { key: 'saves', label: t('profile.tabSaves') },
+    { key: 'series', label: t('profile.tabSeries') },
   ];
 
-  const isGrid = activeTab !== 'archives';
+  const isGrid = activeTab === 'publications' || activeTab === 'saves';
+  const isSeries = activeTab === 'series';
 
   const styles = useMemo(() => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.noir },
@@ -300,7 +312,7 @@ export default function ProfileScreen() {
   segmentLabel: {
     color: colors.textMuted,
     fontFamily: Fonts.medium,
-    fontSize: 11,
+    fontSize: 10,
     textAlign: 'center',
   },
   segmentLabelActive: {
@@ -374,6 +386,45 @@ export default function ProfileScreen() {
     color: colors.danger,
     fontFamily: Fonts.medium,
     fontSize: 12,
+  },
+  seriesCreateBtn: {
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  seriesCard: {
+    flex: 1,
+    margin: 4,
+    backgroundColor: colors.noirSoft,
+    borderRadius: Radii.md,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  seriesCover: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: colors.noirElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  seriesCoverImg: {
+    width: '100%',
+    height: '100%',
+  },
+  seriesCardTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    paddingHorizontal: 8,
+    paddingTop: 8,
+  },
+  seriesCardMeta: {
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+    paddingHorizontal: 8,
+    paddingBottom: 10,
+    paddingTop: 2,
   },
 }), [colors]);
 
@@ -462,6 +513,56 @@ export default function ProfileScreen() {
       ) : null}
     </View>
   );
+
+  if (isSeries) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <FlatList
+          ListHeaderComponent={
+            <>
+              {header}
+              {user ? (
+                <Button
+                  title={t('series.createCta')}
+                  variant="gold"
+                  onPress={() => router.push('/series/create')}
+                  style={styles.seriesCreateBtn}
+                />
+              ) : null}
+            </>
+          }
+          data={seriesList}
+          keyExtractor={(i) => i.id}
+          numColumns={2}
+          columnWrapperStyle={{ paddingHorizontal: 4 }}
+          contentContainerStyle={{ paddingBottom: Spacing.xxl }}
+          ListEmptyComponent={
+            user ? <Text style={styles.empty}>{emptyMessage}</Text> : null
+          }
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.seriesCard}
+              onPress={() => router.push(`/series/${item.id}`)}
+            >
+              <View style={styles.seriesCover}>
+                {item.coverUrl ? (
+                  <Image source={{ uri: item.coverUrl }} style={styles.seriesCoverImg} />
+                ) : (
+                  <Text style={{ color: colors.or, fontFamily: Fonts.bold }}>S</Text>
+                )}
+              </View>
+              <Text style={styles.seriesCardTitle} numberOfLines={2}>
+                {item.title}
+              </Text>
+              <Text style={styles.seriesCardMeta}>
+                {t('series.episodeCount', { count: item.episodeCount })}
+              </Text>
+            </Pressable>
+          )}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

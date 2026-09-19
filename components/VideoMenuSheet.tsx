@@ -23,6 +23,7 @@ type Props = {
   onShare?: () => void;
   onArchive?: () => void;
   onDelete?: () => void;
+  onAddToSeries?: () => void;
 };
 
 export function VideoMenuSheet({
@@ -36,6 +37,7 @@ export function VideoMenuSheet({
   onShare,
   onArchive,
   onDelete,
+  onAddToSeries,
 }: Props) {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
@@ -61,6 +63,19 @@ export function VideoMenuSheet({
           >
             <Ionicons name="share-outline" size={22} color={Colors.sable} />
             <Text style={styles.rowLabel}>{t('feed.share')}</Text>
+          </Pressable>
+        ) : null}
+
+        {canManage && onAddToSeries ? (
+          <Pressable
+            style={styles.row}
+            onPress={() => {
+              onClose();
+              onAddToSeries();
+            }}
+          >
+            <Ionicons name="albums-outline" size={22} color={Colors.or} />
+            <Text style={styles.rowLabel}>{t('series.addToSeries')}</Text>
           </Pressable>
         ) : null}
         {canManage && onArchive ? (

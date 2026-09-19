@@ -321,6 +321,79 @@ export type Database = {
       };
 
 
+
+      series: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          cover_path: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          cover_path?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          cover_path?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'series_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      series_items: {
+        Row: {
+          series_id: string;
+          video_id: string;
+          position: number;
+          created_at: string;
+        };
+        Insert: {
+          series_id: string;
+          video_id: string;
+          position: number;
+          created_at?: string;
+        };
+        Update: {
+          series_id?: string;
+          video_id?: string;
+          position?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'series_items_series_id_fkey';
+            columns: ['series_id'];
+            isOneToOne: false;
+            referencedRelation: 'series';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'series_items_video_id_fkey';
+            columns: ['video_id'];
+            isOneToOne: false;
+            referencedRelation: 'videos';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
       likes: {
         Row: {
           user_id: string;
@@ -648,3 +721,5 @@ export type SoundRow = Database['public']['Tables']['sounds']['Row'];
 export type EventRow = Database['public']['Tables']['events']['Row'];
 export type EventAttendeeRow = Database['public']['Tables']['event_attendees']['Row'];
 export type LiveStreamRow = Database['public']['Tables']['live_streams']['Row'];
+export type SeriesRow = Database['public']['Tables']['series']['Row'];
+export type SeriesItemRow = Database['public']['Tables']['series_items']['Row'];

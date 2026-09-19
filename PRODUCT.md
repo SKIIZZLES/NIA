@@ -51,6 +51,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Profil + grille | ✅ Étape 5 (profil public + édition bio/display_name) |
 | Découvrir (catégories) | ✅ UI shell |
 | Recherche unifiée (V2.4) | ✅ Personnes / Pubs / Sons / Events / Hashtags |
+| Séries (V2.5) | ✅ `series` + `series_items`, profil onglet Séries, menu vidéo |
 | Notifications (liste Supabase / empty) | ✅ Étape 4 |
 | Schéma SQL init + doc Sprint 1 | ✅ `001` + `002` + `docs/SCHEMA_SPRINT1.md` |
 | Helpers likes / comments / follows / notifications | ✅ Étape 2 |
@@ -92,6 +93,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 - OAuth (Google / Apple) — aussi listé ci-dessus
 
 ### Phase 3 — Engagement
+- ~~Séries / collections de vidéos~~ ✅ V2.5 (`011_series.sql`)
 - Live / lives culturels — **préparation V2.3** (DB+UI) ; streaming réel = phase suivante
 - Duets / stitches
 - Challenges & hashtags géoculturels

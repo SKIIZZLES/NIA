@@ -316,6 +316,11 @@ function VideoCardInner({
     ]);
   }, [deleteOwnVideoInFeed, item.id, t]);
 
+
+  const onAddToSeries = useCallback(() => {
+    router.push(`/series/add?videoId=${encodeURIComponent(item.id)}`);
+  }, [router, item.id]);
+
   const onBlock = () => {
     if (!authorId || isOwn) return;
     Alert.alert(
@@ -534,6 +539,7 @@ function VideoCardInner({
         onShare={() => void onShare()}
         onArchive={onArchive}
         onDelete={onDelete}
+        onAddToSeries={onAddToSeries}
       />
 
       <ReportSheet

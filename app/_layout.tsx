@@ -93,6 +93,7 @@ function RootNavigator() {
         <Stack.Screen name="appearance" options={{ headerShown: false }} />
         <Stack.Screen name="sound/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="events" options={{ headerShown: false }} />
+        <Stack.Screen name="series" options={{ headerShown: false }} />
         <Stack.Screen name="search" options={{ headerShown: false }} />
         <Stack.Screen name="live" options={{ headerShown: false }} />
         <Stack.Screen name="video/[id]" options={{ headerShown: false }} />

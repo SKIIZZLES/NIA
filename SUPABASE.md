@@ -24,8 +24,9 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 8. `supabase/migrations/008_sounds.sql` — **REQUIRED for Sons** — `sounds` + `videos.sound_id` + audio MIME on bucket `videos`
 9. `supabase/migrations/009_events.sql` — **REQUIRED for Événements** — `events` + `event_attendees` + optional `videos.event_id`
 10. `supabase/migrations/010_live_streams.sql` — **REQUIRED for Live (préparation)** — `live_streams` metadata only (no Mux/LiveKit yet)
+11. `supabase/migrations/011_series.sql` — **REQUIRED for Séries** — `series` + `series_items` (ordered episodes; no `videos.series_id`)
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009 → 010 → 011).
 
 ### Apply 003 (reposts) on the live project
 
@@ -152,6 +153,29 @@ Creates:
 Until 010 is applied, live screens show empty / not-found states (no fake demo streams).
 
 
+
+
+### Apply 011 (series / Séries V2.5)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/011_series.sql` once.
+
+Creates:
+- `public.series` — id, user_id, title, description, cover_path nullable, created_at
+- `public.series_items` — PK (series_id, video_id), position int, unique (series_id, position)
+- RLS: series SELECT public; INSERT/UPDATE/DELETE own (`user_id`); series_items SELECT public; INSERT/UPDATE/DELETE when caller owns the parent series
+
+**No `videos.series_id`** — membership is only via `series_items` (avoids duplication).
+
+**Storage:** optional covers under `{user_id}/series/{timestamp}.{ext}` in bucket `videos`.
+
+**App behaviour after 011:**
+- Profile (own) → 4th tab **Séries** + CTA créer
+- `/series/create` — title, description, cover
+- `/series/[id]` — ordered episodes (tap → video)
+- Owner video menu → **Ajouter à une série** → `/series/add?videoId=`
+
+Until 011 is applied, series screens show empty / not-found states (no fake demo series).
+
 ## Storage bucket `videos` (required for publish)
 
 If **Storage → Buckets** has no public `videos` bucket (or upload fails with bucket/policy errors):
@@ -181,7 +205,7 @@ Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 - [ ] **API**: Project URL + anon (publishable) key match EAS `EXPO_PUBLIC_*` / local `.env`
 - [ ] **Auth → Providers**: Email (+ Google if used). For email MVP, disable “Confirm email”
 - [ ] **Auth → Google**: Web client ID matches `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (see `GOOGLE_AUTH.md`)
-- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`, `sounds`, `events`, `event_attendees`, `live_streams`
+- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`, `sounds`, `events`, `event_attendees`, `live_streams`, `series`, `series_items`
 - [ ] **RLS**: enabled on those tables; policies from 001/002 present
 - [ ] **Storage**: bucket `videos` exists, **Public**, policies as above
 - [ ] Empty `videos` table ⇒ empty in-app feed **without** « Connexion limitée » (by design — not demo injection)
