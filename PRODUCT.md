@@ -106,7 +106,8 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 
 L’onglet **+** ouvre d’abord un hub de création (noir / sable / ocre) :
 - **Actifs :** Vidéo, Photo → formulaire publish existant (`mode=video|photo`) avec picker / caméra adaptés, légende, hashtags, catégories (dont Maghreb / Actus), upload Supabase + `media_type`.
-- **Bientôt (désactivés) :** Texte, Live, Événement — pas de backend live / events / compositeur texte.
+- **Actif :** Événement → `/events/create` (migration `009_events.sql`).
+- **Bientôt (désactivés) :** Texte, Live — pas de backend live / compositeur texte.
 
 ## Principes UX
 

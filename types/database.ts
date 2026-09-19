@@ -68,6 +68,7 @@ export type Database = {
           save_count: number;
           repost_of: string | null;
           sound_id: string | null;
+          event_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -88,6 +89,7 @@ export type Database = {
           save_count?: number;
           repost_of?: string | null;
           sound_id?: string | null;
+          event_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -105,6 +107,7 @@ export type Database = {
           tag?: string | null;
           like_count?: number;
           save_count?: number;
+          event_id?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -155,6 +158,97 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'sounds_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+
+      events: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          cover_path: string | null;
+          location_text: string | null;
+          city: string | null;
+          country: string | null;
+          starts_at: string;
+          ends_at: string | null;
+          category: string;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          cover_path?: string | null;
+          location_text?: string | null;
+          city?: string | null;
+          country?: string | null;
+          starts_at: string;
+          ends_at?: string | null;
+          category?: string;
+          created_by: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string | null;
+          cover_path?: string | null;
+          location_text?: string | null;
+          city?: string | null;
+          country?: string | null;
+          starts_at?: string;
+          ends_at?: string | null;
+          category?: string;
+          created_by?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'events_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      event_attendees: {
+        Row: {
+          event_id: string;
+          user_id: string;
+          status: 'going' | 'interested';
+          created_at: string;
+        };
+        Insert: {
+          event_id: string;
+          user_id: string;
+          status?: 'going' | 'interested';
+          created_at?: string;
+        };
+        Update: {
+          event_id?: string;
+          user_id?: string;
+          status?: 'going' | 'interested';
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'event_attendees_event_id_fkey';
+            columns: ['event_id'];
+            isOneToOne: false;
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'event_attendees_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'profiles';
@@ -487,3 +581,5 @@ export type ReportRow = Database['public']['Tables']['reports']['Row'];
 export type BlockRow = Database['public']['Tables']['blocks']['Row'];
 export type RepostRow = Database['public']['Tables']['reposts']['Row'];
 export type SoundRow = Database['public']['Tables']['sounds']['Row'];
+export type EventRow = Database['public']['Tables']['events']['Row'];
+export type EventAttendeeRow = Database['public']['Tables']['event_attendees']['Row'];

@@ -21,9 +21,10 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 5. `supabase/migrations/005_archive_delete.sql` — status `deleted`, tighten SELECT RLS (published public; owner sees own non-deleted)
 6. `supabase/migrations/006_videos_rls_insert.sql` — **REQUIRED for publish** — recreate videos INSERT/SELECT/UPDATE/DELETE RLS
 7. `supabase/migrations/007_media_type_cover.sql` — **REQUIRED for photo/cover grids** — `media_type` + `cover_path`
-8. `supabase/migrations/008_sounds.sql` — **REQUIRED for Sons** — `sounds` table + `videos.sound_id` + audio MIME on bucket `videos`
+8. `supabase/migrations/008_sounds.sql`
+9. `supabase/migrations/009_events.sql` — **REQUIRED for Événements** — `events` + `event_attendees` + optional `videos.event_id` — **REQUIRED for Sons** — `sounds`, `events`, `event_attendees` table + `videos.sound_id` + audio MIME on bucket `videos`
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008 → 009).
 
 ### Apply 003 (reposts) on the live project
 
@@ -104,6 +105,28 @@ Creates:
 
 Until 008 is applied, the client soft-falls back (feed without sound embed; publish without `sound_id`).
 
+
+
+### Apply 009 (events / Événements)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/009_events.sql` once.
+
+Creates:
+- `public.events` — title, description, cover_path, location_text, city, country, starts_at, ends_at, category, created_by → profiles
+- Categories check: `culture`, `musique`, `sport`, `food`, `tech`, `education`, `business`, `other`
+- `public.event_attendees` — PK `(event_id, user_id)`, status `going` | `interested`
+- RLS: events SELECT public; INSERT/UPDATE/DELETE own (`created_by`); attendees SELECT public; INSERT/UPDATE/DELETE own
+- `videos.event_id` nullable FK → events (ON DELETE SET NULL)
+
+**Storage:** cover images reuse bucket `videos` under `{user_id}/events/{timestamp}.{ext}`.
+
+**App behaviour after 009:**
+- Découvrir → CTA Événements → `/events`
+- Create hub **Événement** actif → `/events/create`
+- Event page: Participer (going) + Partager (Share API)
+- Filters: À venir / Ce week-end / Populaires + category chips
+
+Until 009 is applied, event screens show empty states (no fake demo events).
 
 ## Storage bucket `videos` (required for publish)
 

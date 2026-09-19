@@ -12,8 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
+import { useI18n } from '@/context/I18nContext';
 import {
   DISCOVER_CATEGORIES,
   type CategoryId,
@@ -27,6 +29,8 @@ import { fetchVideosFromSupabase } from '@/lib/videos';
 export default function DiscoverScreen() {
   const { videos: feedVideos } = useFeed();
   const colors = useColors();
+  const router = useRouter();
+  const { t } = useI18n();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<CategoryId | null>(null);
   const [remoteByCategory, setRemoteByCategory] = useState<VideoItem[]>([]);
@@ -243,6 +247,30 @@ export default function DiscoverScreen() {
     textAlign: 'center',
     lineHeight: 18,
   },
+  eventsCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: colors.noirElevated,
+    borderWidth: 1,
+    borderColor: colors.or,
+  },
+  eventsCtaTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  eventsCtaBody: {
+    marginTop: 3,
+    color: colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    lineHeight: 16,
+  },
   footerNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -286,6 +314,22 @@ export default function DiscoverScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      <Pressable
+        style={styles.eventsCta}
+        onPress={() => router.push('/events')}
+        accessibilityRole="button"
+        accessibilityLabel={t('events.openList')}
+      >
+        <View style={styles.iconWrap}>
+          <Ionicons name="calendar-outline" size={22} color={colors.or} />
+        </View>
+        <View style={styles.cardBody}>
+          <Text style={styles.eventsCtaTitle}>{t('events.discoverCta')}</Text>
+          <Text style={styles.eventsCtaBody}>{t('events.discoverCtaBody')}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
 
       <Text style={styles.section}>Univers</Text>
 

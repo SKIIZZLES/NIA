@@ -87,7 +87,7 @@ const HUB_CARDS: HubCardDef[] = [
   },
   {
     id: 'event',
-    active: false,
+    active: true,
     icon: 'calendar-outline',
     titleKey: 'create.hubEvent',
     descKey: 'create.hubEventDesc',
@@ -730,6 +730,10 @@ export default function CreateScreen() {
                   key={card.id}
                   disabled={disabled}
                   onPress={() => {
+                    if (card.id === 'event') {
+                      router.push('/events/create');
+                      return;
+                    }
                     if (card.id === 'video' || card.id === 'photo') {
                       openMode(card.id);
                     }
