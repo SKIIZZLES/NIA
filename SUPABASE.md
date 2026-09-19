@@ -19,7 +19,6 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 3. `supabase/migrations/003_reposts.sql` — `reposts` table + RLS, `videos.repost_of`, `videos.share_count`, share_count trigger
 4. `supabase/migrations/004_saves.sql` — `saves` bookmarks + RLS, `videos.save_count` + trigger
 5. `supabase/migrations/005_archive_delete.sql` — status `deleted`, tighten SELECT RLS (published public; owner sees own non-deleted)
-6. `supabase/migrations/006_videos_rls_insert.sql
 6. `supabase/migrations/006_videos_rls_insert.sql` — **REQUIRED for publish** — recreate videos INSERT/SELECT/UPDATE/DELETE RLS
 7. `supabase/migrations/007_media_type_cover.sql` — **REQUIRED for photo/cover grids** — `media_type` + `cover_path`
 
