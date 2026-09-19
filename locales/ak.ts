@@ -224,6 +224,13 @@ const ak: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Hwehwɛ',
+    allChip: 'Nyinaa',
+    emptyTitle: 'Biribiara nni ha seesei',
+    emptyBody: 'Video biara nni saa wiase yi mu. Yɛ nea ɔdi kan de to so.',
+    tileA11y: '%{handle}, %{count} ɔdɔ',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

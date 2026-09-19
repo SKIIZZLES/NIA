@@ -224,6 +224,13 @@ const ig: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Chọpụta',
+    allChip: 'Niile',
+    emptyTitle: 'Ọ nweghị ihe dị ebe a ugbu a',
+    emptyBody: 'Enweghị vidiyo na ụwa a. Bụrụ onye mbụ dee.',
+    tileA11y: '%{handle}, %{count} mmasị',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

@@ -84,10 +84,10 @@ export default function DiscoverScreen() {
 
   const chips = useMemo(
     () => [
-      { id: null as CategoryId | null, label: 'Tout', icon: 'sparkles-outline' as const },
+      { id: null as CategoryId | null, label: t('discover.allChip'), icon: 'sparkles-outline' as const },
       ...DISCOVER_CATEGORIES.map((c) => ({ id: c.id as CategoryId | null, label: c.label, icon: c.icon })),
     ],
-    [],
+    [t],
   );
 
   const styles = useMemo(
@@ -219,7 +219,7 @@ export default function DiscoverScreen() {
   const header = (
     <View>
       <View style={styles.header}>
-        <Text style={styles.title}>Découvrir</Text>
+        <Text style={styles.title}>{t('discover.title')}</Text>
         <Pressable
           style={styles.searchBox}
           onPress={() => router.push('/search')}
@@ -306,7 +306,10 @@ export default function DiscoverScreen() {
             style={styles.tile}
             onPress={() => router.push(`/video/${v.id}`)}
             accessibilityRole="button"
-            accessibilityLabel={`${v.handle}, ${formatCount(v.likes)} j'aime`}
+            accessibilityLabel={t('discover.tileA11y', {
+              handle: v.handle,
+              count: formatCount(v.likes),
+            })}
           >
             <MediaThumb
               thumbnailUrl={v.thumbnailUrl}
@@ -327,10 +330,8 @@ export default function DiscoverScreen() {
           ) : (
             <View style={styles.empty}>
               <Ionicons name="compass-outline" size={36} color={colors.or} />
-              <Text style={styles.emptyTitle}>Rien ici pour l’instant</Text>
-              <Text style={styles.emptyBody}>
-                Aucune vidéo dans cet univers. Sois le premier à publier.
-              </Text>
+              <Text style={styles.emptyTitle}>{t('discover.emptyTitle')}</Text>
+              <Text style={styles.emptyBody}>{t('discover.emptyBody')}</Text>
             </View>
           )
         }

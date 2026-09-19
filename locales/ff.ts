@@ -224,6 +224,13 @@ const ff: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Yiylo',
+    allChip: 'Fof',
+    emptyTitle: 'Hay huunde ɗoo tawo',
+    emptyBody: 'Widewo alaa e nder aduna ngoo. Wonu gadano winndude.',
+    tileA11y: '%{handle}, %{count} yiɗde',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

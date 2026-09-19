@@ -234,6 +234,13 @@ const fr = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Découvrir',
+    allChip: 'Tout',
+    emptyTitle: 'Rien ici pour l’instant',
+    emptyBody: 'Aucune vidéo dans cet univers. Sois le premier à publier.',
+    tileA11y: '%{handle}, %{count} j’aime',
+  },
   events: {
     title: 'Événements',
     subtitle: 'Concerts, rencontres, culture — près de chez toi et ailleurs.',

@@ -236,6 +236,13 @@ const arSD: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'اكتشف',
+    allChip: 'الكل',
+    emptyTitle: 'ما في حاجة هنا لسه',
+    emptyBody: 'ما في فيديو في العالم دا. كن أول واحد ينشر.',
+    tileA11y: '%{handle}، %{count} إعجاب',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

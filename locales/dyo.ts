@@ -234,6 +234,13 @@ const dyo: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Gis-gis',
+    allChip: 'Lépp',
+    emptyTitle: 'Amul dara fii ba léegi',
+    emptyBody: 'Amul benn wideyo ci àddina bii. Nga jëkk a jottali.',
+    tileA11y: '%{handle}, %{count} bëgg',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

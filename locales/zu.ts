@@ -224,6 +224,13 @@ const zu: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Thola',
+    allChip: 'Konke',
+    emptyTitle: 'Ayikho into lapha okwamanje',
+    emptyBody: 'Alikho ividiyo kulomkhakha. Yiba ngowokuqala ukuposa.',
+    tileA11y: '%{handle}, okuthandwayo okungu-%{count}',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

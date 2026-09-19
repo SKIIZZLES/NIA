@@ -224,6 +224,13 @@ const ln: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Luka',
+    allChip: 'Nyonso',
+    emptyTitle: 'Eloko ezali awa naino te',
+    emptyBody: 'Vidéo ezali te na mokili oyo. Zala moto ya liboso ya kotinda.',
+    tileA11y: '%{handle}, %{count} balingi',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

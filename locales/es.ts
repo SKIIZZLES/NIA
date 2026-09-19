@@ -234,6 +234,13 @@ const es: TranslationKeys = {
     emptyOwn: 'Aún no hay sonidos. Importa un archivo de audio (mp3, m4a, wav).',
     defaultTitle: 'Sonido original',
   },
+  discover: {
+    title: 'Descubrir',
+    allChip: 'Todo',
+    emptyTitle: 'Aquí no hay nada todavía',
+    emptyBody: 'No hay vídeos en este universo. Sé el primero en publicar.',
+    tileA11y: '%{handle}, %{count} me gusta',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

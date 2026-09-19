@@ -237,6 +237,13 @@ const arMA: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'اكتشف',
+    allChip: 'الكل',
+    emptyTitle: 'ماكاين والو دابا',
+    emptyBody: 'ماكاين حتى فيديو فهاد العالم. كون الأول اللي ينشر.',
+    tileA11y: '%{handle}، %{count} إعجاب',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

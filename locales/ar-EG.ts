@@ -224,6 +224,13 @@ const arEG: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'اكتشف',
+    allChip: 'الكل',
+    emptyTitle: 'مفيش حاجة هنا لسه',
+    emptyBody: 'مفيش فيديو في العالم ده. كن أول واحد ينشر.',
+    tileA11y: '%{handle}، %{count} إعجاب',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

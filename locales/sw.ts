@@ -234,6 +234,13 @@ const sw: TranslationKeys = {
     emptyOwn: 'Bado hakuna sauti. Pakia faili (mp3, m4a, wav).',
     defaultTitle: 'Sauti asili',
   },
+  discover: {
+    title: 'Gundua',
+    allChip: 'Zote',
+    emptyTitle: 'Hakuna kitu hapa bado',
+    emptyBody: 'Hakuna video katika ulimwengu huu. Kuwa wa kwanza kuchapisha.',
+    tileA11y: '%{handle}, mapenzi %{count}',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

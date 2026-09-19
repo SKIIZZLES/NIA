@@ -224,6 +224,13 @@ const mnk: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Jeroo',
+    allChip: 'Bee',
+    emptyTitle: 'Feŋ te jaŋ foloo',
+    emptyBody: 'Wideyo te ñiŋ duniyaa kono. I ye ke foloo ti ka a landi.',
+    tileA11y: '%{handle}, %{count} lafinna',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

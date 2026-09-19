@@ -224,6 +224,13 @@ const bm: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Yeli',
+    allChip: 'Bɛɛ',
+    emptyTitle: 'Foyi tɛ yan fɔlɔ',
+    emptyBody: 'Wideyo si tɛ nin diɲɛ in kɔnɔ. I ka kɛ fɔlɔ ye k’a bila.',
+    tileA11y: '%{handle}, %{count} diyara',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

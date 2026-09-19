@@ -224,6 +224,13 @@ const am: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'ያግኙ',
+    allChip: 'ሁሉም',
+    emptyTitle: 'እስካሁን እዚህ ምንም የለም',
+    emptyBody: 'በዚህ ዓለም ውስጥ ምንም ቪዲዮ የለም። መጀመሪያ የሚለጥፉ ይሁኑ።',
+    tileA11y: '%{handle}፣ %{count} ወደዱት',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',

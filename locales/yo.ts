@@ -224,6 +224,13 @@ const yo: TranslationKeys = {
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
   },
+  discover: {
+    title: 'Ṣàwárí',
+    allChip: 'Gbogbo',
+    emptyTitle: 'Kò sí nǹkan níbí síbẹ̀',
+    emptyBody: 'Kò sí fídíò nínú àgbáyé yìí. Jẹ́ ẹni àkọ́kọ́ láti fi sí.',
+    tileA11y: '%{handle}, ìfẹ́ %{count}',
+  },
   events: {
     title: 'Events',
     subtitle: 'Concerts, meetups, culture — near you and beyond.',
