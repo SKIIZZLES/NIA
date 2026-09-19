@@ -257,6 +257,70 @@ export type Database = {
         ];
       };
 
+      live_streams: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          category: string;
+          thumbnail_path: string | null;
+          visibility: 'public' | 'followers' | 'private';
+          status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+          scheduled_at: string | null;
+          started_at: string | null;
+          ended_at: string | null;
+          viewer_count: number;
+          provider: string | null;
+          provider_stream_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          category?: string;
+          thumbnail_path?: string | null;
+          visibility?: 'public' | 'followers' | 'private';
+          status?: 'scheduled' | 'live' | 'ended' | 'cancelled';
+          scheduled_at?: string | null;
+          started_at?: string | null;
+          ended_at?: string | null;
+          viewer_count?: number;
+          provider?: string | null;
+          provider_stream_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          description?: string | null;
+          category?: string;
+          thumbnail_path?: string | null;
+          visibility?: 'public' | 'followers' | 'private';
+          status?: 'scheduled' | 'live' | 'ended' | 'cancelled';
+          scheduled_at?: string | null;
+          started_at?: string | null;
+          ended_at?: string | null;
+          viewer_count?: number;
+          provider?: string | null;
+          provider_stream_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'live_streams_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
+
       likes: {
         Row: {
           user_id: string;
@@ -583,3 +647,4 @@ export type RepostRow = Database['public']['Tables']['reposts']['Row'];
 export type SoundRow = Database['public']['Tables']['sounds']['Row'];
 export type EventRow = Database['public']['Tables']['events']['Row'];
 export type EventAttendeeRow = Database['public']['Tables']['event_attendees']['Row'];
+export type LiveStreamRow = Database['public']['Tables']['live_streams']['Row'];

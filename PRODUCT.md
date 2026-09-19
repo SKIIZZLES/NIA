@@ -26,7 +26,7 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 |--------|------|
 | **Accueil** | Feed vertical (Pour toi / Abonnements / Afrique) |
 | **Découvrir** | Univers (Afrique, Diaspora, Culture, Musique…) — recherche full-text plus tard |
-| **+ (Publier)** | **Create Hub** (Vidéo / Photo actifs ; Texte / Live / Événement = Bientôt) → formulaire publish (mode) → mock local ou Storage |
+| **+ (Publier)** | **Create Hub** (Vidéo / Photo / Live prep / Événement actifs ; Texte = Bientôt) → formulaire publish (mode) → mock local ou Storage |
 | **Notifications** | Liste branchée `lib/notifications` (empty state sinon) |
 | **Profil** | Grille + compte |
 
@@ -47,7 +47,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Feed vertical plein écran + démos | ✅ |
 | Nav Accueil / Découvrir / + / Notifications / Profil | ✅ Étape 1 |
 | Rail like / commentaire / partage | ✅ Étape 4 (compteurs + actions) |
-| Création : Create Hub + pick média + publier local **ou** Storage | ✅ Hub Vidéo/Photo ; Texte/Live/Événement placeholder ; preview, #tags, catégorie, limites |
+| Création : Create Hub + pick média + publier local **ou** Storage | ✅ Hub Vidéo/Photo/Live prep/Événement ; Texte = Bientôt ; preview, #tags, catégorie, limites |
 | Profil + grille | ✅ Étape 5 (profil public + édition bio/display_name) |
 | Découvrir (catégories) | ✅ UI shell |
 | Notifications (liste Supabase / empty) | ✅ Étape 4 |
@@ -60,7 +60,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Partage natif (Share API) + empty/error FR | ✅ Étape 7 |
 | Guard rails offline (pas de crash si Supabase down) | ✅ Étape 7 |
 | Transcoding / CDN pro | ❌ après MVP |
-| Lives / messagerie / marketplace | ❌ hors scope immédiat |
+| Lives (streaming réel) / messagerie / marketplace | ⚠️ Live = préparation UI+DB (010) ; streaming Mux/LiveKit ❌ pas encore |
 
 
 
@@ -91,7 +91,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 - OAuth (Google / Apple) — aussi listé ci-dessus
 
 ### Phase 3 — Engagement
-- Live / lives culturels
+- Live / lives culturels — **préparation V2.3** (DB+UI) ; streaming réel = phase suivante
 - Duets / stitches
 - Challenges & hashtags géoculturels
 
@@ -107,7 +107,8 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 L’onglet **+** ouvre d’abord un hub de création (noir / sable / ocre) :
 - **Actifs :** Vidéo, Photo → formulaire publish existant (`mode=video|photo`) avec picker / caméra adaptés, légende, hashtags, catégories (dont Maghreb / Actus), upload Supabase + `media_type`.
 - **Actif :** Événement → `/events/create` (migration `009_events.sql`).
-- **Bientôt (désactivés) :** Texte, Live — pas de backend live / compositeur texte.
+- **Actif (préparation) :** Live → `/live/create` (migration `010_live_streams.sql`) — métadonnées + UI only ; **pas** de faux player WebRTC/Mux. Placeholder « Bientôt — infrastructure live à brancher ».
+- **Bientôt (désactivé) :** Texte — pas de compositeur texte.
 
 ## Principes UX
 

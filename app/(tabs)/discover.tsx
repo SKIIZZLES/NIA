@@ -331,6 +331,22 @@ export default function DiscoverScreen() {
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </Pressable>
 
+      <Pressable
+        style={styles.eventsCta}
+        onPress={() => router.push('/live')}
+        accessibilityRole="button"
+        accessibilityLabel={t('live.openList')}
+      >
+        <View style={styles.iconWrap}>
+          <Ionicons name="radio-outline" size={22} color={colors.or} />
+        </View>
+        <View style={styles.cardBody}>
+          <Text style={styles.eventsCtaTitle}>{t('live.discoverCta')}</Text>
+          <Text style={styles.eventsCtaBody}>{t('live.discoverCtaBody')}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </Pressable>
+
       <Text style={styles.section}>Univers</Text>
 
       <FlatList

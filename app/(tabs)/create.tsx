@@ -80,7 +80,7 @@ const HUB_CARDS: HubCardDef[] = [
   },
   {
     id: 'live',
-    active: false,
+    active: true,
     icon: 'radio-outline',
     titleKey: 'create.hubLive',
     descKey: 'create.hubLiveDesc',
@@ -732,6 +732,10 @@ export default function CreateScreen() {
                   onPress={() => {
                     if (card.id === 'event') {
                       router.push('/events/create');
+                      return;
+                    }
+                    if (card.id === 'live') {
+                      router.push('/live/create');
                       return;
                     }
                     if (card.id === 'video' || card.id === 'photo') {
