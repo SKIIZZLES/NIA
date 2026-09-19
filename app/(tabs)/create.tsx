@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
@@ -26,6 +27,8 @@ import {
   parseHashtags,
 } from '@/constants/publish';
 
+type CreateMode = 'video' | 'photo';
+
 type PickedMedia = {
   uri: string;
   mimeType: string | null;
@@ -34,6 +37,52 @@ type PickedMedia = {
   durationMs: number | null;
   type: 'image' | 'video' | 'unknown';
 };
+
+type HubCardDef = {
+  id: CreateMode | 'text' | 'live' | 'event';
+  active: boolean;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  titleKey: string;
+  descKey: string;
+};
+
+const HUB_CARDS: HubCardDef[] = [
+  {
+    id: 'video',
+    active: true,
+    icon: 'videocam',
+    titleKey: 'create.hubVideo',
+    descKey: 'create.hubVideoDesc',
+  },
+  {
+    id: 'photo',
+    active: true,
+    icon: 'camera',
+    titleKey: 'create.hubPhoto',
+    descKey: 'create.hubPhotoDesc',
+  },
+  {
+    id: 'text',
+    active: false,
+    icon: 'create-outline',
+    titleKey: 'create.hubText',
+    descKey: 'create.hubTextDesc',
+  },
+  {
+    id: 'live',
+    active: false,
+    icon: 'radio-outline',
+    titleKey: 'create.hubLive',
+    descKey: 'create.hubLiveDesc',
+  },
+  {
+    id: 'event',
+    active: false,
+    icon: 'calendar-outline',
+    titleKey: 'create.hubEvent',
+    descKey: 'create.hubEventDesc',
+  },
+];
 
 /** Android gallery often omits mimeType; infer from type / fileName / URI. */
 function inferMimeType(
@@ -60,6 +109,7 @@ export default function CreateScreen() {
   const { publishPost, isMockFeed } = useFeed();
   const { t } = useI18n();
   const router = useRouter();
+  const [mode, setMode] = useState<CreateMode | null>(null);
   const [caption, setCaption] = useState('');
   const [media, setMedia] = useState<PickedMedia | null>(null);
   const [cover, setCover] = useState<PickedMedia | null>(null);
@@ -70,8 +120,24 @@ export default function CreateScreen() {
   const maxMinutes = Math.round(MAX_VIDEO_DURATION_SEC / 60);
   const maxMb = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
 
+  const resetForm = () => {
+    setCaption('');
+    setMedia(null);
+    setCover(null);
+    setCategory(null);
+  };
 
-  const applyAsset = (asset: ImagePicker.ImagePickerAsset) => {
+  const openMode = (next: CreateMode) => {
+    resetForm();
+    setMode(next);
+  };
+
+  const backToHub = () => {
+    resetForm();
+    setMode(null);
+  };
+
+  const applyAsset = (asset: ImagePicker.ImagePickerAsset, expected: CreateMode) => {
     const fileSize = asset.fileSize ?? null;
     const durationMs =
       typeof asset.duration === 'number' ? asset.duration : null;
@@ -85,6 +151,15 @@ export default function CreateScreen() {
             : asset.mimeType?.startsWith('image')
               ? 'image'
               : 'unknown';
+
+    if (expected === 'video' && type === 'image') {
+      Alert.alert(t('common.error'), t('create.errWrongMediaVideo'));
+      return;
+    }
+    if (expected === 'photo' && type === 'video') {
+      Alert.alert(t('common.error'), t('create.errWrongMediaPhoto'));
+      return;
+    }
 
     if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
       Alert.alert(
@@ -105,16 +180,18 @@ export default function CreateScreen() {
       return;
     }
 
+    const resolvedType: PickedMedia['type'] =
+      expected === 'photo' ? 'image' : type === 'unknown' ? 'video' : type;
+
     setMedia({
       uri: asset.uri,
-      mimeType: inferMimeType(asset, type),
+      mimeType: inferMimeType(asset, resolvedType),
       fileName: asset.fileName ?? null,
       fileSize,
-      durationMs,
-      type,
+      durationMs: expected === 'photo' ? null : durationMs,
+      type: resolvedType,
     });
-    // Cover only applies to videos
-    if (type !== 'video') setCover(null);
+    if (expected !== 'video') setCover(null);
   };
 
   const pickCover = async () => {
@@ -143,32 +220,31 @@ export default function CreateScreen() {
   };
 
   const pick = async () => {
+    if (!mode) return;
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['videos', 'images'],
+      mediaTypes: mode === 'photo' ? ['images'] : ['videos'],
       quality: 0.8,
       videoMaxDuration: MAX_VIDEO_DURATION_SEC,
     });
     if (res.canceled || !res.assets[0]) return;
-    applyAsset(res.assets[0]);
+    applyAsset(res.assets[0], mode);
   };
 
-  const film = async () => {
+  const capture = async () => {
+    if (!mode) return;
     const cam = await ImagePicker.requestCameraPermissionsAsync();
     if (!cam.granted) {
-      Alert.alert(
-        t('create.alertCamera'),
-        t('create.errCameraDenied'),
-      );
+      Alert.alert(t('create.alertCamera'), t('create.errCameraDenied'));
       return;
     }
     const res = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['videos'],
+      mediaTypes: mode === 'photo' ? ['images'] : ['videos'],
       quality: 0.8,
       videoMaxDuration: MAX_VIDEO_DURATION_SEC,
       allowsEditing: false,
     });
     if (res.canceled || !res.assets[0]) return;
-    applyAsset(res.assets[0]);
+    applyAsset(res.assets[0], mode);
   };
 
   const publish = async () => {
@@ -206,7 +282,7 @@ export default function CreateScreen() {
         localUri: media?.uri || undefined,
         mimeType: media?.mimeType ?? null,
         fileName: media?.fileName ?? null,
-        mediaKind: media?.type ?? null,
+        mediaKind: media?.type ?? (mode === 'photo' ? 'image' : 'video'),
         coverUri: media?.type === 'video' ? cover?.uri ?? null : null,
         coverMimeType: media?.type === 'video' ? cover?.mimeType ?? null : null,
         coverFileName: media?.type === 'video' ? cover?.fileName ?? null : null,
@@ -215,10 +291,8 @@ export default function CreateScreen() {
         fileSize: media?.fileSize ?? undefined,
         durationMs: media?.durationMs ?? undefined,
       });
-      setCaption('');
-      setMedia(null);
-      setCover(null);
-      setCategory(null);
+      resetForm();
+      setMode(null);
       Alert.alert(
         isMockFeed ? t('create.publishedMockTitle') : t('create.publishedTitle'),
         isMockFeed ? t('create.publishedMockBody') : t('create.publishedBody'),
@@ -232,6 +306,78 @@ export default function CreateScreen() {
     }
   };
 
+  if (!mode) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScrollView
+          contentContainerStyle={styles.hubScroll}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>{t('create.hubTitle')}</Text>
+          <Text style={styles.subtitle}>{t('create.hubSubtitle')}</Text>
+
+          <View style={styles.hubGrid}>
+            {HUB_CARDS.map((card) => {
+              const disabled = !card.active;
+              return (
+                <Pressable
+                  key={card.id}
+                  disabled={disabled}
+                  onPress={() => {
+                    if (card.id === 'video' || card.id === 'photo') {
+                      openMode(card.id);
+                    }
+                  }}
+                  style={({ pressed }) => [
+                    styles.hubCard,
+                    disabled && styles.hubCardDisabled,
+                    !disabled && pressed && styles.hubCardPressed,
+                  ]}
+                >
+                  {disabled ? (
+                    <View style={styles.soonBadge}>
+                      <Text style={styles.soonText}>{t('create.hubSoon')}</Text>
+                    </View>
+                  ) : null}
+                  <View
+                    style={[
+                      styles.hubIconWrap,
+                      disabled && styles.hubIconWrapDisabled,
+                    ]}
+                  >
+                    <Ionicons
+                      name={card.icon}
+                      size={28}
+                      color={disabled ? Colors.textMuted : Colors.or}
+                    />
+                  </View>
+                  <Text
+                    style={[
+                      styles.hubCardTitle,
+                      disabled && styles.hubCardTitleDisabled,
+                    ]}
+                  >
+                    {t(card.titleKey)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.hubCardDesc,
+                      disabled && styles.hubCardDescDisabled,
+                    ]}
+                  >
+                    {t(card.descKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  const isPhoto = mode === 'photo';
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
@@ -239,7 +385,14 @@ export default function CreateScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>{t('create.title')}</Text>
+        <Pressable onPress={backToHub} style={styles.backRow} hitSlop={8}>
+          <Ionicons name="chevron-back" size={22} color={Colors.sable} />
+          <Text style={styles.backText}>{t('common.back')}</Text>
+        </Pressable>
+
+        <Text style={styles.title}>
+          {isPhoto ? t('create.titlePhoto') : t('create.titleVideo')}
+        </Text>
         <Text style={styles.subtitle}>
           {isMockFeed ? t('create.subtitleMock') : t('create.subtitleSupabase')}
         </Text>
@@ -268,22 +421,24 @@ export default function CreateScreen() {
         <View style={styles.mediaRow}>
           <View style={styles.mediaBtn}>
             <Button
-              title={t('create.pickMedia')}
+              title={isPhoto ? t('create.pickPhoto') : t('create.pickVideo')}
               variant="outline"
-              onPress={pick}
+              onPress={() => void pick()}
             />
           </View>
           <View style={styles.mediaBtn}>
             <Button
-              title={t('create.film')}
+              title={isPhoto ? t('create.takePhoto') : t('create.film')}
               variant="gold"
-              onPress={() => void film()}
+              onPress={() => void capture()}
             />
           </View>
         </View>
-        <Text style={styles.hint}>{t('create.filmHint')}</Text>
+        <Text style={styles.hint}>
+          {isPhoto ? t('create.filmHintPhoto') : t('create.filmHintVideo')}
+        </Text>
 
-        {media?.type === 'video' ? (
+        {!isPhoto && media?.type === 'video' ? (
           <View style={styles.coverBlock}>
             <Text style={styles.label}>{t('create.coverLabel')}</Text>
             <Text style={styles.hint}>{t('create.coverHint')}</Text>
@@ -372,9 +527,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.noir,
   },
+  hubScroll: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
   scroll: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxl,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+    gap: 2,
+  },
+  backText: {
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 15,
   },
   title: {
     color: Colors.sable,
@@ -389,6 +560,77 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: Spacing.lg,
     lineHeight: 18,
+  },
+  hubGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  hubCard: {
+    width: '47%',
+    flexGrow: 1,
+    minWidth: '42%',
+    backgroundColor: Colors.noirElevated,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.md,
+    minHeight: 148,
+  },
+  hubCardPressed: {
+    borderColor: Colors.or,
+    backgroundColor: Colors.noirSoft,
+  },
+  hubCardDisabled: {
+    opacity: 0.55,
+    backgroundColor: Colors.noirSoft,
+  },
+  hubIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: Radii.md,
+    backgroundColor: 'rgba(209, 127, 42, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  hubIconWrapDisabled: {
+    backgroundColor: 'rgba(245, 230, 211, 0.06)',
+  },
+  hubCardTitle: {
+    color: Colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 17,
+    marginBottom: 4,
+  },
+  hubCardTitleDisabled: {
+    color: Colors.textMuted,
+  },
+  hubCardDesc: {
+    color: Colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  hubCardDescDisabled: {
+    color: Colors.textMuted,
+  },
+  soonBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(245, 230, 211, 0.12)',
+    borderRadius: Radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  soonText: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
   preview: {
     height: 220,
@@ -506,5 +748,4 @@ const styles = StyleSheet.create({
     borderRadius: Radii.md,
     backgroundColor: Colors.noirSoft,
   },
-
 });

@@ -26,7 +26,7 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 |--------|------|
 | **Accueil** | Feed vertical (Pour toi / Abonnements / Afrique) |
 | **Découvrir** | Univers (Afrique, Diaspora, Culture, Musique…) — recherche full-text plus tard |
-| **+ (Publier)** | Pick média + légende → mock local ou Storage |
+| **+ (Publier)** | **Create Hub** (Vidéo / Photo actifs ; Texte / Live / Événement = Bientôt) → formulaire publish (mode) → mock local ou Storage |
 | **Notifications** | Liste branchée `lib/notifications` (empty state sinon) |
 | **Profil** | Grille + compte |
 
@@ -47,7 +47,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Feed vertical plein écran + démos | ✅ |
 | Nav Accueil / Découvrir / + / Notifications / Profil | ✅ Étape 1 |
 | Rail like / commentaire / partage | ✅ Étape 4 (compteurs + actions) |
-| Création : pick média + publier local **ou** Storage | ✅ Étape 5 (preview, #tags, catégorie, limites) |
+| Création : Create Hub + pick média + publier local **ou** Storage | ✅ Hub Vidéo/Photo ; Texte/Live/Événement placeholder ; preview, #tags, catégorie, limites |
 | Profil + grille | ✅ Étape 5 (profil public + édition bio/display_name) |
 | Découvrir (catégories) | ✅ UI shell |
 | Notifications (liste Supabase / empty) | ✅ Étape 4 |
@@ -100,6 +100,13 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 - Tips / monétisation créateurs
 - Brand partnerships & catalogues culturels
 - Analytics créateur
+
+
+## Create Hub (+)
+
+L’onglet **+** ouvre d’abord un hub de création (noir / sable / ocre) :
+- **Actifs :** Vidéo, Photo → formulaire publish existant (`mode=video|photo`) avec picker / caméra adaptés, légende, hashtags, catégories (dont Maghreb / Actus), upload Supabase + `media_type`.
+- **Bientôt (désactivés) :** Texte, Live, Événement — pas de backend live / events / compositeur texte.
 
 ## Principes UX
 
