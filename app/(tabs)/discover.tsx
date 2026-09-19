@@ -3,11 +3,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,21 +29,11 @@ export default function DiscoverScreen() {
   const colors = useColors();
   const router = useRouter();
   const { t } = useI18n();
-  const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<CategoryId | null>(null);
   const [remoteByCategory, setRemoteByCategory] = useState<VideoItem[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
 
-  const filteredCategories = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return DISCOVER_CATEGORIES;
-    return DISCOVER_CATEGORIES.filter(
-      (c) =>
-        c.label.toLowerCase().includes(q) ||
-        c.blurb.toLowerCase().includes(q) ||
-        c.id.includes(q),
-    );
-  }, [query]);
+  const filteredCategories = DISCOVER_CATEGORIES;
 
   const loadCategoryVideos = useCallback(async (categoryId: CategoryId) => {
     if (!isSupabaseConfigured) {
@@ -298,22 +286,17 @@ export default function DiscoverScreen() {
         Explorez les scènes, cultures et talents — filtrez par univers.
       </Text>
 
-      <View style={styles.searchBox}>
+      <Pressable
+        style={styles.searchBox}
+        onPress={() => router.push('/search')}
+        accessibilityRole="button"
+        accessibilityLabel={t('search.openA11y')}
+      >
         <Ionicons name="search" size={20} color={colors.textMuted} />
-        <TextInput
-          style={styles.input}
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Catégories, scènes, thèmes…"
-          placeholderTextColor={colors.textMuted}
-          accessibilityLabel="Recherche dans Découvrir"
-        />
-        {query.length > 0 ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-      </View>
+        <Text style={[styles.input, { color: colors.textMuted }]} numberOfLines={1}>
+          {t('search.placeholder')}
+        </Text>
+      </Pressable>
 
       <Pressable
         style={styles.eventsCta}
@@ -432,7 +415,7 @@ export default function DiscoverScreen() {
             <Ionicons name="compass-outline" size={40} color={colors.or} />
             <Text style={styles.emptyTitle}>Aucun univers trouvé</Text>
             <Text style={styles.emptyBody}>
-              Essayez un autre mot-clé. La recherche full-text arrive bientôt.
+              Aucun univers dans cette liste.
             </Text>
           </View>
         }

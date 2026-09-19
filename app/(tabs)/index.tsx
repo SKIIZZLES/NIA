@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import {
   Pressable,
   StyleSheet,
@@ -9,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedPager } from '@/components/FeedPager';
 import { useFeed } from '@/context/FeedContext';
+import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts } from '@/constants/theme';
 import { VideoItem } from '@/data/mockVideos';
 
@@ -42,6 +45,8 @@ function filterVideos(
 }
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { t } = useI18n();
   const { videos, followingIds } = useFeed();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -60,6 +65,7 @@ export default function HomeScreen() {
 
       <View style={[styles.topTabs, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
         <View style={styles.tabsRow}>
+          <View style={styles.tabsSpacer} />
           {TABS.map((t) => {
             const active = t.key === tab;
             return (
@@ -71,6 +77,15 @@ export default function HomeScreen() {
               </Pressable>
             );
           })}
+          <Pressable
+            style={styles.searchBtn}
+            onPress={() => router.push('/search')}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('search.openA11y')}
+          >
+            <Ionicons name="search" size={22} color={Colors.sable} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -92,8 +107,18 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
     gap: 14,
     paddingHorizontal: 8,
+  },
+  tabsSpacer: {
+    width: 36,
+  },
+  searchBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   tabItem: {
     alignItems: 'center',

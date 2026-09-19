@@ -25,7 +25,7 @@ Positionnement : élégance (Noir), héritage (Terre), créativité (Or africain
 | Onglet | Rôle |
 |--------|------|
 | **Accueil** | Feed vertical (Pour toi / Abonnements / Afrique) |
-| **Découvrir** | Univers (Afrique, Diaspora, Culture, Musique…) — recherche full-text plus tard |
+| **Découvrir** | Univers (Afrique, Diaspora, Culture, Musique…) — barre → recherche unifiée `/search` |
 | **+ (Publier)** | **Create Hub** (Vidéo / Photo / Live prep / Événement actifs ; Texte = Bientôt) → formulaire publish (mode) → mock local ou Storage |
 | **Notifications** | Liste branchée `lib/notifications` (empty state sinon) |
 | **Profil** | Grille + compte |
@@ -50,6 +50,7 @@ Messages = **phase 2** (retiré de la nav principale). Ancienne « Recherche » 
 | Création : Create Hub + pick média + publier local **ou** Storage | ✅ Hub Vidéo/Photo/Live prep/Événement ; Texte = Bientôt ; preview, #tags, catégorie, limites |
 | Profil + grille | ✅ Étape 5 (profil public + édition bio/display_name) |
 | Découvrir (catégories) | ✅ UI shell |
+| Recherche unifiée (V2.4) | ✅ Personnes / Pubs / Sons / Events / Hashtags |
 | Notifications (liste Supabase / empty) | ✅ Étape 4 |
 | Schéma SQL init + doc Sprint 1 | ✅ `001` + `002` + `docs/SCHEMA_SPRINT1.md` |
 | Helpers likes / comments / follows / notifications | ✅ Étape 2 |
