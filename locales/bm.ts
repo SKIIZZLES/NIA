@@ -230,6 +230,18 @@ const bm: TranslationKeys = {
     emptyTitle: 'Foyi tɛ yan fɔlɔ',
     emptyBody: 'Wideyo si tɛ nin diɲɛ in kɔnɔ. I ka kɛ fɔlɔ ye k’a bila.',
     tileA11y: '%{handle}, %{count} diyara',
+    categories: {
+      afrique: 'Afiriki',
+      maghreb: 'Magrebu',
+      diaspora: 'Diaspora',
+      culture: 'Laadaw',
+      musique: 'Fɔli',
+      mode: 'Mod',
+      tech: 'Teknoloji',
+      food: 'Dumuni',
+      sport: 'Sport',
+      actus: 'Kibaruw',
+    },
   },
   events: {
     title: 'Events',

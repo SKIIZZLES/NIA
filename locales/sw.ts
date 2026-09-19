@@ -240,6 +240,18 @@ const sw: TranslationKeys = {
     emptyTitle: 'Hakuna kitu hapa bado',
     emptyBody: 'Hakuna video katika ulimwengu huu. Kuwa wa kwanza kuchapisha.',
     tileA11y: '%{handle}, mapenzi %{count}',
+    categories: {
+      afrique: 'Afrika',
+      maghreb: 'Maghreb',
+      diaspora: 'Diaspora',
+      culture: 'Utamaduni',
+      musique: 'Muziki',
+      mode: 'Mitindo',
+      tech: 'Teknolojia na ubunifu',
+      food: 'Vyakula',
+      sport: 'Michezo',
+      actus: 'Habari',
+    },
   },
   events: {
     title: 'Events',

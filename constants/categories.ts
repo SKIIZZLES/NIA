@@ -18,7 +18,8 @@ export type CategoryId =
 
 export type DiscoverCategory = {
   id: CategoryId;
-  label: string;
+  /** i18n key under discover.categories.* */
+  labelKey: string;
   blurb: string;
   icon: ComponentProps<typeof Ionicons>['name'];
 };
@@ -26,61 +27,61 @@ export type DiscoverCategory = {
 export const DISCOVER_CATEGORIES: DiscoverCategory[] = [
   {
     id: 'afrique',
-    label: 'Afrique',
+    labelKey: 'discover.categories.afrique',
     blurb: 'Créations nées sur le continent',
     icon: 'globe-outline',
   },
   {
     id: 'maghreb',
-    label: 'Maghreb',
+    labelKey: 'discover.categories.maghreb',
     blurb: 'Voix du Maroc, Algérie, Tunisie & voisinage',
     icon: 'sunny-outline',
   },
   {
     id: 'diaspora',
-    label: 'Diaspora',
+    labelKey: 'discover.categories.diaspora',
     blurb: 'Voix et récits hors frontières',
     icon: 'airplane-outline',
   },
   {
     id: 'culture',
-    label: 'Culture',
+    labelKey: 'discover.categories.culture',
     blurb: 'Arts, langues, patrimoine vivant',
     icon: 'library-outline',
   },
   {
     id: 'musique',
-    label: 'Musique',
+    labelKey: 'discover.categories.musique',
     blurb: 'Afrobeats, jazz, tradition & scène',
     icon: 'musical-notes-outline',
   },
   {
     id: 'mode',
-    label: 'Mode',
+    labelKey: 'discover.categories.mode',
     blurb: 'Style, design & maison créative',
     icon: 'shirt-outline',
   },
   {
     id: 'tech',
-    label: 'Tech & Innovation',
+    labelKey: 'discover.categories.tech',
     blurb: 'Builders, startups, futur afro-tech',
     icon: 'hardware-chip-outline',
   },
   {
     id: 'food',
-    label: 'Gastronomie',
+    labelKey: 'discover.categories.food',
     blurb: 'Saveurs, chefs & tables urbaines',
     icon: 'restaurant-outline',
   },
   {
     id: 'sport',
-    label: 'Sport',
+    labelKey: 'discover.categories.sport',
     blurb: 'Talents, clubs & moments forts',
     icon: 'football-outline',
   },
   {
     id: 'actus',
-    label: 'Actus',
+    labelKey: 'discover.categories.actus',
     blurb: 'Infos, débats & moments d’actualité',
     icon: 'newspaper-outline',
   },

@@ -230,6 +230,18 @@ const yo: TranslationKeys = {
     emptyTitle: 'Kò sí nǹkan níbí síbẹ̀',
     emptyBody: 'Kò sí fídíò nínú àgbáyé yìí. Jẹ́ ẹni àkọ́kọ́ láti fi sí.',
     tileA11y: '%{handle}, ìfẹ́ %{count}',
+    categories: {
+      afrique: 'Áfíríkà',
+      maghreb: 'Màgírébù',
+      diaspora: 'Diaspora',
+      culture: 'Àṣà',
+      musique: 'Orin',
+      mode: 'Ìmúra',
+      tech: 'Ìmọ̀-ẹ̀rọ àti ìdàgbàsókè',
+      food: 'Oúnjẹ',
+      sport: 'Eré ìdárayá',
+      actus: 'Ìròyìn',
+    },
   },
   events: {
     title: 'Events',

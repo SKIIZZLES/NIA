@@ -85,7 +85,11 @@ export default function DiscoverScreen() {
   const chips = useMemo(
     () => [
       { id: null as CategoryId | null, label: t('discover.chipAll'), icon: 'sparkles-outline' as const },
-      ...DISCOVER_CATEGORIES.map((c) => ({ id: c.id as CategoryId | null, label: c.label, icon: c.icon })),
+      ...DISCOVER_CATEGORIES.map((c) => ({
+        id: c.id as CategoryId | null,
+        label: t(c.labelKey),
+        icon: c.icon,
+      })),
     ],
     [t],
   );

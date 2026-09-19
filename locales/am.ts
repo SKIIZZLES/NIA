@@ -230,6 +230,18 @@ const am: TranslationKeys = {
     emptyTitle: 'እስካሁን እዚህ ምንም የለም',
     emptyBody: 'በዚህ ዓለም ውስጥ ምንም ቪዲዮ የለም። መጀመሪያ የሚለጥፉ ይሁኑ።',
     tileA11y: '%{handle}፣ %{count} ወደዱት',
+    categories: {
+      afrique: 'አፍሪካ',
+      maghreb: 'መግሬብ',
+      diaspora: 'ዲያስፖራ',
+      culture: 'ባህል',
+      musique: 'ሙዚቃ',
+      mode: 'ፋሽን',
+      tech: 'ቴክኖሎጂ እና ፈጠራ',
+      food: 'ምግብ',
+      sport: 'ስፖርት',
+      actus: 'ዜና',
+    },
   },
   events: {
     title: 'Events',

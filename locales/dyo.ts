@@ -240,6 +240,18 @@ const dyo: TranslationKeys = {
     emptyTitle: 'Amul dara fii ba léegi',
     emptyBody: 'Amul benn wideyo ci àddina bii. Nga jëkk a jottali.',
     tileA11y: '%{handle}, %{count} bëgg',
+    categories: {
+      afrique: 'Afrig',
+      maghreb: 'Magreb',
+      diaspora: 'Diaspora',
+      culture: 'Aada',
+      musique: 'Mizik',
+      mode: 'Mod',
+      tech: 'Teknoloji',
+      food: 'Lekk',
+      sport: 'Sport',
+      actus: 'Xibaar',
+    },
   },
   events: {
     title: 'Events',

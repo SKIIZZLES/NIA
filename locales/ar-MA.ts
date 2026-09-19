@@ -243,6 +243,18 @@ const arMA: TranslationKeys = {
     emptyTitle: 'ماكاين والو دابا',
     emptyBody: 'ماكاين حتى فيديو فهاد العالم. كون الأول اللي ينشر.',
     tileA11y: '%{handle}، %{count} إعجاب',
+    categories: {
+      afrique: 'أفريقيا',
+      maghreb: 'المغرب العربي',
+      diaspora: 'الشتات',
+      culture: 'ثقافة',
+      musique: 'موسيقى',
+      mode: 'موضة',
+      tech: 'تقنية وابتكار',
+      food: 'مأكولات',
+      sport: 'رياضة',
+      actus: 'أخبار',
+    },
   },
   events: {
     title: 'Events',

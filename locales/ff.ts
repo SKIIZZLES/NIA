@@ -230,6 +230,18 @@ const ff: TranslationKeys = {
     emptyTitle: 'Hay huunde ɗoo tawo',
     emptyBody: 'Widewo alaa e nder aduna ngoo. Wonu gadano winndude.',
     tileA11y: '%{handle}, %{count} yiɗde',
+    categories: {
+      afrique: 'Afiriki',
+      maghreb: 'Magreb',
+      diaspora: 'Diaspora',
+      culture: 'Finaa-tawaa',
+      musique: 'Yimre',
+      mode: 'Mod',
+      tech: 'Teknoloji',
+      food: 'Ñaamdu',
+      sport: 'Sport',
+      actus: 'Kabaaru',
+    },
   },
   events: {
     title: 'Events',

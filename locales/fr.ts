@@ -240,6 +240,18 @@ const fr = {
     emptyTitle: 'Rien ici pour l’instant',
     emptyBody: 'Aucune vidéo dans cet univers. Sois le premier à publier.',
     tileA11y: '%{handle}, %{count} j’aime',
+    categories: {
+      afrique: 'Afrique',
+      maghreb: 'Maghreb',
+      diaspora: 'Diaspora',
+      culture: 'Culture',
+      musique: 'Musique',
+      mode: 'Mode',
+      tech: 'Tech & Innovation',
+      food: 'Gastronomie',
+      sport: 'Sport',
+      actus: 'Actus',
+    },
   },
   events: {
     title: 'Événements',

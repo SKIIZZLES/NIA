@@ -240,6 +240,18 @@ const ha: TranslationKeys = {
     emptyTitle: 'Babu kome a nan tukuna',
     emptyBody: 'Babu bidiyo a wannan sararin. Ka zama na farko da zai wallafa.',
     tileA11y: '%{handle}, son %{count}',
+    categories: {
+      afrique: 'Afirka',
+      maghreb: 'Magrib',
+      diaspora: 'Diaspora',
+      culture: 'Al’ada',
+      musique: 'Kiɗa',
+      mode: 'Salo',
+      tech: 'Fasaha da ƙirƙira',
+      food: 'Abinci',
+      sport: 'Wasanni',
+      actus: 'Labarai',
+    },
   },
   events: {
     title: 'Events',

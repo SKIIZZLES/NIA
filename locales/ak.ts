@@ -230,6 +230,18 @@ const ak: TranslationKeys = {
     emptyTitle: 'Biribiara nni ha seesei',
     emptyBody: 'Video biara nni saa wiase yi mu. Yɛ nea ɔdi kan de to so.',
     tileA11y: '%{handle}, %{count} ɔdɔ',
+    categories: {
+      afrique: 'Afrika',
+      maghreb: 'Maghreb',
+      diaspora: 'Diaspora',
+      culture: 'Amammerɛ',
+      musique: 'Nnwom',
+      mode: 'Ntadeɛ',
+      tech: 'Tɛknɔlɔgyi',
+      food: 'Aduane',
+      sport: 'Agodie',
+      actus: 'Amanneɛbɔ',
+    },
   },
   events: {
     title: 'Events',

@@ -242,6 +242,18 @@ const arSD: TranslationKeys = {
     emptyTitle: 'ما في حاجة هنا لسه',
     emptyBody: 'ما في فيديو في العالم دا. كن أول واحد ينشر.',
     tileA11y: '%{handle}، %{count} إعجاب',
+    categories: {
+      afrique: 'أفريقيا',
+      maghreb: 'المغرب العربي',
+      diaspora: 'الشتات',
+      culture: 'ثقافة',
+      musique: 'موسيقى',
+      mode: 'موضة',
+      tech: 'تقنية وابتكار',
+      food: 'مأكولات',
+      sport: 'رياضة',
+      actus: 'أخبار',
+    },
   },
   events: {
     title: 'Events',

@@ -241,6 +241,18 @@ const en: TranslationKeys = {
     emptyTitle: 'Nothing here yet',
     emptyBody: 'No video in this universe. Be the first to post.',
     tileA11y: '%{handle}, %{count} likes',
+    categories: {
+      afrique: 'Africa',
+      maghreb: 'Maghreb',
+      diaspora: 'Diaspora',
+      culture: 'Culture',
+      musique: 'Music',
+      mode: 'Fashion',
+      tech: 'Tech & Innovation',
+      food: 'Food',
+      sport: 'Sports',
+      actus: 'News',
+    },
   },
   events: {
     title: 'Events',

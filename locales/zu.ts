@@ -230,6 +230,18 @@ const zu: TranslationKeys = {
     emptyTitle: 'Ayikho into lapha okwamanje',
     emptyBody: 'Alikho ividiyo kulomkhakha. Yiba ngowokuqala ukuposa.',
     tileA11y: '%{handle}, okuthandwayo okungu-%{count}',
+    categories: {
+      afrique: 'I-Afrika',
+      maghreb: 'I-Maghreb',
+      diaspora: 'I-Diaspora',
+      culture: 'Amasiko',
+      musique: 'Umculo',
+      mode: 'Imfashini',
+      tech: 'Ubuchwepheshe nokusungula',
+      food: 'Ukudla',
+      sport: 'Ezemidlalo',
+      actus: 'Izindaba',
+    },
   },
   events: {
     title: 'Events',

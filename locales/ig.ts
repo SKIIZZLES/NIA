@@ -230,6 +230,18 @@ const ig: TranslationKeys = {
     emptyTitle: 'Ọ nweghị ihe dị ebe a ugbu a',
     emptyBody: 'Enweghị vidiyo na ụwa a. Bụrụ onye mbụ dee.',
     tileA11y: '%{handle}, %{count} mmasị',
+    categories: {
+      afrique: 'Afrika',
+      maghreb: 'Maghreb',
+      diaspora: 'Ndị mba ọzọ',
+      culture: 'Omenala',
+      musique: 'Egwu',
+      mode: 'Ejiji',
+      tech: 'Teknụzụ na ihe ọhụrụ',
+      food: 'Nri',
+      sport: 'Egwuregwu',
+      actus: 'Akụkọ',
+    },
   },
   events: {
     title: 'Events',

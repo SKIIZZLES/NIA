@@ -230,6 +230,18 @@ const ln: TranslationKeys = {
     emptyTitle: 'Eloko ezali awa naino te',
     emptyBody: 'Vidéo ezali te na mokili oyo. Zala moto ya liboso ya kotinda.',
     tileA11y: '%{handle}, %{count} balingi',
+    categories: {
+      afrique: 'Afrika',
+      maghreb: 'Magrebi',
+      diaspora: 'Diaspora',
+      culture: 'Mimeseno',
+      musique: 'Miziki',
+      mode: 'Molato',
+      tech: 'Teknoloji',
+      food: 'Bilei',
+      sport: 'Masano',
+      actus: 'Nsango',
+    },
   },
   events: {
     title: 'Events',

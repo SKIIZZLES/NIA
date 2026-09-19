@@ -240,6 +240,18 @@ const es: TranslationKeys = {
     emptyTitle: 'Aquí no hay nada todavía',
     emptyBody: 'No hay vídeos en este universo. Sé el primero en publicar.',
     tileA11y: '%{handle}, %{count} me gusta',
+    categories: {
+      afrique: 'África',
+      maghreb: 'Magreb',
+      diaspora: 'Diáspora',
+      culture: 'Cultura',
+      musique: 'Música',
+      mode: 'Moda',
+      tech: 'Tecnología e innovación',
+      food: 'Gastronomía',
+      sport: 'Deporte',
+      actus: 'Noticias',
+    },
   },
   events: {
     title: 'Events',

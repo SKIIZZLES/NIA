@@ -230,6 +230,18 @@ const mnk: TranslationKeys = {
     emptyTitle: 'Feŋ te jaŋ foloo',
     emptyBody: 'Wideyo te ñiŋ duniyaa kono. I ye ke foloo ti ka a landi.',
     tileA11y: '%{handle}, %{count} lafinna',
+    categories: {
+      afrique: 'Afirikoo',
+      maghreb: 'Magirebu',
+      diaspora: 'Diaspora',
+      culture: 'Aadoo',
+      musique: 'Miziki',
+      mode: 'Mod',
+      tech: 'Teknoloji',
+      food: 'Domoroo',
+      sport: 'Sport',
+      actus: 'Kibaaroo',
+    },
   },
   events: {
     title: 'Events',

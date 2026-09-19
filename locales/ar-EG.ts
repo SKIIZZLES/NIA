@@ -230,6 +230,18 @@ const arEG: TranslationKeys = {
     emptyTitle: 'مفيش حاجة هنا لسه',
     emptyBody: 'مفيش فيديو في العالم ده. كن أول واحد ينشر.',
     tileA11y: '%{handle}، %{count} إعجاب',
+    categories: {
+      afrique: 'أفريقيا',
+      maghreb: 'المغرب العربي',
+      diaspora: 'الشتات',
+      culture: 'ثقافة',
+      musique: 'موسيقى',
+      mode: 'موضة',
+      tech: 'تقنية وابتكار',
+      food: 'مأكولات',
+      sport: 'رياضة',
+      actus: 'أخبار',
+    },
   },
   events: {
     title: 'Events',
