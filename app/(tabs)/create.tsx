@@ -1025,7 +1025,7 @@ export default function CreateScreen() {
                 style={[styles.catChip, selected && styles.catChipOn]}
               >
                 <Text style={[styles.catText, selected && styles.catTextOn]}>
-                  {c.label}
+                  {t(c.labelKey)}
                 </Text>
               </Pressable>
             );

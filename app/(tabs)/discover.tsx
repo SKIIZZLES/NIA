@@ -85,7 +85,11 @@ export default function DiscoverScreen() {
   const chips = useMemo(
     () => [
       { id: null as CategoryId | null, label: t('discover.chipAll'), icon: 'sparkles-outline' as const },
-      ...DISCOVER_CATEGORIES.map((c) => ({ id: c.id as CategoryId | null, label: c.label, icon: c.icon })),
+      ...DISCOVER_CATEGORIES.map((c) => ({
+        id: c.id as CategoryId | null,
+        label: t(c.labelKey),
+        icon: c.icon,
+      })),
     ],
     [t],
   );
@@ -331,7 +335,9 @@ export default function DiscoverScreen() {
             <View style={styles.empty}>
               <Ionicons name="compass-outline" size={36} color={colors.or} />
               <Text style={styles.emptyTitle}>{t('discover.emptyTitle')}</Text>
-              <Text style={styles.emptyBody}>{t('discover.emptyBody')}</Text>
+              <Text style={styles.emptyBody}>
+                {t(selected ? 'discover.emptyBodyCategory' : 'discover.emptyBodyAll')}
+              </Text>
             </View>
           )
         }
