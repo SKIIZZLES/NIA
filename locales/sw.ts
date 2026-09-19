@@ -130,8 +130,11 @@ const sw: TranslationKeys = {
     filmHintPhoto: 'Galerie photo ou appareil photo.',
     errWrongMediaVideo: 'Sélectionnez une vidéo pour ce mode.',
     errWrongMediaPhoto: 'Sélectionnez une photo pour ce mode.',
-
-  },
+    addSound: 'Ongeza sauti',
+    addSoundHint:
+      'Sauti zilizopakiwa / asili tu — hakuna katalogi ya biashara. Chagua yako au pakia faili ya sauti.',
+    pickSound: 'Chagua sauti',
+},
   profile: {
     defaultBio: 'Wasifu wa NIA',
     posts: 'Machapisho',
@@ -209,6 +212,23 @@ const sw: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
+  },
+  sound: {
+    title: 'Sauti',
+    useThis: 'Tumia sauti hii',
+    useCount: 'matumizi %{count}',
+    originalLabel: 'Sauti asili — %{handle}',
+    originalOnly: 'Sauti zilizopakiwa na jamii pekee. NIA haitoi katalogi ya muziki wa kibiashara.',
+    notFound: 'Sauti haijapatikana.',
+    loadFail: 'Imeshindwa kupakia sauti hii.',
+    loginRequired: 'Ingia ili kuongeza sauti.',
+    uploadAudio: 'Pakia faili ya sauti',
+    uploadTitleLabel: 'Jina la sauti',
+    uploadTitlePlaceholder: 'Mf. Beat ya nyumbani…',
+    uploadFail: 'Kupakia sauti kumeshindikana',
+    mySounds: 'Sauti zangu',
+    emptyOwn: 'Bado hakuna sauti. Pakia faili (mp3, m4a, wav).',
+    defaultTitle: 'Sauti asili',
   },
   appearance: {
     title: 'Apparence',

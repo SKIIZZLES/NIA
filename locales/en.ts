@@ -130,7 +130,10 @@ const en: TranslationKeys = {
     filmHintPhoto: 'Photo gallery or camera.',
     errWrongMediaVideo: 'Select a video for this mode.',
     errWrongMediaPhoto: 'Select a photo for this mode.',
-
+    addSound: 'Add a sound',
+    addSoundHint:
+      'User-uploaded / original sounds only — no commercial music catalog. Pick one of your sounds or import an audio file.',
+    pickSound: 'Choose a sound',
   },
   profile: {
     defaultBio: 'NIA profile',
@@ -209,6 +212,24 @@ const en: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
+  },
+  sound: {
+    title: 'Sound',
+    useThis: 'Use this sound',
+    useCount: '%{count} uses',
+    originalLabel: 'Original sound — %{handle}',
+    originalOnly:
+      'Community-uploaded sounds only. NIA does not offer a commercial music catalog.',
+    notFound: 'Sound not found.',
+    loadFail: 'Could not load this sound.',
+    loginRequired: 'Sign in to add a sound.',
+    uploadAudio: 'Import an audio file',
+    uploadTitleLabel: 'Sound title',
+    uploadTitlePlaceholder: 'e.g. Home beat, voiceover…',
+    uploadFail: 'Sound upload failed',
+    mySounds: 'My sounds',
+    emptyOwn: 'No sounds yet. Import an audio file (mp3, m4a, wav).',
+    defaultTitle: 'Original sound',
   },
   appearance: {
     title: 'Appearance',

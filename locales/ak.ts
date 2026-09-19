@@ -122,8 +122,11 @@ const ak: TranslationKeys = {
     filmHintPhoto: 'Galerie photo ou appareil photo.',
     errWrongMediaVideo: 'Sélectionnez une vidéo pour ce mode.',
     errWrongMediaPhoto: 'Sélectionnez une photo pour ce mode.',
-
-  },
+    addSound: 'Ajouter un son',
+    addSoundHint:
+      'Sons uploadés / originaux uniquement — pas de catalogue commercial.',
+    pickSound: 'Choisir un son',
+},
   profile: {
     defaultBio: 'NIA profile',
     posts: 'Ntoa so',
@@ -199,6 +202,23 @@ const ak: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
+  },
+  sound: {
+    title: 'Son',
+    useThis: 'Utiliser ce son',
+    useCount: '%{count} utilisations',
+    originalLabel: 'Son original — %{handle}',
+    originalOnly: 'Sons uploadés par la communauté uniquement. NIA ne propose pas de catalogue musical commercial.',
+    notFound: 'Son introuvable.',
+    loadFail: 'Impossible de charger ce son.',
+    loginRequired: 'Connectez-vous pour ajouter un son.',
+    uploadAudio: 'Importer un fichier audio',
+    uploadTitleLabel: 'Titre du son',
+    uploadTitlePlaceholder: 'Ex. Beat maison, voix off…',
+    uploadFail: 'Échec de l\'upload du son',
+    mySounds: 'Mes sons',
+    emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
+    defaultTitle: 'Son original',
   },
   appearance: {
     title: 'Apparence',

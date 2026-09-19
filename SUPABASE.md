@@ -21,8 +21,9 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 5. `supabase/migrations/005_archive_delete.sql` — status `deleted`, tighten SELECT RLS (published public; owner sees own non-deleted)
 6. `supabase/migrations/006_videos_rls_insert.sql` — **REQUIRED for publish** — recreate videos INSERT/SELECT/UPDATE/DELETE RLS
 7. `supabase/migrations/007_media_type_cover.sql` — **REQUIRED for photo/cover grids** — `media_type` + `cover_path`
+8. `supabase/migrations/008_sounds.sql` — **REQUIRED for Sons** — `sounds` table + `videos.sound_id` + audio MIME on bucket `videos`
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007 → 008).
 
 ### Apply 003 (reposts) on the live project
 
@@ -81,6 +82,29 @@ Also nulls out existing `thumbnail_url` values that look like video files, and b
 Until 007 is applied, the client still publishes without those columns (soft fallback) but grids keep using the safe Image/placeholder logic.
 
 
+### Apply 008 (sounds / Sons)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/008_sounds.sql` once.
+
+Creates:
+- `public.sounds` — `id`, `user_id` → profiles, `title`, `storage_path`, `duration_ms`, `use_count`, `created_at`
+- RLS: SELECT public; INSERT/UPDATE/DELETE own (`auth.uid() = user_id`)
+- `videos.sound_id` nullable FK → `sounds` (ON DELETE SET NULL)
+- Extends Storage bucket **`videos`** `allowed_mime_types` with audio: `audio/mpeg`, `audio/mp4`, `audio/wav`, `audio/x-wav`, `audio/x-m4a`, `audio/aac`, `audio/m4a`
+
+**Storage choice:** reuse the existing public `videos` bucket (simpler) rather than a separate `sounds` bucket. Audio files are stored under `{user_id}/sounds/{timestamp}.{ext}`. Existing object policies already allow authenticated upload under `{auth.uid()}/…`.
+
+**Product rule:** user-uploaded / original sounds only — **no** licensed commercial music catalog.
+
+**App behaviour after 008:**
+- Create flow: optional « Ajouter un son » — pick from own sounds or upload audio via DocumentPicker
+- Publish sets `videos.sound_id` and increments `sounds.use_count`
+- Feed `VideoCard` shows a tappable sound line → `/sound/[id]`
+- Sound page: title, @creator, use count, [Utiliser ce son]
+
+Until 008 is applied, the client soft-falls back (feed without sound embed; publish without `sound_id`).
+
+
 ## Storage bucket `videos` (required for publish)
 
 If **Storage → Buckets** has no public `videos` bucket (or upload fails with bucket/policy errors):
@@ -91,7 +115,7 @@ If **Storage → Buckets** has no public `videos` bucket (or upload fails with b
 2. Name: `videos`
 3. **Public bucket**: ON
 4. Optional: file size limit ≥ max upload you allow in-app (see `MAX_UPLOAD_BYTES` in `constants/publish.ts`)
-5. Allowed MIME (suggested): `video/mp4`, `video/quicktime`, `video/webm`, `image/jpeg`, `image/png`, `image/webp`
+5. Allowed MIME (suggested): `video/mp4`, `video/quicktime`, `video/webm`, `image/jpeg`, `image/png`, `image/webp`, plus audio after **008**: `audio/mpeg`, `audio/mp4`, `audio/wav`, `audio/x-m4a`, `audio/aac`
 
 ### Policies (if SQL insert did not apply)
 
@@ -110,7 +134,7 @@ Publish path used by the app: `{user_id}/{timestamp}.{ext}` via `lib/videos.ts`.
 - [ ] **API**: Project URL + anon (publishable) key match EAS `EXPO_PUBLIC_*` / local `.env`
 - [ ] **Auth → Providers**: Email (+ Google if used). For email MVP, disable “Confirm email”
 - [ ] **Auth → Google**: Web client ID matches `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` (see `GOOGLE_AUTH.md`)
-- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`
+- [ ] **Table Editor**: `profiles`, `videos`, `likes`, `comments`, `follows`, `notifications`, `reports`, `blocks`, `reposts`, `saves`, `sounds`
 - [ ] **RLS**: enabled on those tables; policies from 001/002 present
 - [ ] **Storage**: bucket `videos` exists, **Public**, policies as above
 - [ ] Empty `videos` table ⇒ empty in-app feed **without** « Connexion limitée » (by design — not demo injection)

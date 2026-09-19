@@ -67,6 +67,7 @@ export type Database = {
           share_count: number;
           save_count: number;
           repost_of: string | null;
+          sound_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           share_count?: number;
           save_count?: number;
           repost_of?: string | null;
+          sound_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -122,6 +124,45 @@ export type Database = {
           },
         ];
       };
+      sounds: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          storage_path: string;
+          duration_ms: number | null;
+          use_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          storage_path: string;
+          duration_ms?: number | null;
+          use_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          storage_path?: string;
+          duration_ms?: number | null;
+          use_count?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'sounds_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+
       likes: {
         Row: {
           user_id: string;
@@ -445,3 +486,4 @@ export type NotificationRow = Database['public']['Tables']['notifications']['Row
 export type ReportRow = Database['public']['Tables']['reports']['Row'];
 export type BlockRow = Database['public']['Tables']['blocks']['Row'];
 export type RepostRow = Database['public']['Tables']['reposts']['Row'];
+export type SoundRow = Database['public']['Tables']['sounds']['Row'];

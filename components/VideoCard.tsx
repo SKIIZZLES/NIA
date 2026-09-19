@@ -93,6 +93,11 @@ function VideoCardInner({
     router.push(`/user/${handle}`);
   };
 
+  const openSound = () => {
+    if (!item.soundId) return;
+    router.push(`/sound/${item.soundId}`);
+  };
+
   useEffect(() => {
     player.muted = muted;
   }, [muted, player]);
@@ -490,6 +495,20 @@ function VideoCardInner({
         <Text style={styles.caption} numberOfLines={3}>
           {item.caption}
         </Text>
+        {item.soundId ? (
+          <Pressable onPress={openSound} hitSlop={6} style={styles.soundRow}>
+            <Ionicons name="musical-notes" size={14} color={colors.or} />
+            <Text style={styles.soundText} numberOfLines={1}>
+              {item.soundTitle
+                ? item.soundCreatorHandle
+                  ? `${item.soundTitle} — ${item.soundCreatorHandle}`
+                  : item.soundTitle
+                : t('sound.originalLabel', {
+                    handle: item.soundCreatorHandle || item.handle,
+                  })}
+            </Text>
+          </Pressable>
+        ) : null}
         {item.country ? (
           <Text style={styles.country}>{item.country}</Text>
         ) : null}
@@ -692,6 +711,18 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 14,
     lineHeight: 20,
+  },
+  soundRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  soundText: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+    flexShrink: 1,
   },
   country: {
     marginTop: 8,

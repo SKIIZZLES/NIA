@@ -130,8 +130,11 @@ const es: TranslationKeys = {
     filmHintPhoto: 'Galerie photo ou appareil photo.',
     errWrongMediaVideo: 'Sélectionnez une vidéo pour ce mode.',
     errWrongMediaPhoto: 'Sélectionnez une photo pour ce mode.',
-
-  },
+    addSound: 'Añadir un sonido',
+    addSoundHint:
+      'Solo sonidos subidos / originales — sin catálogo comercial. Elige uno propio o importa un archivo de audio.',
+    pickSound: 'Elegir un sonido',
+},
   profile: {
     defaultBio: 'Perfil NIA',
     posts: 'Publicaciones',
@@ -209,6 +212,23 @@ const es: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archivado',
     videoNotFound: 'Vídeo no encontrado.',
+  },
+  sound: {
+    title: 'Sonido',
+    useThis: 'Usar este sonido',
+    useCount: '%{count} usos',
+    originalLabel: 'Sonido original — %{handle}',
+    originalOnly: 'Solo sonidos subidos por la comunidad. NIA no ofrece un catálogo musical comercial.',
+    notFound: 'Sonido no encontrado.',
+    loadFail: 'No se pudo cargar este sonido.',
+    loginRequired: 'Inicia sesión para añadir un sonido.',
+    uploadAudio: 'Importar un archivo de audio',
+    uploadTitleLabel: 'Título del sonido',
+    uploadTitlePlaceholder: 'Ej. Beat casero, voz en off…',
+    uploadFail: 'Error al subir el sonido',
+    mySounds: 'Mis sonidos',
+    emptyOwn: 'Aún no hay sonidos. Importa un archivo de audio (mp3, m4a, wav).',
+    defaultTitle: 'Sonido original',
   },
   appearance: {
     title: 'Apparence',

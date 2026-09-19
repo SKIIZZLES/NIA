@@ -26,6 +26,10 @@ export type VideoItem = {
   repostOf?: string;
   /** Handle du créateur original (UI « a republié ») */
   originalHandle?: string;
+  /** Son attaché (008_sounds) */
+  soundId?: string;
+  soundTitle?: string;
+  soundCreatorHandle?: string;
 };
 
 /** Démos publiques (Big Buck Bunny / samples) — à remplacer par CDN NIA */

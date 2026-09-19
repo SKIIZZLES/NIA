@@ -130,8 +130,11 @@ const ha: TranslationKeys = {
     filmHintPhoto: 'Galerie photo ou appareil photo.',
     errWrongMediaVideo: 'Sélectionnez une vidéo pour ce mode.',
     errWrongMediaPhoto: 'Sélectionnez une photo pour ce mode.',
-
-  },
+    addSound: 'Ƙara sauti',
+    addSoundHint:
+      'Sautukan da aka ɗora / na asali kawai — babu kasuwanci. Zaɓi naka ko shigo da fayil.',
+    pickSound: 'Zaɓi sauti',
+},
   profile: {
     defaultBio: 'Bayanan martaba na NIA',
     posts: 'Wallafe-wallafe',
@@ -209,6 +212,23 @@ const ha: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
+  },
+  sound: {
+    title: 'Sauti',
+    useThis: 'Yi amfani da wannan sauti',
+    useCount: 'amfani %{count}',
+    originalLabel: 'Sauti na asali — %{handle}',
+    originalOnly: 'Sautukan al\'umma kawai. NIA ba ta bayar da kasuwancin kiɗa ba.',
+    notFound: 'Ba a sami sauti ba.',
+    loadFail: 'An kasa ɗora wannan sauti.',
+    loginRequired: 'Shiga don ƙara sauti.',
+    uploadAudio: 'Shigo da fayil ɗin sauti',
+    uploadTitleLabel: 'Taken sauti',
+    uploadTitlePlaceholder: 'Misali Beat na gida…',
+    uploadFail: 'An kasa ɗora sauti',
+    mySounds: 'Sautuna',
+    emptyOwn: 'Babu sauti tukuna. Shigo da fayil (mp3, m4a, wav).',
+    defaultTitle: 'Sauti na asali',
   },
   appearance: {
     title: 'Apparence',

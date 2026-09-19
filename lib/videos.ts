@@ -15,13 +15,25 @@ import { isLikelyVideoUrl } from '@/lib/mediaThumb';
  * path and returns PGRST201 unless the FK is named explicitly.
  */
 export const VIDEO_PROFILE_SELECT =
-  '*, profiles!videos_user_id_fkey(username, avatar_url, display_name)';
+  '*, profiles!videos_user_id_fkey(username, avatar_url, display_name), sounds(id, title, user_id, profiles!sounds_user_id_fkey(username))';
 
 export const VIDEO_PROFILE_SELECT_LEGACY =
   '*, profiles!videos_user_id_fkey(username, avatar_url)';
 
+export const VIDEO_PROFILE_SELECT_NO_SOUND =
+  '*, profiles!videos_user_id_fkey(username, avatar_url, display_name)';
+
+type SoundEmbed = {
+  id: string;
+  title: string;
+  user_id: string;
+  profiles: { username: string | null } | null;
+} | null;
+
 type VideoWithProfile = VideoRow & {
   profiles: Pick<ProfileRow, 'username' | 'avatar_url' | 'display_name'> | null;
+  sounds?: SoundEmbed;
+  sound_id?: string | null;
 };
 
 function guessTab(
@@ -95,6 +107,11 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     category: resolveCategory(row.category, row.tag, row.region),
     userId: row.user_id,
     repostOf: row.repost_of || undefined,
+    soundId: row.sounds?.id || row.sound_id || undefined,
+    soundTitle: row.sounds?.title || undefined,
+    soundCreatorHandle: row.sounds?.profiles?.username
+      ? `@${row.sounds.profiles.username}`
+      : undefined,
   };
 }
 
@@ -116,7 +133,34 @@ export async function fetchVideosFromSupabase(options?: {
     query = query.eq('category', options.category);
   }
 
-  const { data, error } = await query;
+  let data: unknown = null;
+  let error: { message?: string; code?: string } | null = null;
+  {
+    const first = await query;
+    data = first.data;
+    error = first.error;
+  }
+
+  // Soft fallback if 008_sounds not applied (sounds embed / column missing)
+  if (
+    error &&
+    (error.message?.includes('sounds') ||
+      error.message?.includes('sound_id') ||
+      error.code === 'PGRST200' ||
+      error.code === 'PGRST204' ||
+      error.code === '42703')
+  ) {
+    let retry = sb
+      .from('videos')
+      .select(VIDEO_PROFILE_SELECT_NO_SOUND)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(options?.limit ?? 20);
+    if (options?.category) retry = retry.eq('category', options.category);
+    const fb = await retry;
+    data = fb.data;
+    error = fb.error;
+  }
 
   if (error) {
     // status/category absents si 002 pas encore joué — retry soft sans filtre
@@ -291,6 +335,8 @@ export type UploadVideoInput = {
   avatarUrl?: string;
   /** Statut DB — défaut published (pas de transcoder) */
   status?: 'published' | 'processing' | 'draft';
+  /** Optional linked sound (008) */
+  soundId?: string | null;
 };
 
 export async function uploadVideoToSupabase(
@@ -395,12 +441,13 @@ export async function uploadVideoToSupabase(
     media_type: mediaType,
     cover_path: coverPath,
     status: input.status || 'published',
+    sound_id: input.soundId || null,
   };
 
   let { data: inserted, error: insErr } = await sb
     .from('videos')
     .insert(insertPayload as never)
-    .select(VIDEO_PROFILE_SELECT)
+    .select(VIDEO_PROFILE_SELECT_NO_SOUND)
     .single();
 
   // Soft fallback if migration 007 not applied yet (unknown columns).
@@ -414,6 +461,7 @@ export async function uploadVideoToSupabase(
     const legacyPayload = { ...insertPayload };
     delete legacyPayload.media_type;
     delete legacyPayload.cover_path;
+    delete legacyPayload.sound_id;
     // Still never store a video URL as thumbnail_url.
     if (mediaType === 'video' && legacyPayload.thumbnail_url && isLikelyVideoUrl(String(legacyPayload.thumbnail_url))) {
       legacyPayload.thumbnail_url = null;
@@ -421,13 +469,42 @@ export async function uploadVideoToSupabase(
     const retry = await sb
       .from('videos')
       .insert(legacyPayload as never)
-      .select(VIDEO_PROFILE_SELECT)
+      .select(VIDEO_PROFILE_SELECT_NO_SOUND)
       .single();
     inserted = retry.data;
     insErr = retry.error;
   }
 
+  if (insErr) {
+    // Retry without sound_id if column missing
+    if (
+      input.soundId &&
+      (insErr.message?.includes('sound_id') ||
+        insErr.code === 'PGRST204' ||
+        insErr.code === '42703')
+    ) {
+      const noSound = { ...insertPayload };
+      delete noSound.sound_id;
+      const retrySound = await sb
+        .from('videos')
+        .insert(noSound as never)
+        .select(VIDEO_PROFILE_SELECT_NO_SOUND)
+        .single();
+      inserted = retrySound.data;
+      insErr = retrySound.error;
+    }
+  }
+
   if (insErr) throw insErr;
+
+  if (input.soundId && inserted) {
+    try {
+      const { incrementSoundUseCount } = await import('@/lib/sounds');
+      await incrementSoundUseCount(input.soundId);
+    } catch {
+      // ignore use_count bump failures
+    }
+  }
 
   const row = inserted as unknown as VideoWithProfile;
   // Ensure client-side mediaType even if column missing in SELECT
@@ -439,6 +516,9 @@ export async function uploadVideoToSupabase(
   }
   const item = mapRowToVideoItem(row, publicUrl);
   item.mediaType = mediaType;
+  if (input.soundId) {
+    item.soundId = input.soundId;
+  }
   if (!row.profiles && input.username) {
     item.handle = `@${input.username}`;
     item.avatarUrl = input.avatarUrl || item.avatarUrl;
