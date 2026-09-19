@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { Fonts, Radii, Spacing } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
 import {
   DISCOVER_CATEGORIES,
   type CategoryId,
@@ -25,6 +26,7 @@ import { fetchVideosFromSupabase } from '@/lib/videos';
 
 export default function DiscoverScreen() {
   const { videos: feedVideos } = useFeed();
+  const colors = useColors();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<CategoryId | null>(null);
   const [remoteByCategory, setRemoteByCategory] = useState<VideoItem[]>([]);
@@ -81,6 +83,186 @@ export default function DiscoverScreen() {
     setSelected((prev) => (prev === item.id ? null : item.id));
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.noir, paddingHorizontal: Spacing.lg },
+  title: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 28,
+    marginTop: Spacing.md,
+  },
+  subtitle: {
+    color: colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    marginTop: 6,
+    marginBottom: Spacing.md,
+    lineHeight: 18,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.noirSoft,
+    borderRadius: Radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  input: {
+    flex: 1,
+    color: colors.sable,
+    fontFamily: Fonts.regular,
+    fontSize: 16,
+  },
+  section: {
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.sm,
+    color: colors.textSecondary,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  listContent: { paddingBottom: Spacing.xxl },
+  resultsBlock: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: colors.noirElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  resultsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  resultsTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  clearFilter: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  emptyCat: {
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    marginVertical: 8,
+  },
+  mockHint: {
+    marginTop: 8,
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+  },
+  thumbCard: {
+    width: 120,
+  },
+  thumb: {
+    width: 120,
+    height: 180,
+    borderRadius: Radii.sm,
+    backgroundColor: colors.noirSoft,
+  },
+  thumbHandle: {
+    marginTop: 6,
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+  thumbMeta: {
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderRadius: Radii.md,
+    backgroundColor: colors.noirElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cardActive: {
+    borderColor: colors.or,
+    backgroundColor: colors.noirSoft,
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radii.sm,
+    backgroundColor: colors.noirSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 162, 39, 0.35)',
+  },
+  iconWrapActive: {
+    backgroundColor: colors.or,
+    borderColor: colors.or,
+  },
+  cardBody: { flex: 1 },
+  cardTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 15,
+  },
+  cardBlurb: {
+    marginTop: 3,
+    color: colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  empty: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxl,
+    paddingHorizontal: Spacing.md,
+    gap: 10,
+  },
+  emptyTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  emptyBody: {
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  footerNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: colors.noirElevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  footerText: {
+    flex: 1,
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+}), [colors]);
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Text style={styles.title}>Découvrir</Text>
@@ -89,18 +271,18 @@ export default function DiscoverScreen() {
       </Text>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={20} color={Colors.textMuted} />
+        <Ionicons name="search" size={20} color={colors.textMuted} />
         <TextInput
           style={styles.input}
           value={query}
           onChangeText={setQuery}
           placeholder="Catégories, scènes, thèmes…"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           accessibilityLabel="Recherche dans Découvrir"
         />
         {query.length > 0 ? (
           <Pressable onPress={() => setQuery('')} hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
           </Pressable>
         ) : null}
       </View>
@@ -123,7 +305,7 @@ export default function DiscoverScreen() {
                 </Pressable>
               </View>
               {loadingRemote ? (
-                <ActivityIndicator color={Colors.or} style={{ marginVertical: 16 }} />
+                <ActivityIndicator color={colors.or} style={{ marginVertical: 16 }} />
               ) : categoryVideos.length === 0 ? (
                 <Text style={styles.emptyCat}>
                   Aucune vidéo dans cet univers pour l’instant.
@@ -170,7 +352,7 @@ export default function DiscoverScreen() {
                 <Ionicons
                   name={item.icon}
                   size={22}
-                  color={active ? Colors.noir : Colors.or}
+                  color={active ? colors.noir : colors.or}
                 />
               </View>
               <View style={styles.cardBody}>
@@ -180,14 +362,14 @@ export default function DiscoverScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={18}
-                color={Colors.textMuted}
+                color={colors.textMuted}
               />
             </Pressable>
           );
         }}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="compass-outline" size={40} color={Colors.or} />
+            <Ionicons name="compass-outline" size={40} color={colors.or} />
             <Text style={styles.emptyTitle}>Aucun univers trouvé</Text>
             <Text style={styles.emptyBody}>
               Essayez un autre mot-clé. La recherche full-text arrive bientôt.
@@ -196,7 +378,7 @@ export default function DiscoverScreen() {
         }
         ListFooterComponent={
           <View style={styles.footerNote}>
-            <Ionicons name="sparkles-outline" size={16} color={Colors.or} />
+            <Ionicons name="sparkles-outline" size={16} color={colors.or} />
             <Text style={styles.footerText}>
               Filtre sur `videos.category` (migration 002) quand Supabase est
               configuré ; sinon démos par catégorie.
@@ -208,182 +390,3 @@ export default function DiscoverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.noir, paddingHorizontal: Spacing.lg },
-  title: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 28,
-    marginTop: Spacing.md,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    marginTop: 6,
-    marginBottom: Spacing.md,
-    lineHeight: 18,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: Colors.noirSoft,
-    borderRadius: Radii.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  input: {
-    flex: 1,
-    color: Colors.sable,
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-  },
-  section: {
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.sm,
-    color: Colors.textSecondary,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  listContent: { paddingBottom: Spacing.xxl },
-  resultsBlock: {
-    marginBottom: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.noirElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  resultsTitle: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-  },
-  clearFilter: {
-    color: Colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-  },
-  emptyCat: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    marginVertical: 8,
-  },
-  mockHint: {
-    marginTop: 8,
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-  },
-  thumbCard: {
-    width: 120,
-  },
-  thumb: {
-    width: 120,
-    height: 180,
-    borderRadius: Radii.sm,
-    backgroundColor: Colors.noirSoft,
-  },
-  thumbHandle: {
-    marginTop: 6,
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-  },
-  thumbMeta: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.noirElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardActive: {
-    borderColor: Colors.or,
-    backgroundColor: Colors.noirSoft,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.sm,
-    backgroundColor: Colors.noirSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(201, 162, 39, 0.35)',
-  },
-  iconWrapActive: {
-    backgroundColor: Colors.or,
-    borderColor: Colors.or,
-  },
-  cardBody: { flex: 1 },
-  cardTitle: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 15,
-  },
-  cardBlurb: {
-    marginTop: 3,
-    color: Colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xxl,
-    paddingHorizontal: Spacing.md,
-    gap: 10,
-  },
-  emptyTitle: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-  },
-  emptyBody: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  footerNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.noirElevated,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  footerText: {
-    flex: 1,
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-});

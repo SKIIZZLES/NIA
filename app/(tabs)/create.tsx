@@ -16,7 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
-import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { Fonts, Radii, Spacing } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
 import {
   DISCOVER_CATEGORIES,
   type CategoryId,
@@ -108,6 +109,7 @@ function inferMimeType(
 export default function CreateScreen() {
   const { publishPost, isMockFeed } = useFeed();
   const { t } = useI18n();
+  const colors = useColors();
   const router = useRouter();
   const [mode, setMode] = useState<CreateMode | null>(null);
   const [caption, setCaption] = useState('');
@@ -306,6 +308,234 @@ export default function CreateScreen() {
     }
   };
 
+  const styles = useMemo(() => StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.noir,
+  },
+  hubScroll: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
+  scroll: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
+    gap: 2,
+  },
+  backText: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 15,
+  },
+  title: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 28,
+    marginTop: Spacing.md,
+  },
+  subtitle: {
+    color: colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 13,
+    marginTop: 8,
+    marginBottom: Spacing.lg,
+    lineHeight: 18,
+  },
+  hubGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  hubCard: {
+    width: '47%',
+    flexGrow: 1,
+    minWidth: '42%',
+    backgroundColor: colors.noirElevated,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: Spacing.md,
+    minHeight: 148,
+  },
+  hubCardPressed: {
+    borderColor: colors.or,
+    backgroundColor: colors.noirSoft,
+  },
+  hubCardDisabled: {
+    opacity: 0.55,
+    backgroundColor: colors.noirSoft,
+  },
+  hubIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: Radii.md,
+    backgroundColor: 'rgba(209, 127, 42, 0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  hubIconWrapDisabled: {
+    backgroundColor: 'rgba(245, 230, 211, 0.06)',
+  },
+  hubCardTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 17,
+    marginBottom: 4,
+  },
+  hubCardTitleDisabled: {
+    color: colors.textMuted,
+  },
+  hubCardDesc: {
+    color: colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  hubCardDescDisabled: {
+    color: colors.textMuted,
+  },
+  soonBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(245, 230, 211, 0.12)',
+    borderRadius: Radii.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  soonText: {
+    color: colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 10,
+    letterSpacing: 0.3,
+  },
+  preview: {
+    height: 220,
+    borderRadius: Radii.lg,
+    backgroundColor: colors.noirSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+    overflow: 'hidden',
+  },
+  mediaRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  mediaBtn: {
+    flex: 1,
+  },
+  thumb: { width: '100%', height: '100%' },
+  previewHint: {
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+  },
+  previewBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radii.pill,
+  },
+  previewBadgeText: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
+  },
+  label: {
+    marginTop: Spacing.lg,
+    marginBottom: 6,
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  input: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+    backgroundColor: colors.noirSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: Radii.md,
+    color: colors.sable,
+    fontFamily: Fonts.regular,
+    fontSize: 15,
+    padding: 14,
+  },
+  hint: {
+    marginTop: 8,
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
+  },
+  tagChip: {
+    backgroundColor: colors.noirSoft,
+    borderWidth: 1,
+    borderColor: colors.or,
+    borderRadius: Radii.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  tagText: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+  catRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  catChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.noirSoft,
+  },
+  catChipOn: {
+    borderColor: colors.or,
+    backgroundColor: 'rgba(201, 162, 39, 0.18)',
+  },
+  catText: {
+    color: colors.textSecondary,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  catTextOn: {
+    color: colors.or,
+  },
+  coverBlock: {
+    marginTop: Spacing.md,
+  },
+  coverPreview: {
+    marginTop: Spacing.sm,
+    width: '100%',
+    height: 140,
+    borderRadius: Radii.md,
+    backgroundColor: colors.noirSoft,
+  },
+}), [colors]);
+
   if (!mode) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -348,7 +578,7 @@ export default function CreateScreen() {
                     <Ionicons
                       name={card.icon}
                       size={28}
-                      color={disabled ? Colors.textMuted : Colors.or}
+                      color={disabled ? colors.textMuted : colors.or}
                     />
                   </View>
                   <Text
@@ -386,7 +616,7 @@ export default function CreateScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Pressable onPress={backToHub} style={styles.backRow} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={Colors.sable} />
+          <Ionicons name="chevron-back" size={22} color={colors.sable} />
           <Text style={styles.backText}>{t('common.back')}</Text>
         </Pressable>
 
@@ -475,7 +705,7 @@ export default function CreateScreen() {
           value={caption}
           onChangeText={setCaption}
           placeholder={t('create.captionPlaceholder')}
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
         />
         {hashtags.length > 0 ? (
           <View style={styles.tagRow}>
@@ -522,230 +752,3 @@ export default function CreateScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.noir,
-  },
-  hubScroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-  },
-  scroll: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xs,
-    gap: 2,
-  },
-  backText: {
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 15,
-  },
-  title: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 28,
-    marginTop: Spacing.md,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    marginTop: 8,
-    marginBottom: Spacing.lg,
-    lineHeight: 18,
-  },
-  hubGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.md,
-  },
-  hubCard: {
-    width: '47%',
-    flexGrow: 1,
-    minWidth: '42%',
-    backgroundColor: Colors.noirElevated,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.md,
-    minHeight: 148,
-  },
-  hubCardPressed: {
-    borderColor: Colors.or,
-    backgroundColor: Colors.noirSoft,
-  },
-  hubCardDisabled: {
-    opacity: 0.55,
-    backgroundColor: Colors.noirSoft,
-  },
-  hubIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: Radii.md,
-    backgroundColor: 'rgba(209, 127, 42, 0.16)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.sm,
-  },
-  hubIconWrapDisabled: {
-    backgroundColor: 'rgba(245, 230, 211, 0.06)',
-  },
-  hubCardTitle: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 17,
-    marginBottom: 4,
-  },
-  hubCardTitleDisabled: {
-    color: Colors.textMuted,
-  },
-  hubCardDesc: {
-    color: Colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  hubCardDescDisabled: {
-    color: Colors.textMuted,
-  },
-  soonBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(245, 230, 211, 0.12)',
-    borderRadius: Radii.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  soonText: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.medium,
-    fontSize: 10,
-    letterSpacing: 0.3,
-  },
-  preview: {
-    height: 220,
-    borderRadius: Radii.lg,
-    backgroundColor: Colors.noirSoft,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.md,
-    overflow: 'hidden',
-  },
-  mediaRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  mediaBtn: {
-    flex: 1,
-  },
-  thumb: { width: '100%', height: '100%' },
-  previewHint: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-  },
-  previewBadge: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radii.pill,
-  },
-  previewBadgeText: {
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 11,
-  },
-  label: {
-    marginTop: Spacing.lg,
-    marginBottom: 6,
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-  },
-  input: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-    backgroundColor: Colors.noirSoft,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radii.md,
-    color: Colors.sable,
-    fontFamily: Fonts.regular,
-    fontSize: 15,
-    padding: 14,
-  },
-  hint: {
-    marginTop: 8,
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 10,
-  },
-  tagChip: {
-    backgroundColor: Colors.noirSoft,
-    borderWidth: 1,
-    borderColor: Colors.or,
-    borderRadius: Radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  tagText: {
-    color: Colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-  },
-  catRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  catChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radii.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.noirSoft,
-  },
-  catChipOn: {
-    borderColor: Colors.or,
-    backgroundColor: 'rgba(201, 162, 39, 0.18)',
-  },
-  catText: {
-    color: Colors.textSecondary,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-  },
-  catTextOn: {
-    color: Colors.or,
-  },
-  coverBlock: {
-    marginTop: Spacing.md,
-  },
-  coverPreview: {
-    marginTop: Spacing.sm,
-    width: '100%',
-    height: 140,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.noirSoft,
-  },
-});

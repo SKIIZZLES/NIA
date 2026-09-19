@@ -15,6 +15,7 @@ import {
 import { AuthProvider } from '@/context/AuthContext';
 import { FeedProvider } from '@/context/FeedContext';
 import { I18nProvider } from '@/context/I18nContext';
+import { ThemeProvider, useColors } from '@/context/ThemeContext';
 import { Colors } from '@/constants/theme';
 import { t } from '@/lib/i18n';
 
@@ -71,13 +72,15 @@ class ErrorBoundary extends Component<EBProps, EBState> {
 }
 
 function RootNavigator() {
+  const colors = useColors();
+
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style={colors.isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: Colors.noir },
+          contentStyle: { backgroundColor: colors.noir },
           animation: 'fade',
         }}
       >
@@ -87,6 +90,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="user/[username]" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="appearance" options={{ headerShown: false }} />
       </Stack>
     </>
   );
@@ -132,13 +136,15 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <I18nProvider>
-        <AuthProvider>
-          <FeedProvider>
-            <RootNavigator />
-          </FeedProvider>
-        </AuthProvider>
-      </I18nProvider>
+      <ThemeProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <FeedProvider>
+              <RootNavigator />
+            </FeedProvider>
+          </AuthProvider>
+        </I18nProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

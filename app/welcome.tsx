@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NiaWordmark } from '@/components/NiaWordmark';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
+import { useColors } from '@/context/ThemeContext';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
 
@@ -15,13 +16,71 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { isMockAuth } = useAuth();
   const { t } = useI18n();
+  const colors = useColors();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safe: {
+          flex: 1,
+          backgroundColor: colors.noir,
+          paddingHorizontal: Spacing.lg,
+        },
+        top: {
+          marginTop: Spacing.xxl,
+          alignItems: 'center',
+        },
+        badge: {
+          marginTop: Spacing.md,
+          paddingHorizontal: 12,
+          paddingVertical: 4,
+          borderRadius: 999,
+        },
+        badgeText: {
+          color: colors.onMedia,
+          fontFamily: Fonts.bold,
+          fontSize: 11,
+          letterSpacing: 0.6,
+        },
+        hero: {
+          flex: 1,
+          justifyContent: 'center',
+          paddingVertical: Spacing.xl,
+        },
+        heroPrimary: {
+          color: colors.sable,
+          fontFamily: Fonts.bold,
+          fontSize: 28,
+          lineHeight: 36,
+          letterSpacing: -0.3,
+        },
+        heroSecondary: {
+          marginTop: Spacing.md,
+          color: colors.textSecondary,
+          fontFamily: Fonts.medium,
+          fontSize: 15,
+          lineHeight: 22,
+        },
+        actions: {
+          paddingBottom: Spacing.xl,
+        },
+        mockHint: {
+          marginTop: Spacing.md,
+          textAlign: 'center',
+          color: colors.textMuted,
+          fontFamily: Fonts.regular,
+          fontSize: 11,
+        },
+      }),
+    [colors],
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
         <NiaWordmark size={72} showTagline />
         {isMockAuth ? (
-          <View style={[styles.badge, { backgroundColor: Colors.terre }]}>
+          <View style={[styles.badge, { backgroundColor: colors.terre }]}>
             <Text style={styles.badgeText}>{t('welcome.authMockBadge')}</Text>
           </View>
         ) : null}
@@ -54,56 +113,3 @@ export default function WelcomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.noir,
-    paddingHorizontal: Spacing.lg,
-  },
-  top: {
-    marginTop: Spacing.xxl,
-    alignItems: 'center',
-  },
-  badge: {
-    marginTop: Spacing.md,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeText: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 11,
-    letterSpacing: 0.6,
-  },
-  hero: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingVertical: Spacing.xl,
-  },
-  heroPrimary: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: -0.3,
-  },
-  heroSecondary: {
-    marginTop: Spacing.md,
-    color: Colors.textSecondary,
-    fontFamily: Fonts.medium,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  actions: {
-    paddingBottom: Spacing.xl,
-  },
-  mockHint: {
-    marginTop: Spacing.md,
-    textAlign: 'center',
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-  },
-});

@@ -152,6 +152,7 @@ const en: TranslationKeys = {
     unsaveTitle: 'Remove from saved?',
     unsaveBody: 'This video will no longer appear in your saved list.',
     language: 'Language',
+    appearance: 'Appearance',
   },
   notifications: {
     title: 'Notifications',
@@ -208,6 +209,18 @@ const en: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
+  },
+  appearance: {
+    title: 'Appearance',
+    subtitle: 'Customize interface colors for this account. This does not restyle other people’s posts.',
+    original: 'NIA Original',
+    sable: 'Sable',
+    terre: 'Terre',
+    bronze: 'Bronze',
+    nuit: 'Nuit',
+    clair: 'Clair',
+    auto: 'Automatic',
+    autoHint: 'Follows the system light / dark theme',
   },
   errors: {
     boundaryTitle: 'Something went wrong',

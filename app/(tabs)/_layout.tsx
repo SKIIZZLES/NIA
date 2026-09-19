@@ -1,20 +1,50 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Radii } from '@/constants/theme';
+import { Fonts, Radii } from '@/constants/theme';
 import { useI18n } from '@/context/I18nContext';
+import { useColors } from '@/context/ThemeContext';
 
 export default function TabsLayout() {
   const { t } = useI18n();
+  const colors = useColors();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        tabBar: {
+          backgroundColor: colors.noir,
+          borderTopColor: colors.border,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          height: 64,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
+        label: {
+          fontFamily: Fonts.medium,
+          fontSize: 10,
+        },
+        createBtn: {
+          width: 48,
+          height: 36,
+          borderRadius: Radii.create,
+          backgroundColor: colors.or,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 4,
+        },
+      }),
+    [colors],
+  );
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: Colors.sable,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarActiveTintColor: colors.sable,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.label,
       }}
     >
@@ -43,7 +73,7 @@ export default function TabsLayout() {
           tabBarLabel: () => null,
           tabBarIcon: () => (
             <View style={styles.createBtn}>
-              <Ionicons name="add" size={28} color={Colors.noir} />
+              <Ionicons name="add" size={28} color={colors.onAccent} />
             </View>
           ),
         }}
@@ -69,27 +99,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: Colors.noir,
-    borderTopColor: Colors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    height: 64,
-    paddingBottom: 8,
-    paddingTop: 6,
-  },
-  label: {
-    fontFamily: Fonts.medium,
-    fontSize: 10,
-  },
-  createBtn: {
-    width: 48,
-    height: 36,
-    borderRadius: Radii.create,
-    backgroundColor: Colors.or,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-});

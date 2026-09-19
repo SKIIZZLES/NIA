@@ -151,6 +151,7 @@ const fr = {
     unsaveTitle: 'Retirer des enregistrements ?',
     unsaveBody: 'Cette vidéo ne figurera plus dans vos enregistrements.',
     language: 'Langue',
+    appearance: 'Apparence',
   },
   notifications: {
     title: 'Notifications',
@@ -207,6 +208,18 @@ const fr = {
     deleteSuccessMock: 'Supprimée (mode démo).',
     archivedBadge: 'Archivée',
     videoNotFound: 'Vidéo introuvable.',
+  },
+  appearance: {
+    title: 'Apparence',
+    subtitle: 'Personnalisez les couleurs de l’interface pour ce compte. Cela ne change pas le contenu des publications.',
+    original: 'NIA Original',
+    sable: 'Sable',
+    terre: 'Terre',
+    bronze: 'Bronze',
+    nuit: 'Nuit',
+    clair: 'Clair',
+    auto: 'Automatique',
+    autoHint: 'Suit le thème clair / sombre du système',
   },
   errors: {
     boundaryTitle: 'Une erreur est survenue',

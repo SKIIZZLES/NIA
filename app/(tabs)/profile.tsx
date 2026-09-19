@@ -16,7 +16,8 @@ import { MediaThumb } from '@/components/MediaThumb';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
-import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { Fonts, Radii, Spacing } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
 import { useRouter } from 'expo-router';
 import {
   countFollowers,
@@ -34,6 +35,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { videos, savedIds, toggleSave, refresh } = useFeed();
   const { t } = useI18n();
+  const colors = useColors();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const gap = 2;
@@ -178,6 +180,203 @@ export default function ProfileScreen() {
 
   const isGrid = activeTab !== 'archives';
 
+  const styles = useMemo(() => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.noir },
+  header: {
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    paddingTop: Spacing.md,
+  },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderWidth: 2,
+    borderColor: colors.or,
+  },
+  displayName: {
+    marginTop: Spacing.md,
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 20,
+  },
+  username: {
+    marginTop: 4,
+    color: colors.textSecondary,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+  },
+  bio: {
+    marginTop: 6,
+    color: colors.textSecondary,
+    fontFamily: Fonts.regular,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  stats: {
+    flexDirection: 'row',
+    gap: 28,
+    marginTop: Spacing.lg,
+  },
+  stat: { alignItems: 'center' },
+  statValue: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 16,
+  },
+  statLabel: {
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  settingsRow: {
+    marginTop: Spacing.md,
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: Radii.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.noirElevated,
+  },
+  settingsRowText: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+  },
+  settingsRowChevron: {
+    color: colors.textMuted,
+    fontSize: 22,
+    lineHeight: 22,
+  },
+  editBtn: {
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  editBtnText: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 14,
+  },
+  linkBtn: { marginTop: Spacing.sm, padding: 6 },
+  linkText: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  segment: {
+    marginTop: Spacing.lg,
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    backgroundColor: colors.noirSoft,
+    borderRadius: Radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    padding: 3,
+    gap: 2,
+  },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: Radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentItemActive: {
+    backgroundColor: colors.noirElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(209, 127, 42, 0.55)',
+  },
+  segmentLabel: {
+    color: colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  segmentLabelActive: {
+    color: colors.or,
+    fontFamily: Fonts.bold,
+  },
+  empty: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontFamily: Fonts.regular,
+    marginTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+  },
+  archiveRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    alignItems: 'center',
+  },
+  archiveThumbWrap: {
+    position: 'relative',
+  },
+  archiveThumb: {
+    width: 72,
+    height: 72 * (16 / 9),
+    borderRadius: Radii.sm,
+    overflow: 'hidden',
+    backgroundColor: colors.noirSoft,
+  },
+  archiveBadge: {
+    position: 'absolute',
+    left: 4,
+    bottom: 4,
+    backgroundColor: 'rgba(11,11,11,0.75)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  archiveBadgeText: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 9,
+  },
+  archiveMeta: {
+    flex: 1,
+    gap: 8,
+  },
+  archiveCaption: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  archiveActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  archiveActionBtn: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  archiveActionPrimary: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+  archiveActionDanger: {
+    color: colors.danger,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+}), [colors]);
+
   const header = (
     <View style={styles.header}>
       <Image
@@ -197,6 +396,14 @@ export default function ProfileScreen() {
         <Stat label={t('profile.following')} value={formatCount(followingCount)} />
       </View>
       <LanguageToggle />
+      <Pressable
+        style={styles.settingsRow}
+        onPress={() => router.push('/appearance')}
+        accessibilityRole="button"
+      >
+        <Text style={styles.settingsRowText}>{t('profile.appearance')}</Text>
+        <Text style={styles.settingsRowChevron}>›</Text>
+      </Pressable>
       {user ? (
         <>
           <Pressable
@@ -333,7 +540,7 @@ export default function ProfileScreen() {
                 style={{
                   width: size,
                   height: size * (16 / 9),
-                  backgroundColor: Colors.noirSoft,
+                  backgroundColor: colors.noirSoft,
                   overflow: 'hidden',
                 }}
               />
@@ -346,184 +553,29 @@ export default function ProfileScreen() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
   return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+    <View style={{ alignItems: 'center' }}>
+      <Text
+        style={{
+          color: colors.sable,
+          fontFamily: Fonts.bold,
+          fontSize: 16,
+        }}
+      >
+        {value}
+      </Text>
+      <Text
+        style={{
+          color: colors.textMuted,
+          fontFamily: Fonts.regular,
+          fontSize: 11,
+          marginTop: 2,
+        }}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.noir },
-  header: {
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
-    paddingTop: Spacing.md,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 2,
-    borderColor: Colors.or,
-  },
-  displayName: {
-    marginTop: Spacing.md,
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 20,
-  },
-  username: {
-    marginTop: 4,
-    color: Colors.textSecondary,
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-  },
-  bio: {
-    marginTop: 6,
-    color: Colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  stats: {
-    flexDirection: 'row',
-    gap: 28,
-    marginTop: Spacing.lg,
-  },
-  stat: { alignItems: 'center' },
-  statValue: {
-    color: Colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-  },
-  statLabel: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  editBtn: {
-    marginTop: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  editBtnText: {
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-  },
-  linkBtn: { marginTop: Spacing.sm, padding: 6 },
-  linkText: {
-    color: Colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-  },
-  segment: {
-    marginTop: Spacing.lg,
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    backgroundColor: Colors.noirSoft,
-    borderRadius: Radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: Colors.border,
-    padding: 3,
-    gap: 2,
-  },
-  segmentItem: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: Radii.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentItemActive: {
-    backgroundColor: Colors.noirElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(209, 127, 42, 0.55)',
-  },
-  segmentLabel: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.medium,
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  segmentLabelActive: {
-    color: Colors.or,
-    fontFamily: Fonts.bold,
-  },
-  empty: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    marginTop: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-  },
-  archiveRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    alignItems: 'center',
-  },
-  archiveThumbWrap: {
-    position: 'relative',
-  },
-  archiveThumb: {
-    width: 72,
-    height: 72 * (16 / 9),
-    borderRadius: Radii.sm,
-    overflow: 'hidden',
-    backgroundColor: Colors.noirSoft,
-  },
-  archiveBadge: {
-    position: 'absolute',
-    left: 4,
-    bottom: 4,
-    backgroundColor: 'rgba(11,11,11,0.75)',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  archiveBadgeText: {
-    color: Colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 9,
-  },
-  archiveMeta: {
-    flex: 1,
-    gap: 8,
-  },
-  archiveCaption: {
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-  },
-  archiveActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  archiveActionBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  archiveActionPrimary: {
-    color: Colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-  },
-  archiveActionDanger: {
-    color: Colors.danger,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-  },
-});

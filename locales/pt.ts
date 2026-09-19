@@ -152,6 +152,7 @@ const pt: TranslationKeys = {
     unsaveTitle: 'Remover dos guardados?',
     unsaveBody: 'Este vídeo deixará de aparecer nos seus guardados.',
     language: 'Idioma',
+    appearance: 'Apparence',
   },
   notifications: {
     title: 'Notificações',
@@ -208,6 +209,18 @@ const pt: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Arquivado',
     videoNotFound: 'Vídeo não encontrado.',
+  },
+  appearance: {
+    title: 'Apparence',
+    subtitle: 'Personnalisez les couleurs de l’interface pour ce compte. Cela ne change pas le contenu des publications.',
+    original: 'NIA Original',
+    sable: 'Sable',
+    terre: 'Terre',
+    bronze: 'Bronze',
+    nuit: 'Nuit',
+    clair: 'Clair',
+    auto: 'Automatique',
+    autoHint: 'Suit le thème clair / sombre du système',
   },
   errors: {
     boundaryTitle: 'Algo correu mal',

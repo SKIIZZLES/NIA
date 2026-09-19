@@ -1,35 +1,12 @@
 /**
  * NIA — tokens de marque (moodboard)
  * Noir Terre · Ocre Africain · Sable · Vert Baobab · Rouge Terre
+ *
+ * Static `Colors` aliases NIA Original for backward compatibility.
+ * Prefer `useColors()` / `useTheme()` from ThemeContext for themed chrome.
  */
-export const Colors = {
-  /** Noir Terre #0B0B0B */
-  noir: '#0B0B0B',
-  noirElevated: '#141414',
-  noirSoft: '#1C1C1C',
-  terre: '#6B3E26',
-  terreLight: '#8B5A2B',
-  /** Ocre Africain #D17F2A — primary accent (was gold/or) */
-  or: '#D17F2A',
-  orSoft: '#E09A4F',
-  ocre: '#D17F2A',
-  /** Sable #F5E6D3 — primary UI text (cream-brown, not pure white) */
-  sable: '#F5E6D3',
-  sableMuted: '#E8D9C4',
-  /** Vert Baobab #1B4D3E */
-  vert: '#1B4D3E',
-  vertDeep: '#143D31',
-  vertBaobab: '#1B4D3E',
-  /** Rouge Terre #A33227 */
-  rougeTerre: '#A33227',
-  white: '#FFFFFF',
-  textPrimary: '#F5E6D3',
-  textSecondary: 'rgba(245, 230, 211, 0.72)',
-  textMuted: 'rgba(245, 230, 211, 0.45)',
-  border: 'rgba(245, 230, 211, 0.18)',
-  danger: '#A33227',
-  overlay: 'rgba(11, 11, 11, 0.55)',
-} as const;
+export { ORIGINAL_COLORS as Colors } from '@/constants/themes';
+export type { ThemeColors, ThemeId } from '@/constants/themes';
 
 export const Spacing = {
   xs: 4,

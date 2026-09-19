@@ -11,6 +11,7 @@ import {
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radii } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
 import { formatCount, VideoItem } from '@/data/mockVideos';
 import { useFeed } from '@/context/FeedContext';
 import { useAuth } from '@/context/AuthContext';
@@ -50,6 +51,8 @@ function VideoCardInner({
   });
   const router = useRouter();
   const { t } = useI18n();
+  const colors = useColors();
+  const chrome = colors.onMedia;
   const { user } = useAuth();
   const {
     toggleLike,
@@ -373,7 +376,7 @@ function VideoCardInner({
             <Ionicons
               name={pausedByUser ? 'play' : 'pause'}
               size={36}
-              color={Colors.sable}
+              color={chrome}
             />
           </View>
         </View>
@@ -387,7 +390,7 @@ function VideoCardInner({
             hitSlop={10}
             accessibilityLabel={t('feed.rewind')}
           >
-            <Ionicons name="play-back" size={16} color={Colors.sable} />
+            <Ionicons name="play-back" size={16} color={chrome} />
             <Text style={styles.rewindLabel}>{SEEK_SEC}s</Text>
           </Pressable>
           <Pressable
@@ -396,7 +399,7 @@ function VideoCardInner({
             hitSlop={10}
             accessibilityLabel={t('feed.forward')}
           >
-            <Ionicons name="play-forward" size={16} color={Colors.sable} />
+            <Ionicons name="play-forward" size={16} color={chrome} />
             <Text style={styles.rewindLabel}>{SEEK_SEC}s</Text>
           </Pressable>
         </View>
@@ -408,7 +411,7 @@ function VideoCardInner({
         hitSlop={12}
         accessibilityLabel="Options vidéo"
       >
-        <Ionicons name="ellipsis-vertical" size={22} color={Colors.sable} />
+        <Ionicons name="ellipsis-vertical" size={22} color={chrome} />
       </Pressable>
 
       <View style={styles.rail}>
@@ -428,20 +431,20 @@ function VideoCardInner({
         </View>
         <RailAction
           icon={liked ? 'heart' : 'heart-outline'}
-          color={liked ? Colors.rougeTerre : Colors.sable}
+          color={liked ? colors.rougeTerre : chrome}
           label={formatCount(item.likes)}
           onPress={() => toggleLike(item.id)}
         />
         <RailAction
           icon="chatbubble-ellipses"
-          color={Colors.sable}
+          color={chrome}
           label={formatCount(item.comments)}
           onPress={() => onOpenComments?.(item.id)}
           accessibilityLabel={t('feed.comments')}
         />
         <RailAction
           icon={saved ? 'bookmark' : 'bookmark-outline'}
-          color={saved ? Colors.or : Colors.sable}
+          color={saved ? colors.or : chrome}
           label={formatCount(saveCount)}
           onPress={onSave}
           accessibilityLabel={t('feed.save')}
@@ -456,7 +459,7 @@ function VideoCardInner({
           icon="sync-outline"
           label={t('feed.repost')}
           onPress={() => void onRepost()}
-          color={Colors.or}
+          color={colors.or}
           accessibilityLabel={t('feed.repost')}
         />
         {!isImagePost ? (
@@ -464,7 +467,7 @@ function VideoCardInner({
             <Ionicons
               name={muted ? 'volume-mute' : 'volume-high'}
               size={22}
-              color={Colors.sable}
+              color={chrome}
             />
           </Pressable>
         ) : null}

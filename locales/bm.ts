@@ -144,6 +144,7 @@ const bm: TranslationKeys = {
     unsaveTitle: 'Retirer des enregistrements ?',
     unsaveBody: 'Cette vidéo ne figuera plus dans vos enregistrements.',
     language: 'Kan',
+    appearance: 'Apparence',
   },
   notifications: {
     title: 'Kibaaruw',
@@ -198,6 +199,18 @@ const bm: TranslationKeys = {
     deleteSuccessMock: 'Deleted (demo mode).',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
+  },
+  appearance: {
+    title: 'Apparence',
+    subtitle: 'Personnalisez les couleurs de l’interface pour ce compte. Cela ne change pas le contenu des publications.',
+    original: 'NIA Original',
+    sable: 'Sable',
+    terre: 'Terre',
+    bronze: 'Bronze',
+    nuit: 'Nuit',
+    clair: 'Clair',
+    auto: 'Automatique',
+    autoHint: 'Suit le thème clair / sombre du système',
   },
   errors: {
     boundaryTitle: 'Filili kɛra',
