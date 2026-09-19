@@ -95,6 +95,11 @@ const am: TranslationKeys = {
     filmHint: 'ጋለሪ ወይም ካሜራ (expo-image-picker)።',
     alertCamera: 'ካሜራ',
     errCameraDenied: 'ቪዲዮ ለመቅረጽ ካሜራ ይፍቀዱ።',
+    coverLabel: 'ሽፋን (አማራጭ)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

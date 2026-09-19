@@ -124,6 +124,8 @@ export async function createRepost(
     user_id: userId,
     storage_path: original.storage_path,
     thumbnail_url: original.thumbnail_url,
+    media_type: (original as { media_type?: string }).media_type || 'video',
+    cover_path: (original as { cover_path?: string | null }).cover_path ?? null,
     caption: original.caption,
     region: original.region,
     tag: original.tag,

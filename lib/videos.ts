@@ -7,6 +7,7 @@ import type { CategoryId } from '@/constants/categories';
 import { isCategoryId } from '@/constants/categories';
 import { parseHashtags } from '@/constants/publish';
 import type { ProfileRow, VideoRow } from '@/types/database';
+import { isLikelyVideoUrl } from '@/lib/mediaThumb';
 
 /**
  * Disambiguate videos→profiles embed.
@@ -60,11 +61,25 @@ function resolveCategory(
 
 export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): VideoItem {
   const username = row.profiles?.username || 'createur';
-  const thumb = row.thumbnail_url || publicUrl;
+  const mediaType: 'video' | 'image' =
+    (row as { media_type?: string }).media_type === 'image' ? 'image' : 'video';
+
+  // Never fall back to a video public URL for Image grids.
+  let thumb = row.thumbnail_url || '';
+  if (mediaType === 'image') {
+    thumb = row.thumbnail_url || publicUrl;
+  } else if (thumb && isLikelyVideoUrl(thumb)) {
+    thumb = '';
+  }
+  if (thumb && isLikelyVideoUrl(thumb)) {
+    thumb = '';
+  }
+
   return {
     id: row.id,
     videoUrl: publicUrl,
     thumbnailUrl: thumb,
+    mediaType,
     handle: `@${username}`,
     caption: row.caption || '',
     likes: row.like_count ?? 0,
@@ -268,6 +283,10 @@ export type UploadVideoInput = {
   fileName?: string | null;
   /** Picker asset.type / inferred kind — fallback when mime + extension missing */
   mediaKind?: 'image' | 'video' | 'unknown' | null;
+  /** Optional cover/still for videos (ImagePicker image URI) */
+  coverUri?: string | null;
+  coverMimeType?: string | null;
+  coverFileName?: string | null;
   username?: string;
   avatarUrl?: string;
   /** Statut DB — défaut published (pas de transcoder) */
@@ -317,6 +336,52 @@ export async function uploadVideoToSupabase(
   if (upErr) throw upErr;
 
   const { data: urlData } = sb.storage.from('videos').getPublicUrl(path);
+  const publicUrl = urlData.publicUrl;
+
+  const mediaType: 'video' | 'image' =
+    input.mediaKind === 'image' || contentType.startsWith('image/')
+      ? 'image'
+      : 'video';
+
+  // Cover / poster (optional for videos). Always an image file in the videos bucket.
+  let coverPath: string | null = null;
+  let thumbnailUrl: string | null = null;
+
+  if (mediaType === 'image') {
+    // Image posts: the media itself is the thumb — safe for <Image />.
+    thumbnailUrl = publicUrl;
+  } else if (input.coverUri) {
+    const coverResolved = resolveUploadContentType({
+      mimeType: input.coverMimeType,
+      localUri: input.coverUri,
+      fileName: input.coverFileName,
+      mediaKind: 'image',
+    });
+    const coverExt = coverResolved.ext.match(/^(jpe?g|png|webp)$/i)
+      ? coverResolved.ext
+      : 'jpg';
+    coverPath = `${creatorId}/covers/${Date.now()}.${coverExt}`;
+    const coverRes = await fetch(input.coverUri);
+    if (!coverRes.ok) {
+      throw new Error(`Impossible de lire la cover (${coverRes.status})`);
+    }
+    const coverBuf = await coverRes.arrayBuffer();
+    const { error: coverErr } = await sb.storage
+      .from('videos')
+      .upload(coverPath, coverBuf, {
+        contentType: coverResolved.contentType.startsWith('image/')
+          ? coverResolved.contentType
+          : 'image/jpeg',
+        upsert: false,
+      });
+    if (coverErr) throw coverErr;
+    const { data: coverUrlData } = sb.storage.from('videos').getPublicUrl(coverPath);
+    thumbnailUrl = coverUrlData.publicUrl;
+  } else {
+    // Video without cover: leave thumbnail_url null (grids show NIA placeholder).
+    // NEVER set thumbnail_url to the .mp4 public URL.
+    thumbnailUrl = null;
+  }
 
   const insertPayload: Record<string, unknown> = {
     user_id: creatorId,
@@ -326,20 +391,54 @@ export async function uploadVideoToSupabase(
     tag: input.tag || null,
     category: input.category || input.tag || null,
     hashtags: input.hashtags?.length ? input.hashtags : null,
-    thumbnail_url: urlData.publicUrl,
+    thumbnail_url: thumbnailUrl,
+    media_type: mediaType,
+    cover_path: coverPath,
     status: input.status || 'published',
   };
 
-  const { data: inserted, error: insErr } = await sb
+  let { data: inserted, error: insErr } = await sb
     .from('videos')
     .insert(insertPayload as never)
     .select(VIDEO_PROFILE_SELECT)
     .single();
 
+  // Soft fallback if migration 007 not applied yet (unknown columns).
+  if (
+    insErr &&
+    (insErr.message?.includes('media_type') ||
+      insErr.message?.includes('cover_path') ||
+      insErr.code === 'PGRST204' ||
+      insErr.code === '42703')
+  ) {
+    const legacyPayload = { ...insertPayload };
+    delete legacyPayload.media_type;
+    delete legacyPayload.cover_path;
+    // Still never store a video URL as thumbnail_url.
+    if (mediaType === 'video' && legacyPayload.thumbnail_url && isLikelyVideoUrl(String(legacyPayload.thumbnail_url))) {
+      legacyPayload.thumbnail_url = null;
+    }
+    const retry = await sb
+      .from('videos')
+      .insert(legacyPayload as never)
+      .select(VIDEO_PROFILE_SELECT)
+      .single();
+    inserted = retry.data;
+    insErr = retry.error;
+  }
+
   if (insErr) throw insErr;
 
   const row = inserted as unknown as VideoWithProfile;
-  const item = mapRowToVideoItem(row, urlData.publicUrl);
+  // Ensure client-side mediaType even if column missing in SELECT
+  if (!(row as { media_type?: string }).media_type) {
+    (row as { media_type?: string }).media_type = mediaType;
+  }
+  if (thumbnailUrl && !row.thumbnail_url) {
+    row.thumbnail_url = thumbnailUrl;
+  }
+  const item = mapRowToVideoItem(row, publicUrl);
+  item.mediaType = mediaType;
   if (!row.profiles && input.username) {
     item.handle = `@${input.username}`;
     item.avatarUrl = input.avatarUrl || item.avatarUrl;

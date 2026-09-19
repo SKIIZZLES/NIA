@@ -1,3 +1,4 @@
+import { MediaThumb } from '@/components/MediaThumb';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -136,7 +137,12 @@ export default function DiscoverScreen() {
                   contentContainerStyle={{ gap: 10, paddingBottom: 8 }}
                   renderItem={({ item: v }) => (
                     <View style={styles.thumbCard}>
-                      <Image source={{ uri: v.thumbnailUrl }} style={styles.thumb} />
+                      <MediaThumb
+                        thumbnailUrl={v.thumbnailUrl}
+                        mediaType={v.mediaType}
+                        videoUrl={v.videoUrl}
+                        style={styles.thumb}
+                      />
                       <Text style={styles.thumbHandle} numberOfLines={1}>
                         {v.handle}
                       </Text>

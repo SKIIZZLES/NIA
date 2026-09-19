@@ -4,6 +4,8 @@ export type VideoItem = {
   id: string;
   videoUrl: string;
   thumbnailUrl: string;
+  /** video (default) | image — feed + grids */
+  mediaType?: 'video' | 'image';
   handle: string;
   caption: string;
   likes: number;

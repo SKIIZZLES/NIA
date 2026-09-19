@@ -95,6 +95,11 @@ const zu: TranslationKeys = {
     filmHint: 'Igalari noma ikhamera (expo-image-picker).',
     alertCamera: 'Ikhamera',
     errCameraDenied: 'Vumela ikhamera ukuze uqophe ividiyo.',
+    coverLabel: 'Isembozo (uyazikhethela)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

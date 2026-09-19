@@ -55,6 +55,8 @@ export type Database = {
           user_id: string;
           storage_path: string;
           thumbnail_url: string | null;
+          media_type: 'video' | 'image';
+          cover_path: string | null;
           status: VideoStatus;
           category: string | null;
           caption: string | null;
@@ -72,6 +74,8 @@ export type Database = {
           user_id: string;
           storage_path: string;
           thumbnail_url?: string | null;
+          media_type?: 'video' | 'image';
+          cover_path?: string | null;
           status?: VideoStatus;
           category?: string | null;
           caption?: string | null;
@@ -89,6 +93,8 @@ export type Database = {
           user_id?: string;
           storage_path?: string;
           thumbnail_url?: string | null;
+          media_type?: 'video' | 'image';
+          cover_path?: string | null;
           status?: VideoStatus;
           category?: string | null;
           caption?: string | null;

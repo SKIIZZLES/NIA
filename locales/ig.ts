@@ -95,6 +95,11 @@ const ig: TranslationKeys = {
     filmHint: 'Gallery ma ọ bụ kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'Kwe ka kamera jiri see vidiyo.',
+    coverLabel: 'Ihe mkpuchi (nhọrọ)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

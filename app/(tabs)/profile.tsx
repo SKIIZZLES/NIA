@@ -16,6 +16,7 @@ import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useRouter } from 'expo-router';
+import { MediaThumb } from '@/components/MediaThumb';
 import {
   countFollowers,
   countFollowing,
@@ -145,15 +146,14 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('feed.play')}
           >
-            <Image
-              source={{ uri: item.thumbnailUrl }}
-              resizeMode="cover"
-              style={{
-                width: size,
+            <MediaThumb
+              thumbnailUrl={item.thumbnailUrl}
+              mediaType={item.mediaType}
+              videoUrl={item.videoUrl}
+              style={{width: size,
                 height: size * (16 / 9),
                 backgroundColor: Colors.noirSoft,
-                overflow: 'hidden',
-              }}
+                overflow: 'hidden',}}
             />
             {item.status === 'archived' ? (
               <View

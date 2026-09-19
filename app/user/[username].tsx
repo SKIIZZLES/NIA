@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { MediaThumb } from '@/components/MediaThumb';
 import { Ionicons } from '@expo/vector-icons';
 import { FollowButton } from '@/components/FollowButton';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -209,16 +210,15 @@ export default function PublicProfileScreen() {
               onPress={() => router.push(`/video/${item.id}`)}
               accessibilityRole="button"
             >
-              <Image
-                source={{ uri: item.thumbnailUrl }}
-                resizeMode="cover"
-                style={{
-                  width: size,
+              <MediaThumb
+              thumbnailUrl={item.thumbnailUrl}
+              mediaType={item.mediaType}
+              videoUrl={item.videoUrl}
+              style={{width: size,
                   height: size * (16 / 9),
                   backgroundColor: Colors.noirSoft,
-                  overflow: 'hidden',
-                }}
-              />
+                  overflow: 'hidden',}}
+            />
             </Pressable>
           )}
         />

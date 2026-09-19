@@ -103,6 +103,11 @@ const sw: TranslationKeys = {
     filmHint: 'Galeria au kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'Ruhusu kamera iliurekodi video.',
+    coverLabel: 'Jalada (si lazima)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

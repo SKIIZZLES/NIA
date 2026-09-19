@@ -95,6 +95,11 @@ const yo: TranslationKeys = {
     filmHint: 'Gallery tàbí kamẹ́rà (expo-image-picker).',
     alertCamera: 'Kamẹ́rà',
     errCameraDenied: 'Fàyè gba kamẹ́rà láti ya fídíò.',
+    coverLabel: 'Ìbojú (kò pọndandan)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

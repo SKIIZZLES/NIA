@@ -102,6 +102,11 @@ const fr = {
     filmHint: 'Galerie ou caméra (expo-image-picker). Pas de rebuild natif si la caméra est déjà déclarée.',
     alertCamera: 'Caméra',
     errCameraDenied: 'Autorisez l’accès à la caméra pour filmer une vidéo.',
+    coverLabel: 'Cover (optionnelle)',
+    coverHint: 'Image affichée sur le profil / Découvrir. Sans cover, un placeholder NIA est utilisé.',
+    pickCover: 'Choisir une cover',
+    changeCover: 'Changer la cover',
+    clearCover: 'Retirer la cover',
 
   },
   profile: {

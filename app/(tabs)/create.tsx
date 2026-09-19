@@ -62,6 +62,7 @@ export default function CreateScreen() {
   const router = useRouter();
   const [caption, setCaption] = useState('');
   const [media, setMedia] = useState<PickedMedia | null>(null);
+  const [cover, setCover] = useState<PickedMedia | null>(null);
   const [category, setCategory] = useState<CategoryId | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -111,6 +112,33 @@ export default function CreateScreen() {
       fileSize,
       durationMs,
       type,
+    });
+    // Cover only applies to videos
+    if (type !== 'video') setCover(null);
+  };
+
+  const pickCover = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (res.canceled || !res.assets[0]) return;
+    const asset = res.assets[0];
+    const fileSize = asset.fileSize ?? null;
+    if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
+      Alert.alert(
+        t('create.alertTooLarge'),
+        t('create.errTooLarge', { mb: maxMb }),
+      );
+      return;
+    }
+    setCover({
+      uri: asset.uri,
+      mimeType: inferMimeType(asset, 'image'),
+      fileName: asset.fileName ?? null,
+      fileSize,
+      durationMs: null,
+      type: 'image',
     });
   };
 
@@ -179,6 +207,9 @@ export default function CreateScreen() {
         mimeType: media?.mimeType ?? null,
         fileName: media?.fileName ?? null,
         mediaKind: media?.type ?? null,
+        coverUri: media?.type === 'video' ? cover?.uri ?? null : null,
+        coverMimeType: media?.type === 'video' ? cover?.mimeType ?? null : null,
+        coverFileName: media?.type === 'video' ? cover?.fileName ?? null : null,
         category,
         hashtags,
         fileSize: media?.fileSize ?? undefined,
@@ -186,6 +217,7 @@ export default function CreateScreen() {
       });
       setCaption('');
       setMedia(null);
+      setCover(null);
       setCategory(null);
       Alert.alert(
         isMockFeed ? t('create.publishedMockTitle') : t('create.publishedTitle'),
@@ -250,6 +282,36 @@ export default function CreateScreen() {
           </View>
         </View>
         <Text style={styles.hint}>{t('create.filmHint')}</Text>
+
+        {media?.type === 'video' ? (
+          <View style={styles.coverBlock}>
+            <Text style={styles.label}>{t('create.coverLabel')}</Text>
+            <Text style={styles.hint}>{t('create.coverHint')}</Text>
+            {cover?.uri ? (
+              <Image source={{ uri: cover.uri }} style={styles.coverPreview} />
+            ) : null}
+            <View style={styles.mediaRow}>
+              <View style={styles.mediaBtn}>
+                <Button
+                  title={
+                    cover?.uri ? t('create.changeCover') : t('create.pickCover')
+                  }
+                  variant="outline"
+                  onPress={() => void pickCover()}
+                />
+              </View>
+              {cover?.uri ? (
+                <View style={styles.mediaBtn}>
+                  <Button
+                    title={t('create.clearCover')}
+                    variant="outline"
+                    onPress={() => setCover(null)}
+                  />
+                </View>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
         <Text style={styles.label}>{t('create.captionLabel')}</Text>
         <TextInput
@@ -434,4 +496,15 @@ const styles = StyleSheet.create({
   catTextOn: {
     color: Colors.or,
   },
+  coverBlock: {
+    marginTop: Spacing.md,
+  },
+  coverPreview: {
+    marginTop: Spacing.sm,
+    width: '100%',
+    height: 140,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.noirSoft,
+  },
+
 });

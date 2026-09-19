@@ -19,9 +19,11 @@ Metro keeps shims for Node `ws` / `stream` / `zlib` and stubs `@supabase/realtim
 3. `supabase/migrations/003_reposts.sql` — `reposts` table + RLS, `videos.repost_of`, `videos.share_count`, share_count trigger
 4. `supabase/migrations/004_saves.sql` — `saves` bookmarks + RLS, `videos.save_count` + trigger
 5. `supabase/migrations/005_archive_delete.sql` — status `deleted`, tighten SELECT RLS (published public; owner sees own non-deleted)
+6. `supabase/migrations/006_videos_rls_insert.sql
 6. `supabase/migrations/006_videos_rls_insert.sql` — **REQUIRED for publish** — recreate videos INSERT/SELECT/UPDATE/DELETE RLS
+7. `supabase/migrations/007_media_type_cover.sql` — **REQUIRED for photo/cover grids** — `media_type` + `cover_path`
 
-Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006).
+Re-run in SQL Editor only if a fresh project is created (001 → 002 → 003 → 004 → 005 → 006 → 007).
 
 ### Apply 003 (reposts) on the live project
 
@@ -57,6 +59,28 @@ Recreates (does **not** disable RLS):
 Creator column is **`user_id`** (not `creator_id`). Client insert uses `session.user.id` for `user_id` + Storage path `{user_id}/…`.
 
 Until 006 is applied on the live project, authenticated publish / repost row inserts into `videos` may keep failing with RLS 42501.
+
+
+
+### Apply 007 (media_type + cover_path — photo/cover display fix)
+
+Dashboard → **SQL Editor** → run `supabase/migrations/007_media_type_cover.sql` once.
+
+**Symptom fixed:** profile / public profile / discover grids show blank tiles for videos because `thumbnail_url` was set to the media public URL (often `.mp4`), which `<Image>` cannot render.
+
+Adds:
+- `videos.media_type` — `'video' | 'image'` (default `'video'`)
+- `videos.cover_path` — optional still path in bucket `videos`
+
+Also nulls out existing `thumbnail_url` values that look like video files, and backfills `media_type='image'` when storage/thumbnail paths look like images.
+
+**App behaviour after 007:**
+- Image publish → `media_type=image`, `thumbnail_url` = public image URL
+- Video publish → `media_type=video`; optional cover pick uploads a still and sets `thumbnail_url` to that image URL; without cover, `thumbnail_url` stays `null` and grids show the NIA placeholder (never an `.mp4` in `<Image>`)
+- Feed `VideoCard` renders a full-bleed `<Image>` when `media_type=image`
+
+Until 007 is applied, the client still publishes without those columns (soft fallback) but grids keep using the safe Image/placeholder logic.
+
 
 ## Storage bucket `videos` (required for publish)
 

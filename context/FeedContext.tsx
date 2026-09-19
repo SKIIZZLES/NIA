@@ -42,6 +42,9 @@ type PublishInput = {
   mimeType?: string | null;
   fileName?: string | null;
   mediaKind?: 'image' | 'video' | 'unknown' | null;
+  coverUri?: string | null;
+  coverMimeType?: string | null;
+  coverFileName?: string | null;
   region?: string;
   tag?: string;
   category?: string;
@@ -194,12 +197,19 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
 
       if (!isSupabaseConfigured || !user || user.id.startsWith('mock_')) {
         const handle = user ? `@${user.username}` : '@moi';
+        const mockType: 'video' | 'image' =
+          input.mediaKind === 'image' ? 'image' : 'video';
         const item: VideoItem = {
           id: `local_${Date.now()}`,
           videoUrl:
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            mockType === 'image'
+              ? input.localUri || ''
+              : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
           thumbnailUrl:
-            input.localUri || 'https://picsum.photos/seed/localnia/540/960',
+            mockType === 'image'
+              ? input.localUri || 'https://picsum.photos/seed/localnia/540/960'
+              : input.coverUri || '',
+          mediaType: mockType,
           handle,
           caption: input.caption || 'Nouvelle vidéo NIA ✨',
           likes: 0,
@@ -228,6 +238,9 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           mimeType: input.mimeType,
           fileName: input.fileName,
           mediaKind: input.mediaKind,
+          coverUri: input.coverUri,
+          coverMimeType: input.coverMimeType,
+          coverFileName: input.coverFileName,
           username: user.username,
           avatarUrl: user.avatarUrl,
           status: 'published',

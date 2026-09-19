@@ -103,6 +103,11 @@ const ha: TranslationKeys = {
     filmHint: 'Gallery ko kamara (expo-image-picker).',
     alertCamera: 'Kamara',
     errCameraDenied: 'Bada izinin kamara don ɗaukar bidiyo.',
+    coverLabel: 'Hoton rufe (na zaɓi)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

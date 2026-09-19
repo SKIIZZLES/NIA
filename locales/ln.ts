@@ -95,6 +95,11 @@ const ln: TranslationKeys = {
     filmHint: 'Galerie to camera (expo-image-picker).',
     alertCamera: 'Camera',
     errCameraDenied: 'Pesa ndingisa ya camera mpo na kanga vidéo.',
+    coverLabel: 'Cover (kokabola)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

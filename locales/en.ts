@@ -103,6 +103,11 @@ const en: TranslationKeys = {
     filmHint: 'Gallery or camera (expo-image-picker). No native rebuild if camera is already declared.',
     alertCamera: 'Camera',
     errCameraDenied: 'Allow camera access to record a video.',
+    coverLabel: 'Cover (optional)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

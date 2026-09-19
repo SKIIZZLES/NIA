@@ -46,7 +46,11 @@ function VideoCardInner({
   bottomInset = 80,
   onOpenComments,
 }: Props) {
-  const player = useVideoPlayer(item.videoUrl, (p) => {
+  const isImagePost = item.mediaType === 'image';
+  const player = useVideoPlayer(
+    isImagePost
+      ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+      : item.videoUrl, (p) => {
     p.loop = true;
     p.muted = false;
     p.timeUpdateEventInterval = 0.25;
@@ -97,7 +101,9 @@ function VideoCardInner({
 
   useEffect(() => {
     try {
-      if (isActive && !pausedByUser) {
+      if (isImagePost) {
+        try { player.pause(); } catch { /* ignore */ }
+      } else if (isActive && !pausedByUser) {
         player.play();
       } else {
         player.pause();
@@ -105,7 +111,7 @@ function VideoCardInner({
     } catch {
       // ignore playback race
     }
-  }, [isActive, pausedByUser, player]);
+  }, [isActive, pausedByUser, player, isImagePost]);
 
   useEffect(() => {
     if (!isActive) {
@@ -115,7 +121,7 @@ function VideoCardInner({
   }, [isActive]);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || isImagePost) return;
     const sub = player.addListener('timeUpdate', ({ currentTime }) => {
       const duration = player.duration;
       if (duration > 0 && Number.isFinite(duration)) {
@@ -309,12 +315,20 @@ function VideoCardInner({
 
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
-      <VideoView
-        player={player}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        nativeControls={false}
-      />
+      {isImagePost ? (
+        <Image
+          source={{ uri: item.thumbnailUrl || item.videoUrl }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
+      ) : (
+        <VideoView
+          player={player}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      )}
       <View style={styles.gradient} pointerEvents="none" />
 
       {/* Tap zone: pause/play + double-tap rewind (left-biased) */}
@@ -336,7 +350,7 @@ function VideoCardInner({
         </View>
       ) : null}
 
-      {isActive ? (
+      {isActive && !isImagePost ? (
         <View style={styles.topLeftControls}>
           <View style={styles.durationPill} pointerEvents="none">
             <Text style={styles.durationText}>{timeLabel}</Text>
@@ -410,13 +424,15 @@ function VideoCardInner({
           color={Colors.or}
           accessibilityLabel={t('feed.repost')}
         />
-        <Pressable onPress={() => setMuted((m) => !m)} style={styles.muteBtn}>
-          <Ionicons
-            name={muted ? 'volume-mute' : 'volume-high'}
-            size={22}
-            color={Colors.sable}
-          />
-        </Pressable>
+        {!isImagePost ? (
+          <Pressable onPress={() => setMuted((m) => !m)} style={styles.muteBtn}>
+            <Ionicons
+              name={muted ? 'volume-mute' : 'volume-high'}
+              size={22}
+              color={Colors.sable}
+            />
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.meta}>

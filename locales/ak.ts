@@ -95,6 +95,11 @@ const ak: TranslationKeys = {
     filmHint: 'Gallery anaa kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'Ma kamera kwan na woatumi atwerɛ video.',
+    coverLabel: 'Cover (pɔn)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

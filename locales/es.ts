@@ -103,6 +103,11 @@ const es: TranslationKeys = {
     filmHint: 'Galería o cámara (expo-image-picker).',
     alertCamera: 'Cámara',
     errCameraDenied: 'Permite el acceso a la cámara para grabar.',
+    coverLabel: 'Portada (opcional)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Elegir portada',
+    changeCover: 'Cambiar portada',
+    clearCover: 'Quitar portada',
 
   },
   profile: {

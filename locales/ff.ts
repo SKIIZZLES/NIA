@@ -95,6 +95,11 @@ const ff: TranslationKeys = {
     filmHint: 'Galerie walla kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'Yamir kamera ngam natal video.',
+    coverLabel: 'Cover (cuɓagol)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

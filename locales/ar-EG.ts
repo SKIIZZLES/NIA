@@ -95,6 +95,11 @@ const arEG: TranslationKeys = {
     filmHint: 'المعرض أو الكاميرا (expo-image-picker).',
     alertCamera: 'الكاميرا',
     errCameraDenied: 'اسمح بالكاميرا عشان تصوّر فيديو.',
+    coverLabel: 'غلاف (اختياري)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

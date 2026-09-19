@@ -95,6 +95,11 @@ const mnk: TranslationKeys = {
     filmHint: 'Galerie walima kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'Kamera yamarali di ka video ta.',
+    coverLabel: 'Cover (suulandi)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

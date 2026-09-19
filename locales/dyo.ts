@@ -103,6 +103,11 @@ const dyo: TranslationKeys = {
     filmHint: 'Galeri walla kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'May kamera ngir tàkk widewoo.',
+    coverLabel: 'Cover (kajum)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {

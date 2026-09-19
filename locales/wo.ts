@@ -95,6 +95,11 @@ const wo: TranslationKeys = {
     filmHint: 'Galerie walla kamera (expo-image-picker).',
     alertCamera: 'Kamera',
     errCameraDenied: 'Maye kamera ngir takk widewoo.',
+    coverLabel: 'Cover (teñu)',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    pickCover: 'Choose a cover',
+    changeCover: 'Change cover',
+    clearCover: 'Remove cover',
 
   },
   profile: {
