@@ -183,6 +183,8 @@ const yo: TranslationKeys = {
     saveLoginRequired: 'Wọlé láti fi fídíò pamọ́.',
     rewind: 'Padà sẹ́yìn ìṣẹ́jú mẹ́ẹ̀ẹ́dọ́gbọ̀n 5',
     forward: 'Lọ síwájú ìṣẹ́jú 5',
+    mute: 'Pa ohùn',
+    unmute: 'Tan ohùn',
     pause: 'Dáwọ́ dúró',
     play: 'Ṣe',
     comments: 'Àwọn àsọyé',
@@ -221,6 +223,13 @@ const yo: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Ṣàwárí',
+    chipAll: 'Gbogbo',
+    emptyTitle: 'Kò sí nǹkan níbí síbẹ̀',
+    emptyBody: 'Kò sí fídíò nínú àgbáyé yìí. Jẹ́ ẹni àkọ́kọ́ láti fi sí.',
+    tileA11y: '%{handle}, ìfẹ́ %{count}',
   },
   events: {
     title: 'Events',

@@ -183,6 +183,8 @@ const ff: TranslationKeys = {
     saveLoginRequired: 'Naat ngam danndude video.',
     rewind: 'Rutto 5 sekonnde',
     forward: 'Yah yeeso 5 sekonnde',
+    mute: 'Ñifu hito',
+    unmute: 'Huɓɓu hito',
     pause: 'Dartin',
     play: 'Fuɗɗo',
     comments: 'Yowtere',
@@ -221,6 +223,13 @@ const ff: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Yiylo',
+    chipAll: 'Fof',
+    emptyTitle: 'Hay huunde ɗoo tawo',
+    emptyBody: 'Widewo alaa e nder aduna ngoo. Wonu gadano winndude.',
+    tileA11y: '%{handle}, %{count} yiɗde',
   },
   events: {
     title: 'Events',

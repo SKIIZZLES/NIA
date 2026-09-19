@@ -183,6 +183,8 @@ const am: TranslationKeys = {
     saveLoginRequired: 'ቪዲዮ ለማስቀመጥ ይግቡ።',
     rewind: '5 ሰከንድ ወደ ኋላ',
     forward: '5 ሰከንድ ወደ ፊት',
+    mute: 'ድምጽ አጥፋ',
+    unmute: 'ድምጽ አብራ',
     pause: 'አቁም',
     play: 'አጫውት',
     comments: 'አስተያየቶች',
@@ -221,6 +223,13 @@ const am: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'ያግኙ',
+    chipAll: 'ሁሉም',
+    emptyTitle: 'እስካሁን እዚህ ምንም የለም',
+    emptyBody: 'በዚህ ዓለም ውስጥ ምንም ቪዲዮ የለም። መጀመሪያ የሚለጥፉ ይሁኑ።',
+    tileA11y: '%{handle}፣ %{count} ወደዱት',
   },
   events: {
     title: 'Events',

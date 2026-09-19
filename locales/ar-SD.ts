@@ -195,6 +195,8 @@ const arSD: TranslationKeys = {
     saveLoginRequired: 'ادخل عشان تحفظ الفيديو.',
     rewind: 'ارجع 5 ثواني',
     forward: 'قدّم 5 ثواني',
+    mute: 'اقفل الصوت',
+    unmute: 'شغّل الصوت',
     pause: 'إيقاف',
     play: 'تشغيل',
     comments: 'التعليقات',
@@ -233,6 +235,13 @@ const arSD: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'اكتشف',
+    chipAll: 'الكل',
+    emptyTitle: 'ما في حاجة هنا لسه',
+    emptyBody: 'ما في فيديو في العالم دا. كن أول واحد ينشر.',
+    tileA11y: '%{handle}، %{count} إعجاب',
   },
   events: {
     title: 'Events',

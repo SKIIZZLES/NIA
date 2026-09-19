@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  type GestureResponderEvent,
   Image,
   Pressable,
   StyleSheet,
@@ -9,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radii } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
@@ -25,6 +28,8 @@ import { useRouter } from 'expo-router';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SEEK_SEC = 5;
+/** Marge droite de la zone de tap : laisse le rail d'actions cliquable. */
+const TAP_ZONE_RIGHT = 72;
 const DOUBLE_TAP_MS = 280;
 
 type Props = {
@@ -41,15 +46,15 @@ function VideoCardInner({
   onOpenComments,
 }: Props) {
   const isImagePost = item.mediaType === 'image';
-  const player = useVideoPlayer(
-    isImagePost
-      ? 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
-      : item.videoUrl, (p) => {
+  // Pas de lecteur vidéo pour les posts photo : l'ancien code chargeait une
+  // vidéo de démo distante pour chaque photo (data gaspillée).
+  const player = useVideoPlayer(isImagePost ? null : item.videoUrl, (p) => {
     p.loop = true;
     p.muted = false;
     p.timeUpdateEventInterval = 0.25;
   });
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const colors = useColors();
   const chrome = colors.onMedia;
@@ -204,11 +209,16 @@ function VideoCardInner({
     }
   }, [player]);
 
-  const onVideoPress = useCallback(() => {
+  const onVideoPress = useCallback((event: GestureResponderEvent) => {
     const now = Date.now();
+    // Le double-tap agit selon la moitié touchée : gauche recule, droite avance.
+    // La zone de tap s'arrête à 72px du bord droit (rail d'actions).
+    const zoneW = SCREEN_W - TAP_ZONE_RIGHT;
+    const onRightHalf = event.nativeEvent.locationX > zoneW / 2;
     if (now - lastTapRef.current < DOUBLE_TAP_MS) {
       lastTapRef.current = 0;
-      rewind();
+      if (onRightHalf) forward();
+      else rewind();
       return;
     }
     lastTapRef.current = now;
@@ -223,7 +233,7 @@ function VideoCardInner({
       });
       lastTapRef.current = 0;
     }, DOUBLE_TAP_MS);
-  }, [rewind, flashPauseIcon]);
+  }, [rewind, forward, flashPauseIcon]);
 
   const onShare = async () => {
     await shareVideo(item);
@@ -371,9 +381,19 @@ function VideoCardInner({
           nativeControls={false}
         />
       )}
-      <View style={styles.gradient} pointerEvents="none" />
+      <LinearGradient
+        colors={['rgba(11,11,11,0.65)', 'rgba(11,11,11,0)']}
+        style={styles.gradientTop}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['rgba(11,11,11,0)', 'rgba(11,11,11,0.6)', 'rgba(11,11,11,0.92)']}
+        locations={[0, 0.5, 1]}
+        style={styles.gradientBottom}
+        pointerEvents="none"
+      />
 
-      {/* Tap zone: pause/play + double-tap rewind (left-biased) */}
+      {/* Tap zone: simple tap = pause/play, double-tap = reculer (gauche) / avancer (droite) */}
       <Pressable
         style={styles.tapZone}
         onPress={onVideoPress}
@@ -392,37 +412,21 @@ function VideoCardInner({
         </View>
       ) : null}
 
-      {isActive && !isImagePost ? (
-        <View style={styles.topLeftControls}>
-          <Pressable
-            style={styles.rewindBtn}
-            onPress={rewind}
-            hitSlop={10}
-            accessibilityLabel={t('feed.rewind')}
-          >
-            <Ionicons name="play-back" size={16} color={chrome} />
-            <Text style={styles.rewindLabel}>{SEEK_SEC}s</Text>
-          </Pressable>
-          <Pressable
-            style={styles.rewindBtn}
-            onPress={forward}
-            hitSlop={10}
-            accessibilityLabel={t('feed.forward')}
-          >
-            <Ionicons name="play-forward" size={16} color={chrome} />
-            <Text style={styles.rewindLabel}>{SEEK_SEC}s</Text>
-          </Pressable>
-        </View>
+      {!isImagePost ? (
+        <Pressable
+          style={[styles.muteBtn, { top: insets.top + 4 }]}
+          onPress={() => setMuted((m) => !m)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={muted ? t('feed.unmute') : t('feed.mute')}
+        >
+          <Ionicons
+            name={muted ? 'volume-mute' : 'volume-high'}
+            size={20}
+            color={chrome}
+          />
+        </Pressable>
       ) : null}
-
-      <Pressable
-        style={styles.menuBtn}
-        onPress={() => setMenuOpen(true)}
-        hitSlop={12}
-        accessibilityLabel="Options vidéo"
-      >
-        <Ionicons name="ellipsis-vertical" size={22} color={chrome} />
-      </Pressable>
 
       <View style={styles.rail}>
         <View style={styles.avatarWrap}>
@@ -441,7 +445,7 @@ function VideoCardInner({
         </View>
         <RailAction
           icon={liked ? 'heart' : 'heart-outline'}
-          color={liked ? colors.rougeTerre : chrome}
+          color={liked ? colors.or : chrome}
           label={formatCount(item.likes)}
           onPress={() => toggleLike(item.id)}
         />
@@ -466,21 +470,11 @@ function VideoCardInner({
           accessibilityLabel={t('feed.share')}
         />
         <RailAction
-          icon="sync-outline"
-          label={t('feed.repost')}
-          onPress={() => void onRepost()}
-          color={colors.or}
-          accessibilityLabel={t('feed.repost')}
+          icon="ellipsis-horizontal"
+          label=""
+          onPress={() => setMenuOpen(true)}
+          accessibilityLabel={t('feed.menuTitle')}
         />
-        {!isImagePost ? (
-          <Pressable onPress={() => setMuted((m) => !m)} style={styles.muteBtn}>
-            <Ionicons
-              name={muted ? 'volume-mute' : 'volume-high'}
-              size={22}
-              color={chrome}
-            />
-          </Pressable>
-        ) : null}
       </View>
 
       <View style={styles.meta}>
@@ -494,9 +488,19 @@ function VideoCardInner({
             ) : null}
           </Text>
         ) : null}
-        <Pressable onPress={openProfile}>
-          <Text style={styles.handle}>{item.handle}</Text>
-        </Pressable>
+        <View style={styles.handleRow}>
+          <Pressable onPress={openProfile}>
+            <Text style={styles.handle}>{item.handle}</Text>
+          </Pressable>
+          {item.country ? (
+            <View style={styles.countryChip}>
+              <Ionicons name="location-outline" size={12} color={colors.sableMuted} />
+              <Text style={[styles.country, { color: colors.sableMuted }]}>
+                {item.country}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.caption} numberOfLines={3}>
           {item.caption}
         </Text>
@@ -520,9 +524,6 @@ function VideoCardInner({
             <Text style={styles.filterBadgeText}>{t('filter.feedBadge')}</Text>
           </View>
         ) : null}
-        {item.country ? (
-          <Text style={styles.country}>{item.country}</Text>
-        ) : null}
       </View>
 
       {isActive && !isImagePost ? (
@@ -543,6 +544,7 @@ function VideoCardInner({
         onReport={() => setReportOpen(true)}
         onBlock={onBlock}
         onShare={() => void onShare()}
+        onRepost={() => void onRepost()}
         onArchive={onArchive}
         onDelete={onDelete}
         onAddToSeries={onAddToSeries}
@@ -577,10 +579,12 @@ function RailAction({
     <Pressable
       onPress={onPress}
       style={styles.railItem}
+      hitSlop={6}
+      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel || label}
     >
-      <Ionicons name={icon} size={28} color={color} />
-      <Text style={styles.railLabel}>{label}</Text>
+      <Ionicons name={icon} size={30} color={color} style={styles.railIcon} />
+      {label ? <Text style={styles.railLabel}>{label}</Text> : null}
     </Pressable>
   );
 }
@@ -593,17 +597,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.noir,
     overflow: 'hidden',
   },
-  gradient: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'transparent',
-    borderBottomWidth: 180,
-    borderBottomColor: Colors.overlay,
+  gradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+    zIndex: 1,
+  },
+  gradientBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '45%',
+    zIndex: 1,
   },
   tapZone: {
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 72,
+    right: TAP_ZONE_RIGHT,
     bottom: 120,
     zIndex: 2,
   },
@@ -620,49 +634,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11, 11, 11, 0.55)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(209, 127, 42, 0.55)',
   },
-  topLeftControls: {
+  muteBtn: {
     position: 'absolute',
-    top: 56,
-    left: 14,
-    zIndex: 5,
-    flexDirection: 'row',
+    left: 8,
+    width: 36,
+    height: 36,
     alignItems: 'center',
-    gap: 8,
-  },
-  rewindBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radii.pill,
-    backgroundColor: 'rgba(11, 11, 11, 0.62)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(209, 127, 42, 0.4)',
-  },
-  rewindLabel: {
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 11,
-  },
-  menuBtn: {
-    position: 'absolute',
-    top: 56,
-    right: 12,
-    zIndex: 5,
-    padding: 8,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: 20,
+    justifyContent: 'center',
+    zIndex: 11,
   },
   rail: {
     position: 'absolute',
-    right: 12,
-    bottom: 100,
+    right: 8,
+    bottom: 96,
     alignItems: 'center',
-    gap: 14,
+    gap: 16,
     zIndex: 4,
   },
   avatarWrap: {
@@ -679,17 +666,19 @@ const styles = StyleSheet.create({
   followBadge: {
     marginTop: -10,
   },
-  railItem: { alignItems: 'center', gap: 4 },
+  railItem: { alignItems: 'center', gap: 3, minWidth: 44 },
+  railIcon: {
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   railLabel: {
     color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 11,
-  },
-  muteBtn: {
-    marginTop: 4,
-    padding: 6,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: 20,
+    fontFamily: Fonts.bold,
+    fontSize: 12,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   meta: {
     position: 'absolute',
@@ -712,11 +701,21 @@ const styles = StyleSheet.create({
     color: Colors.sable,
     fontFamily: Fonts.medium,
   },
+  handleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
   handle: {
     color: Colors.sable,
     fontFamily: Fonts.bold,
     fontSize: 16,
-    marginBottom: 6,
+  },
+  countryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   caption: {
     color: Colors.textPrimary,
@@ -737,8 +736,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   country: {
-    marginTop: 8,
-    color: Colors.or,
+    color: Colors.sableMuted,
     fontFamily: Fonts.medium,
     fontSize: 12,
   },

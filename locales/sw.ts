@@ -193,6 +193,8 @@ const sw: TranslationKeys = {
     saveLoginRequired: 'Ingia ili uhifadhi video.',
     rewind: 'Rudi nyuma sekunde 5',
     forward: 'Sogeza mbele sekunde 5',
+    mute: 'Zima sauti',
+    unmute: 'Washa sauti',
     pause: 'Sitisha',
     play: 'Cheza',
     comments: 'Maoni',
@@ -231,6 +233,13 @@ const sw: TranslationKeys = {
     mySounds: 'Sauti zangu',
     emptyOwn: 'Bado hakuna sauti. Pakia faili (mp3, m4a, wav).',
     defaultTitle: 'Sauti asili',
+  },
+  discover: {
+    title: 'Gundua',
+    chipAll: 'Zote',
+    emptyTitle: 'Hakuna kitu hapa bado',
+    emptyBody: 'Hakuna video katika ulimwengu huu. Kuwa wa kwanza kuchapisha.',
+    tileA11y: '%{handle}, mapenzi %{count}',
   },
   events: {
     title: 'Events',

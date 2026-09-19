@@ -183,6 +183,8 @@ const ln: TranslationKeys = {
     saveLoginRequired: 'Kota mpo na kobomba vidéo.',
     rewind: 'Zonga nsima secondes 5',
     forward: 'Kende liboso secondes 5',
+    mute: 'Boma mongongo',
+    unmute: 'Fungola mongongo',
     pause: 'Tika',
     play: 'Banda',
     comments: 'Commentaires',
@@ -221,6 +223,13 @@ const ln: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Luka',
+    chipAll: 'Nyonso',
+    emptyTitle: 'Eloko ezali awa naino te',
+    emptyBody: 'Vidéo ezali te na mokili oyo. Zala moto ya liboso ya kotinda.',
+    tileA11y: '%{handle}, %{count} balingi',
   },
   events: {
     title: 'Events',

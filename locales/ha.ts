@@ -193,6 +193,8 @@ const ha: TranslationKeys = {
     saveLoginRequired: 'Shiga don ajiye bidiyo.',
     rewind: 'Koma baya da dakiku 5',
     forward: 'Ci gaba da dakiku 5',
+    mute: 'Kashe sauti',
+    unmute: 'Kunna sauti',
     pause: 'Dakata',
     play: 'Kunna',
     comments: 'Sharhi',
@@ -231,6 +233,13 @@ const ha: TranslationKeys = {
     mySounds: 'Sautuna',
     emptyOwn: 'Babu sauti tukuna. Shigo da fayil (mp3, m4a, wav).',
     defaultTitle: 'Sauti na asali',
+  },
+  discover: {
+    title: 'Gano',
+    chipAll: 'Duka',
+    emptyTitle: 'Babu kome a nan tukuna',
+    emptyBody: 'Babu bidiyo a wannan sararin. Ka zama na farko da zai wallafa.',
+    tileA11y: '%{handle}, son %{count}',
   },
   events: {
     title: 'Events',

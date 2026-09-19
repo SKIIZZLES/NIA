@@ -183,6 +183,8 @@ const bm: TranslationKeys = {
     saveLoginRequired: 'Don ka video maraya.',
     rewind: 'Kɔfɛ 5 seconde',
     forward: 'Ŋɛfɛ 5 seconde',
+    mute: 'Mankan faga',
+    unmute: 'Mankan wuli',
     pause: 'Jɔ',
     play: 'Daminɛ',
     comments: 'Kuma',
@@ -221,6 +223,13 @@ const bm: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Yeli',
+    chipAll: 'Bɛɛ',
+    emptyTitle: 'Foyi tɛ yan fɔlɔ',
+    emptyBody: 'Wideyo si tɛ nin diɲɛ in kɔnɔ. I ka kɛ fɔlɔ ye k’a bila.',
+    tileA11y: '%{handle}, %{count} diyara',
   },
   events: {
     title: 'Events',

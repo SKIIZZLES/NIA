@@ -193,6 +193,8 @@ const dyo: TranslationKeys = {
     saveLoginRequired: 'Duggal ngir denc widewoo.',
     rewind: 'Dellu 5 saa',
     forward: 'Jàll 5 saa',
+    mute: 'Fey son bi',
+    unmute: 'Taal son bi',
     pause: 'Taxaw',
     play: 'Door',
     comments: 'Kàddu',
@@ -231,6 +233,13 @@ const dyo: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Gis-gis',
+    chipAll: 'Lépp',
+    emptyTitle: 'Amul dara fii ba léegi',
+    emptyBody: 'Amul benn wideyo ci àddina bii. Nga jëkk a jottali.',
+    tileA11y: '%{handle}, %{count} bëgg',
   },
   events: {
     title: 'Events',

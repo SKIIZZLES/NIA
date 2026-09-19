@@ -183,6 +183,8 @@ const zu: TranslationKeys = {
     saveLoginRequired: 'Ngena ukuze ulondoloze ividiyo.',
     rewind: 'Buyela emuva imizuzwana engu-5',
     forward: 'Dlulela phambili imizuzwana engu-5',
+    mute: 'Cisha umsindo',
+    unmute: 'Vula umsindo',
     pause: 'Misa',
     play: 'Dlala',
     comments: 'Amazwana',
@@ -221,6 +223,13 @@ const zu: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Thola',
+    chipAll: 'Konke',
+    emptyTitle: 'Ayikho into lapha okwamanje',
+    emptyBody: 'Alikho ividiyo kulomkhakha. Yiba ngowokuqala ukuposa.',
+    tileA11y: '%{handle}, okuthandwayo okungu-%{count}',
   },
   events: {
     title: 'Events',

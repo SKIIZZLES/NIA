@@ -196,6 +196,8 @@ const arMA: TranslationKeys = {
     saveLoginRequired: 'دخل باش تسجّل الفيديو.',
     rewind: 'رجّع 5 ثواني',
     forward: 'قدّم 5 ثواني',
+    mute: 'طفّي الصوت',
+    unmute: 'شعّل الصوت',
     pause: 'وقف',
     play: 'شغّل',
     comments: 'التعليقات',
@@ -234,6 +236,13 @@ const arMA: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'اكتشف',
+    chipAll: 'الكل',
+    emptyTitle: 'ماكاين والو دابا',
+    emptyBody: 'ماكاين حتى فيديو فهاد العالم. كون الأول اللي ينشر.',
+    tileA11y: '%{handle}، %{count} إعجاب',
   },
   events: {
     title: 'Events',

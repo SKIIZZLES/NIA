@@ -193,6 +193,8 @@ const en: TranslationKeys = {
     saveLoginRequired: 'Sign in to save a video.',
     rewind: 'Rewind 5 seconds',
     forward: 'Forward 5 seconds',
+    mute: 'Mute sound',
+    unmute: 'Unmute sound',
     pause: 'Pause',
     play: 'Play',
     comments: 'Comments',
@@ -232,6 +234,13 @@ const en: TranslationKeys = {
     mySounds: 'My sounds',
     emptyOwn: 'No sounds yet. Import an audio file (mp3, m4a, wav).',
     defaultTitle: 'Original sound',
+  },
+  discover: {
+    title: 'Discover',
+    chipAll: 'All',
+    emptyTitle: 'Nothing here yet',
+    emptyBody: 'No video in this universe. Be the first to post.',
+    tileA11y: '%{handle}, %{count} likes',
   },
   events: {
     title: 'Events',

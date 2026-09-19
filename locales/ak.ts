@@ -183,6 +183,8 @@ const ak: TranslationKeys = {
     saveLoginRequired: 'Kɔ mu na sie video.',
     rewind: 'San kɔ akyiri seconds 5',
     forward: 'Kɔ anim seconds 5',
+    mute: 'Dum nnyigyei',
+    unmute: 'Sɔ nnyigyei',
     pause: 'Gyae',
     play: 'Bɔ',
     comments: 'Nkyerɛkyerɛmu',
@@ -221,6 +223,13 @@ const ak: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Hwehwɛ',
+    chipAll: 'Nyinaa',
+    emptyTitle: 'Biribiara nni ha seesei',
+    emptyBody: 'Video biara nni saa wiase yi mu. Yɛ nea ɔdi kan de to so.',
+    tileA11y: '%{handle}, %{count} ɔdɔ',
   },
   events: {
     title: 'Events',

@@ -193,6 +193,8 @@ const es: TranslationKeys = {
     saveLoginRequired: 'Inicia sesión para guardar un vídeo.',
     rewind: 'Retroceder 5 segundos',
     forward: 'Avanzar 5 segundos',
+    mute: 'Silenciar',
+    unmute: 'Activar sonido',
     pause: 'Pausa',
     play: 'Reproducir',
     comments: 'Comentarios',
@@ -231,6 +233,13 @@ const es: TranslationKeys = {
     mySounds: 'Mis sonidos',
     emptyOwn: 'Aún no hay sonidos. Importa un archivo de audio (mp3, m4a, wav).',
     defaultTitle: 'Sonido original',
+  },
+  discover: {
+    title: 'Descubrir',
+    chipAll: 'Todo',
+    emptyTitle: 'Aquí no hay nada todavía',
+    emptyBody: 'No hay vídeos en este universo. Sé el primero en publicar.',
+    tileA11y: '%{handle}, %{count} me gusta',
   },
   events: {
     title: 'Events',

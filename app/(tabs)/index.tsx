@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedPager } from '@/components/FeedPager';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Fonts, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
 import { VideoItem } from '@/data/mockVideos';
 
 type FeedTab = 'pour-toi' | 'abonnements' | 'afrique';
@@ -51,8 +51,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [tab, setTab] = useState<FeedTab>('pour-toi');
-  const tabBarApprox = 64;
-  const bottomInset = tabBarApprox;
+  // Doit correspondre exactement à la barre d'onglets, sinon le paging se décale
+  const bottomInset = TAB_BAR_BASE_HEIGHT + insets.bottom;
 
   const data = useMemo(
     () => filterVideos(videos, tab, followingIds),
@@ -64,7 +64,7 @@ export default function HomeScreen() {
       <FeedPager videos={data} bottomInset={bottomInset} />
 
       <View style={[styles.topTabs, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
-        <View style={styles.tabsRow}>
+        <View style={styles.tabsRow} pointerEvents="box-none">
           <View style={styles.tabsSpacer} />
           {TABS.map((t) => {
             const active = t.key === tab;
@@ -125,9 +125,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   tabLabel: {
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     fontFamily: Fonts.medium,
-    fontSize: 14,
+    fontSize: 15,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   tabLabelActive: {
     color: Colors.sable,
@@ -136,7 +139,7 @@ const styles = StyleSheet.create({
   underline: {
     marginTop: 4,
     height: 2,
-    width: '80%',
+    width: 22,
     backgroundColor: Colors.or,
     borderRadius: 1,
   },

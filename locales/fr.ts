@@ -192,6 +192,8 @@ const fr = {
     saveLoginRequired: 'Connectez-vous pour enregistrer une vidéo.',
     rewind: 'Reculer de 5 secondes',
     forward: 'Avancer de 5 secondes',
+    mute: 'Couper le son',
+    unmute: 'Activer le son',
     pause: 'Pause',
     play: 'Lecture',
     comments: 'Commentaires',
@@ -231,6 +233,13 @@ const fr = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'Découvrir',
+    chipAll: 'Tout',
+    emptyTitle: 'Rien ici pour l’instant',
+    emptyBody: 'Aucune vidéo dans cet univers. Sois le premier à publier.',
+    tileA11y: '%{handle}, %{count} j’aime',
   },
   events: {
     title: 'Événements',

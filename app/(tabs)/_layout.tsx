@@ -2,23 +2,27 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Radii } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Fonts, Radii, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 
 export default function TabsLayout() {
   const { t } = useI18n();
   const colors = useColors();
+  const insets = useSafeAreaInsets();
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         tabBar: {
           backgroundColor: colors.noir,
-          borderTopColor: colors.border,
+          // Filet ocre discret : signature NIA en haut de la barre
+          borderTopColor: colors.or + '55',
           borderTopWidth: StyleSheet.hairlineWidth,
-          height: 64,
-          paddingBottom: 8,
+          // Respecte la barre système (iPhone récents, Android gestuel)
+          height: TAB_BAR_BASE_HEIGHT + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 6,
         },
         label: {
@@ -35,7 +39,7 @@ export default function TabsLayout() {
           marginTop: 4,
         },
       }),
-    [colors],
+    [colors, insets.bottom],
   );
 
   return (

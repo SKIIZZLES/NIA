@@ -4,9 +4,11 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,26 +16,32 @@ import { useRouter } from 'expo-router';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
-import {
-  DISCOVER_CATEGORIES,
-  type CategoryId,
-  type DiscoverCategory,
-} from '@/constants/categories';
+import { DISCOVER_CATEGORIES, type CategoryId } from '@/constants/categories';
 import { useFeed } from '@/context/FeedContext';
 import { DEMO_VIDEOS, type VideoItem, formatCount } from '@/data/mockVideos';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { fetchVideosFromSupabase } from '@/lib/videos';
+
+/**
+ * Découvrir — logique « contenu d'abord » (type Explorer Instagram / TikTok) :
+ * recherche, raccourcis Lives/Événements, puces d'univers, puis grille de vidéos.
+ */
+
+const GRID_GAP = 2;
+const COLUMNS = 3;
 
 export default function DiscoverScreen() {
   const { videos: feedVideos } = useFeed();
   const colors = useColors();
   const router = useRouter();
   const { t } = useI18n();
+  const { width } = useWindowDimensions();
   const [selected, setSelected] = useState<CategoryId | null>(null);
   const [remoteByCategory, setRemoteByCategory] = useState<VideoItem[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
 
-  const filteredCategories = DISCOVER_CATEGORIES;
+  const tileW = (width - GRID_GAP * (COLUMNS - 1)) / COLUMNS;
+  const tileH = Math.round(tileW * 1.4);
 
   const loadCategoryVideos = useCallback(async (categoryId: CategoryId) => {
     if (!isSupabaseConfigured) {
@@ -59,9 +67,12 @@ export default function DiscoverScreen() {
     }
   }, [selected, loadCategoryVideos]);
 
-  /** Mock : filtre feed / démos par category. Supabase : remote puis feed (pas de DEMO). */
-  const categoryVideos = useMemo(() => {
-    if (!selected) return [];
+  /** All = vidéos du fil triées par j'aime ; sinon filtre par univers. */
+  const gridVideos = useMemo(() => {
+    if (!selected) {
+      const base = feedVideos.length || isSupabaseConfigured ? feedVideos : DEMO_VIDEOS;
+      return [...base].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+    }
     if (isSupabaseConfigured) {
       if (remoteByCategory.length) return remoteByCategory;
       return feedVideos.filter((v) => v.category === selected);
@@ -71,365 +82,260 @@ export default function DiscoverScreen() {
     return DEMO_VIDEOS.filter((v) => v.category === selected);
   }, [selected, remoteByCategory, feedVideos]);
 
-  const onSelectCategory = (item: DiscoverCategory) => {
-    setSelected((prev) => (prev === item.id ? null : item.id));
-  };
+  const chips = useMemo(
+    () => [
+      { id: null as CategoryId | null, label: t('discover.chipAll'), icon: 'sparkles-outline' as const },
+      ...DISCOVER_CATEGORIES.map((c) => ({ id: c.id as CategoryId | null, label: c.label, icon: c.icon })),
+    ],
+    [t],
+  );
 
-  const styles = useMemo(() => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.noir, paddingHorizontal: Spacing.lg },
-  title: {
-    color: colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 28,
-    marginTop: Spacing.md,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    marginTop: 6,
-    marginBottom: Spacing.md,
-    lineHeight: 18,
-  },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.noirSoft,
-    borderRadius: Radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  input: {
-    flex: 1,
-    color: colors.sable,
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-  },
-  section: {
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.sm,
-    color: colors.textSecondary,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  listContent: { paddingBottom: Spacing.xxl },
-  resultsBlock: {
-    marginBottom: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radii.md,
-    backgroundColor: colors.noirElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  resultsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  resultsTitle: {
-    color: colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-  },
-  clearFilter: {
-    color: colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-  },
-  emptyCat: {
-    color: colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    marginVertical: 8,
-  },
-  mockHint: {
-    marginTop: 8,
-    color: colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-  },
-  thumbCard: {
-    width: 120,
-  },
-  thumb: {
-    width: 120,
-    height: 180,
-    borderRadius: Radii.sm,
-    backgroundColor: colors.noirSoft,
-  },
-  thumbHandle: {
-    marginTop: 6,
-    color: colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-  },
-  thumbMeta: {
-    color: colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    borderRadius: Radii.md,
-    backgroundColor: colors.noirElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardActive: {
-    borderColor: colors.or,
-    backgroundColor: colors.noirSoft,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.sm,
-    backgroundColor: colors.noirSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(201, 162, 39, 0.35)',
-  },
-  iconWrapActive: {
-    backgroundColor: colors.or,
-    borderColor: colors.or,
-  },
-  cardBody: { flex: 1 },
-  cardTitle: {
-    color: colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 15,
-  },
-  cardBlurb: {
-    marginTop: 3,
-    color: colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xxl,
-    paddingHorizontal: Spacing.md,
-    gap: 10,
-  },
-  emptyTitle: {
-    color: colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-  },
-  emptyBody: {
-    color: colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  eventsCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: Radii.md,
-    backgroundColor: colors.noirElevated,
-    borderWidth: 1,
-    borderColor: colors.or,
-  },
-  eventsCtaTitle: {
-    color: colors.sable,
-    fontFamily: Fonts.bold,
-    fontSize: 16,
-  },
-  eventsCtaBody: {
-    marginTop: 3,
-    color: colors.textSecondary,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    lineHeight: 16,
-  },
-  footerNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginTop: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: Radii.md,
-    backgroundColor: colors.noirElevated,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  footerText: {
-    flex: 1,
-    color: colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-}), [colors]);
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safe: { flex: 1, backgroundColor: colors.noir },
+        header: { paddingHorizontal: Spacing.md, paddingTop: Spacing.sm },
+        title: {
+          color: colors.sable,
+          fontFamily: Fonts.bold,
+          fontSize: 24,
+          marginBottom: Spacing.md,
+        },
+        searchBox: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          height: 46,
+          backgroundColor: colors.noirSoft,
+          borderRadius: Radii.md,
+          paddingHorizontal: 14,
+        },
+        searchText: {
+          flex: 1,
+          color: colors.textMuted,
+          fontFamily: Fonts.regular,
+          fontSize: 15,
+        },
+        shortcuts: {
+          flexDirection: 'row',
+          gap: 10,
+          marginTop: Spacing.md,
+        },
+        shortcut: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          height: 56,
+          paddingHorizontal: 12,
+          borderRadius: Radii.md,
+          backgroundColor: colors.noirElevated,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+        },
+        shortcutIcon: {
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.noirSoft,
+        },
+        liveDot: {
+          position: 'absolute',
+          top: 2,
+          right: 2,
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: colors.rougeTerre,
+          borderWidth: 1.5,
+          borderColor: colors.noirElevated,
+        },
+        shortcutLabel: {
+          color: colors.sable,
+          fontFamily: Fonts.bold,
+          fontSize: 14,
+        },
+        chipsRow: {
+          gap: 8,
+          paddingHorizontal: Spacing.md,
+          paddingVertical: Spacing.md,
+        },
+        chip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          height: 36,
+          paddingHorizontal: 14,
+          borderRadius: Radii.pill,
+          backgroundColor: colors.noirSoft,
+        },
+        chipActive: { backgroundColor: colors.or },
+        chipLabel: {
+          color: colors.sable,
+          fontFamily: Fonts.medium,
+          fontSize: 13,
+        },
+        chipLabelActive: { color: colors.onAccent, fontFamily: Fonts.bold },
+        tile: { width: tileW, height: tileH },
+        tileThumb: { width: tileW, height: tileH, borderRadius: 0 },
+        tileMeta: {
+          position: 'absolute',
+          left: 6,
+          bottom: 6,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 3,
+        },
+        tileCount: {
+          color: colors.onMedia,
+          fontFamily: Fonts.bold,
+          fontSize: 12,
+          textShadowColor: 'rgba(0,0,0,0.6)',
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 3,
+        },
+        row: { gap: GRID_GAP },
+        rowSpacer: { height: GRID_GAP },
+        empty: {
+          alignItems: 'center',
+          paddingVertical: Spacing.xxl,
+          paddingHorizontal: Spacing.lg,
+          gap: 10,
+        },
+        emptyTitle: { color: colors.sable, fontFamily: Fonts.bold, fontSize: 16 },
+        emptyBody: {
+          color: colors.textMuted,
+          fontFamily: Fonts.regular,
+          fontSize: 13,
+          textAlign: 'center',
+          lineHeight: 18,
+        },
+      }),
+    [colors, tileW, tileH],
+  );
+
+  const header = (
+    <View>
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('discover.title')}</Text>
+        <Pressable
+          style={styles.searchBox}
+          onPress={() => router.push('/search')}
+          accessibilityRole="button"
+          accessibilityLabel={t('search.openA11y')}
+        >
+          <Ionicons name="search" size={19} color={colors.textMuted} />
+          <Text style={styles.searchText} numberOfLines={1}>
+            {t('search.placeholder')}
+          </Text>
+        </Pressable>
+
+        <View style={styles.shortcuts}>
+          <Pressable
+            style={styles.shortcut}
+            onPress={() => router.push('/live')}
+            accessibilityRole="button"
+            accessibilityLabel={t('live.openList')}
+          >
+            <View style={styles.shortcutIcon}>
+              <Ionicons name="radio-outline" size={18} color={colors.or} />
+              <View style={styles.liveDot} />
+            </View>
+            <Text style={styles.shortcutLabel}>{t('live.discoverCta')}</Text>
+          </Pressable>
+          <Pressable
+            style={styles.shortcut}
+            onPress={() => router.push('/events')}
+            accessibilityRole="button"
+            accessibilityLabel={t('events.openList')}
+          >
+            <View style={styles.shortcutIcon}>
+              <Ionicons name="calendar-outline" size={18} color={colors.or} />
+            </View>
+            <Text style={styles.shortcutLabel}>{t('events.discoverCta')}</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsRow}
+      >
+        {chips.map((c) => {
+          const active = selected === c.id;
+          return (
+            <Pressable
+              key={c.id ?? 'all'}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => setSelected(c.id)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Ionicons
+                name={c.icon}
+                size={15}
+                color={active ? colors.onAccent : colors.or}
+              />
+              <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>
+                {c.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <Text style={styles.title}>Découvrir</Text>
-      <Text style={styles.subtitle}>
-        Explorez les scènes, cultures et talents — filtrez par univers.
-      </Text>
-
-      <Pressable
-        style={styles.searchBox}
-        onPress={() => router.push('/search')}
-        accessibilityRole="button"
-        accessibilityLabel={t('search.openA11y')}
-      >
-        <Ionicons name="search" size={20} color={colors.textMuted} />
-        <Text style={[styles.input, { color: colors.textMuted }]} numberOfLines={1}>
-          {t('search.placeholder')}
-        </Text>
-      </Pressable>
-
-      <Pressable
-        style={styles.eventsCta}
-        onPress={() => router.push('/events')}
-        accessibilityRole="button"
-        accessibilityLabel={t('events.openList')}
-      >
-        <View style={styles.iconWrap}>
-          <Ionicons name="calendar-outline" size={22} color={colors.or} />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.eventsCtaTitle}>{t('events.discoverCta')}</Text>
-          <Text style={styles.eventsCtaBody}>{t('events.discoverCtaBody')}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={styles.eventsCta}
-        onPress={() => router.push('/live')}
-        accessibilityRole="button"
-        accessibilityLabel={t('live.openList')}
-      >
-        <View style={styles.iconWrap}>
-          <Ionicons name="radio-outline" size={22} color={colors.or} />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.eventsCtaTitle}>{t('live.discoverCta')}</Text>
-          <Text style={styles.eventsCtaBody}>{t('live.discoverCtaBody')}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-      </Pressable>
-
-      <Text style={styles.section}>Univers</Text>
-
       <FlatList
-        data={filteredCategories}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          selected ? (
-            <View style={styles.resultsBlock}>
-              <View style={styles.resultsHeader}>
-                <Text style={styles.resultsTitle}>
-                  {DISCOVER_CATEGORIES.find((c) => c.id === selected)?.label}
-                </Text>
-                <Pressable onPress={() => setSelected(null)} hitSlop={8}>
-                  <Text style={styles.clearFilter}>Effacer</Text>
-                </Pressable>
-              </View>
-              {loadingRemote ? (
-                <ActivityIndicator color={colors.or} style={{ marginVertical: 16 }} />
-              ) : categoryVideos.length === 0 ? (
-                <Text style={styles.emptyCat}>
-                  Aucune vidéo dans cet univers pour l’instant.
-                </Text>
-              ) : (
-                <FlatList
-                  data={categoryVideos}
-                  keyExtractor={(v) => v.id}
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 10, paddingBottom: 8 }}
-                  renderItem={({ item: v }) => (
-                    <View style={styles.thumbCard}>
-                      <MediaThumb
-                        thumbnailUrl={v.thumbnailUrl}
-                        mediaType={v.mediaType}
-                        videoUrl={v.videoUrl}
-                        style={styles.thumb}
-                      />
-                      <Text style={styles.thumbHandle} numberOfLines={1}>
-                        {v.handle}
-                      </Text>
-                      <Text style={styles.thumbMeta} numberOfLines={1}>
-                        {formatCount(v.likes)} likes
-                      </Text>
-                    </View>
-                  )}
-                />
-              )}
-              {!isSupabaseConfigured ? (
-                <Text style={styles.mockHint}>Mode mock — catégories locales.</Text>
-              ) : null}
+        data={loadingRemote ? [] : gridVideos}
+        keyExtractor={(v) => v.id}
+        numColumns={COLUMNS}
+        columnWrapperStyle={styles.row}
+        ItemSeparatorComponent={() => <View style={styles.rowSpacer} />}
+        ListHeaderComponent={header}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={9}
+        windowSize={5}
+        renderItem={({ item: v }) => (
+          <Pressable
+            style={styles.tile}
+            onPress={() => router.push(`/video/${v.id}`)}
+            accessibilityRole="button"
+            accessibilityLabel={t('discover.tileA11y', {
+              handle: v.handle,
+              count: formatCount(v.likes),
+            })}
+          >
+            <MediaThumb
+              thumbnailUrl={v.thumbnailUrl}
+              mediaType={v.mediaType}
+              videoUrl={v.videoUrl}
+              style={styles.tileThumb}
+              showVideoBadge={false}
+            />
+            <View style={styles.tileMeta} pointerEvents="none">
+              <Ionicons name="heart" size={11} color={colors.onMedia} />
+              <Text style={styles.tileCount}>{formatCount(v.likes)}</Text>
             </View>
-          ) : null
-        }
-        renderItem={({ item }) => {
-          const active = selected === item.id;
-          return (
-            <Pressable
-              style={[styles.card, active && styles.cardActive]}
-              onPress={() => onSelectCategory(item)}
-            >
-              <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
-                <Ionicons
-                  name={item.icon}
-                  size={22}
-                  color={active ? colors.noir : colors.or}
-                />
-              </View>
-              <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{item.label}</Text>
-                <Text style={styles.cardBlurb}>{item.blurb}</Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={colors.textMuted}
-              />
-            </Pressable>
-          );
-        }}
+          </Pressable>
+        )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="compass-outline" size={40} color={colors.or} />
-            <Text style={styles.emptyTitle}>Aucun univers trouvé</Text>
-            <Text style={styles.emptyBody}>
-              Aucun univers dans cette liste.
-            </Text>
-          </View>
-        }
-        ListFooterComponent={
-          <View style={styles.footerNote}>
-            <Ionicons name="sparkles-outline" size={16} color={colors.or} />
-            <Text style={styles.footerText}>
-              Filtre sur `videos.category` (migration 002) quand Supabase est
-              configuré ; sinon démos par catégorie.
-            </Text>
-          </View>
+          loadingRemote ? (
+            <ActivityIndicator color={colors.or} style={{ marginVertical: Spacing.xl }} />
+          ) : (
+            <View style={styles.empty}>
+              <Ionicons name="compass-outline" size={36} color={colors.or} />
+              <Text style={styles.emptyTitle}>{t('discover.emptyTitle')}</Text>
+              <Text style={styles.emptyBody}>{t('discover.emptyBody')}</Text>
+            </View>
+          )
         }
       />
     </SafeAreaView>
   );
 }
-

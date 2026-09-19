@@ -183,6 +183,8 @@ const arEG: TranslationKeys = {
     saveLoginRequired: 'سجّل دخول عشان تحفظ الفيديو.',
     rewind: 'ارجع 5 ثواني',
     forward: 'قدّم 5 ثواني',
+    mute: 'اقفل الصوت',
+    unmute: 'شغّل الصوت',
     pause: 'إيقاف',
     play: 'تشغيل',
     comments: 'التعليقات',
@@ -221,6 +223,13 @@ const arEG: TranslationKeys = {
     mySounds: 'Mes sons',
     emptyOwn: 'Aucun son pour l’instant. Importez un fichier audio (mp3, m4a, wav).',
     defaultTitle: 'Son original',
+  },
+  discover: {
+    title: 'اكتشف',
+    chipAll: 'الكل',
+    emptyTitle: 'مفيش حاجة هنا لسه',
+    emptyBody: 'مفيش فيديو في العالم ده. كن أول واحد ينشر.',
+    tileA11y: '%{handle}، %{count} إعجاب',
   },
   events: {
     title: 'Events',
