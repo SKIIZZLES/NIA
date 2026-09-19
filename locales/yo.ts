@@ -154,6 +154,7 @@ const yo: TranslationKeys = {
     save: 'Fi pamọ́',
     saveLoginRequired: 'Wọlé láti fi fídíò pamọ́.',
     rewind: 'Padà sẹ́yìn ìṣẹ́jú mẹ́ẹ̀ẹ́dọ́gbọ̀n 5',
+    forward: 'Lọ síwájú ìṣẹ́jú 5',
     pause: 'Dáwọ́ dúró',
     play: 'Ṣe',
     comments: 'Àwọn àsọyé',

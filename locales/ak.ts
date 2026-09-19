@@ -154,6 +154,7 @@ const ak: TranslationKeys = {
     save: 'Sie',
     saveLoginRequired: 'Kɔ mu na sie video.',
     rewind: 'San kɔ akyiri seconds 5',
+    forward: 'Kɔ anim seconds 5',
     pause: 'Gyae',
     play: 'Bɔ',
     comments: 'Nkyerɛkyerɛmu',

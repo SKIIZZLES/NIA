@@ -154,6 +154,7 @@ const bm: TranslationKeys = {
     save: 'Maraya',
     saveLoginRequired: 'Don ka video maraya.',
     rewind: 'Kɔfɛ 5 seconde',
+    forward: 'Ŋɛfɛ 5 seconde',
     pause: 'Jɔ',
     play: 'Daminɛ',
     comments: 'Kuma',

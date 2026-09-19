@@ -167,6 +167,7 @@ const arMA: TranslationKeys = {
     save: 'سجّل',
     saveLoginRequired: 'دخل باش تسجّل الفيديو.',
     rewind: 'رجّع 5 ثواني',
+    forward: 'قدّم 5 ثواني',
     pause: 'وقف',
     play: 'شغّل',
     comments: 'التعليقات',

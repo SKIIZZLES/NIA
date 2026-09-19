@@ -19,10 +19,11 @@ import { FollowButton } from '@/components/FollowButton';
 import { VideoMenuSheet } from '@/components/VideoMenuSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { shareVideo } from '@/lib/share';
+import { VideoProgressBar } from '@/components/VideoProgressBar';
 import { useRouter } from 'expo-router';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
-const REWIND_SEC = 5;
+const SEEK_SEC = 5;
 const DOUBLE_TAP_MS = 280;
 
 type Props = {
@@ -31,14 +32,6 @@ type Props = {
   bottomInset?: number;
   onOpenComments?: (videoId: string) => void;
 };
-
-function formatClock(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
-  const s = Math.floor(seconds);
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${r.toString().padStart(2, '0')}`;
-}
 
 function VideoCardInner({
   item,
@@ -85,7 +78,9 @@ function VideoCardInner({
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [repostBusy, setRepostBusy] = useState(false);
-  const [timeLabel, setTimeLabel] = useState('0:00');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const scrubbingRef = useRef(false);
   const lastTapRef = useRef(0);
   const pauseIconTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -122,13 +117,12 @@ function VideoCardInner({
 
   useEffect(() => {
     if (!isActive || isImagePost) return;
-    const sub = player.addListener('timeUpdate', ({ currentTime }) => {
-      const duration = player.duration;
-      if (duration > 0 && Number.isFinite(duration)) {
-        const remaining = Math.max(0, duration - currentTime);
-        setTimeLabel(formatClock(remaining));
-      } else {
-        setTimeLabel(formatClock(currentTime));
+    const sub = player.addListener('timeUpdate', ({ currentTime: t }) => {
+      if (scrubbingRef.current) return;
+      const d = player.duration;
+      setCurrentTime(t);
+      if (d > 0 && Number.isFinite(d)) {
+        setDuration(d);
       }
     });
     return () => {
@@ -138,7 +132,26 @@ function VideoCardInner({
         // ignore
       }
     };
-  }, [isActive, player]);
+  }, [isActive, player, isImagePost]);
+
+  const seekTo = useCallback(
+    (seconds: number) => {
+      try {
+        const d = player.duration;
+        const max = d > 0 && Number.isFinite(d) ? d : seconds;
+        const next = Math.max(0, Math.min(max, seconds));
+        player.currentTime = next;
+        setCurrentTime(next);
+      } catch {
+        // ignore seek race
+      }
+    },
+    [player],
+  );
+
+  const onScrubbingChange = useCallback((active: boolean) => {
+    scrubbingRef.current = active;
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -155,12 +168,28 @@ function VideoCardInner({
 
   const rewind = useCallback(() => {
     try {
-      const next = Math.max(0, player.currentTime - REWIND_SEC);
+      const next = Math.max(0, player.currentTime - SEEK_SEC);
       player.currentTime = next;
-      // seekBy is also available; currentTime is reliable across platforms
+      setCurrentTime(next);
     } catch {
       try {
-        player.seekBy(-REWIND_SEC);
+        player.seekBy(-SEEK_SEC);
+      } catch {
+        // ignore
+      }
+    }
+  }, [player]);
+
+  const forward = useCallback(() => {
+    try {
+      const d = player.duration;
+      const max = d > 0 && Number.isFinite(d) ? d : player.currentTime + SEEK_SEC;
+      const next = Math.min(max, player.currentTime + SEEK_SEC);
+      player.currentTime = next;
+      setCurrentTime(next);
+    } catch {
+      try {
+        player.seekBy(SEEK_SEC);
       } catch {
         // ignore
       }
@@ -352,9 +381,6 @@ function VideoCardInner({
 
       {isActive && !isImagePost ? (
         <View style={styles.topLeftControls}>
-          <View style={styles.durationPill} pointerEvents="none">
-            <Text style={styles.durationText}>{timeLabel}</Text>
-          </View>
           <Pressable
             style={styles.rewindBtn}
             onPress={rewind}
@@ -362,7 +388,16 @@ function VideoCardInner({
             accessibilityLabel={t('feed.rewind')}
           >
             <Ionicons name="play-back" size={16} color={Colors.sable} />
-            <Text style={styles.rewindLabel}>{REWIND_SEC}s</Text>
+            <Text style={styles.rewindLabel}>{SEEK_SEC}s</Text>
+          </Pressable>
+          <Pressable
+            style={styles.rewindBtn}
+            onPress={forward}
+            hitSlop={10}
+            accessibilityLabel={t('feed.forward')}
+          >
+            <Ionicons name="play-forward" size={16} color={Colors.sable} />
+            <Text style={styles.rewindLabel}>{SEEK_SEC}s</Text>
           </Pressable>
         </View>
       ) : null}
@@ -456,6 +491,15 @@ function VideoCardInner({
           <Text style={styles.country}>{item.country}</Text>
         ) : null}
       </View>
+
+      {isActive && !isImagePost ? (
+        <VideoProgressBar
+          currentTime={currentTime}
+          duration={duration}
+          onSeek={seekTo}
+          onScrubbingChange={onScrubbingChange}
+        />
+      ) : null}
 
       <VideoMenuSheet
         visible={menuOpen}
@@ -554,21 +598,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  durationPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Radii.pill,
-    backgroundColor: 'rgba(11, 11, 11, 0.62)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(209, 127, 42, 0.55)',
-  },
-  durationText: {
-    color: Colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-    letterSpacing: 0.3,
-    fontVariant: ['tabular-nums'],
-  },
   rewindBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -632,7 +661,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 80,
-    bottom: 28,
+    bottom: 52,
     zIndex: 4,
   },
   repostLine: {

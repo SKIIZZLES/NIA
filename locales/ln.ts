@@ -154,6 +154,7 @@ const ln: TranslationKeys = {
     save: 'Bomba',
     saveLoginRequired: 'Kota mpo na kobomba vidéo.',
     rewind: 'Zonga nsima secondes 5',
+    forward: 'Kende liboso secondes 5',
     pause: 'Tika',
     play: 'Banda',
     comments: 'Commentaires',

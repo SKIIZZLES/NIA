@@ -154,6 +154,7 @@ const ig: TranslationKeys = {
     save: 'Chekwaa',
     saveLoginRequired: 'Banye ka ị chekwaa vidiyo.',
     rewind: 'Laghachi azụ sekọnd 5',
+    forward: "Gaa n'ihu sekọnd 5",
     pause: 'Kwụsị',
     play: 'Kpọọ',
     comments: 'Nkwupụta',

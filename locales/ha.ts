@@ -164,6 +164,7 @@ const ha: TranslationKeys = {
     save: 'Ajiye',
     saveLoginRequired: 'Shiga don ajiye bidiyo.',
     rewind: 'Koma baya da dakiku 5',
+    forward: 'Ci gaba da dakiku 5',
     pause: 'Dakata',
     play: 'Kunna',
     comments: 'Sharhi',

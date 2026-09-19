@@ -166,6 +166,7 @@ const arSD: TranslationKeys = {
     save: 'احفظ',
     saveLoginRequired: 'ادخل عشان تحفظ الفيديو.',
     rewind: 'ارجع 5 ثواني',
+    forward: 'قدّم 5 ثواني',
     pause: 'إيقاف',
     play: 'تشغيل',
     comments: 'التعليقات',

@@ -154,6 +154,7 @@ const zu: TranslationKeys = {
     save: 'Londoloza',
     saveLoginRequired: 'Ngena ukuze ulondoloze ividiyo.',
     rewind: 'Buyela emuva imizuzwana engu-5',
+    forward: 'Dlulela phambili imizuzwana engu-5',
     pause: 'Misa',
     play: 'Dlala',
     comments: 'Amazwana',

@@ -164,6 +164,7 @@ const pt: TranslationKeys = {
     save: 'Guardar',
     saveLoginRequired: 'Inicie sessão para guardar um vídeo.',
     rewind: 'Recuar 5 segundos',
+    forward: 'Avançar 5 segundos',
     pause: 'Pausa',
     play: 'Reproduzir',
     comments: 'Comentários',

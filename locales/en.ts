@@ -164,6 +164,7 @@ const en: TranslationKeys = {
     save: 'Save',
     saveLoginRequired: 'Sign in to save a video.',
     rewind: 'Rewind 5 seconds',
+    forward: 'Forward 5 seconds',
     pause: 'Pause',
     play: 'Play',
     comments: 'Comments',

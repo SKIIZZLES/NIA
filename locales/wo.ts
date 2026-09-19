@@ -154,6 +154,7 @@ const wo: TranslationKeys = {
     save: 'Denc',
     saveLoginRequired: 'Duggal ngir denc widewoo.',
     rewind: 'Dellu ci ginaaw 5 saa',
+    forward: 'Jàll ci kanam 5 saa',
     pause: 'Taxaw',
     play: 'Door',
     comments: 'Kàddu',

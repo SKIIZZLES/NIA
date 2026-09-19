@@ -154,6 +154,7 @@ const am: TranslationKeys = {
     save: 'አስቀምጥ',
     saveLoginRequired: 'ቪዲዮ ለማስቀመጥ ይግቡ።',
     rewind: '5 ሰከንድ ወደ ኋላ',
+    forward: '5 ሰከንድ ወደ ፊት',
     pause: 'አቁም',
     play: 'አጫውት',
     comments: 'አስተያየቶች',

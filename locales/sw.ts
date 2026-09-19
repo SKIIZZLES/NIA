@@ -164,6 +164,7 @@ const sw: TranslationKeys = {
     save: 'Hifadhi',
     saveLoginRequired: 'Ingia ili uhifadhi video.',
     rewind: 'Rudi nyuma sekunde 5',
+    forward: 'Sogeza mbele sekunde 5',
     pause: 'Sitisha',
     play: 'Cheza',
     comments: 'Maoni',

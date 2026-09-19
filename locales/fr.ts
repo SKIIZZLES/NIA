@@ -163,6 +163,7 @@ const fr = {
     save: 'Enregistrer',
     saveLoginRequired: 'Connectez-vous pour enregistrer une vidéo.',
     rewind: 'Reculer de 5 secondes',
+    forward: 'Avancer de 5 secondes',
     pause: 'Pause',
     play: 'Lecture',
     comments: 'Commentaires',

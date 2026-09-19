@@ -154,6 +154,7 @@ const ff: TranslationKeys = {
     save: 'Danndu',
     saveLoginRequired: 'Naat ngam danndude video.',
     rewind: 'Rutto 5 sekonnde',
+    forward: 'Yah yeeso 5 sekonnde',
     pause: 'Dartin',
     play: 'Fuɗɗo',
     comments: 'Yowtere',

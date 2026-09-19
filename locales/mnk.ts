@@ -154,6 +154,7 @@ const mnk: TranslationKeys = {
     save: 'Mara',
     saveLoginRequired: 'Don ka video mara.',
     rewind: 'Kɔfɛ 5 seconde',
+    forward: 'Ŋɛfɛ 5 seconde',
     pause: 'Lo',
     play: 'A daminɛ',
     comments: 'Kumaw',
