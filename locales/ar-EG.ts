@@ -226,7 +226,7 @@ const arEG: TranslationKeys = {
   },
   discover: {
     title: 'اكتشف',
-    allChip: 'الكل',
+    chipAll: 'الكل',
     emptyTitle: 'مفيش حاجة هنا لسه',
     emptyBody: 'مفيش فيديو في العالم ده. كن أول واحد ينشر.',
     tileA11y: '%{handle}، %{count} إعجاب',

@@ -236,7 +236,7 @@ const es: TranslationKeys = {
   },
   discover: {
     title: 'Descubrir',
-    allChip: 'Todo',
+    chipAll: 'Todo',
     emptyTitle: 'Aquí no hay nada todavía',
     emptyBody: 'No hay vídeos en este universo. Sé el primero en publicar.',
     tileA11y: '%{handle}, %{count} me gusta',

@@ -226,7 +226,7 @@ const zu: TranslationKeys = {
   },
   discover: {
     title: 'Thola',
-    allChip: 'Konke',
+    chipAll: 'Konke',
     emptyTitle: 'Ayikho into lapha okwamanje',
     emptyBody: 'Alikho ividiyo kulomkhakha. Yiba ngowokuqala ukuposa.',
     tileA11y: '%{handle}, okuthandwayo okungu-%{count}',

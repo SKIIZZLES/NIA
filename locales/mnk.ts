@@ -226,7 +226,7 @@ const mnk: TranslationKeys = {
   },
   discover: {
     title: 'Jeroo',
-    allChip: 'Bee',
+    chipAll: 'Bee',
     emptyTitle: 'Feŋ te jaŋ foloo',
     emptyBody: 'Wideyo te ñiŋ duniyaa kono. I ye ke foloo ti ka a landi.',
     tileA11y: '%{handle}, %{count} lafinna',

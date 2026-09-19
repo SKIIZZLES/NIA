@@ -226,7 +226,7 @@ const ak: TranslationKeys = {
   },
   discover: {
     title: 'Hwehwɛ',
-    allChip: 'Nyinaa',
+    chipAll: 'Nyinaa',
     emptyTitle: 'Biribiara nni ha seesei',
     emptyBody: 'Video biara nni saa wiase yi mu. Yɛ nea ɔdi kan de to so.',
     tileA11y: '%{handle}, %{count} ɔdɔ',

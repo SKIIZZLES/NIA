@@ -236,7 +236,7 @@ const fr = {
   },
   discover: {
     title: 'Découvrir',
-    allChip: 'Tout',
+    chipAll: 'Tout',
     emptyTitle: 'Rien ici pour l’instant',
     emptyBody: 'Aucune vidéo dans cet univers. Sois le premier à publier.',
     tileA11y: '%{handle}, %{count} j’aime',

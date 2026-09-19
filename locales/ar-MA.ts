@@ -239,7 +239,7 @@ const arMA: TranslationKeys = {
   },
   discover: {
     title: 'اكتشف',
-    allChip: 'الكل',
+    chipAll: 'الكل',
     emptyTitle: 'ماكاين والو دابا',
     emptyBody: 'ماكاين حتى فيديو فهاد العالم. كون الأول اللي ينشر.',
     tileA11y: '%{handle}، %{count} إعجاب',

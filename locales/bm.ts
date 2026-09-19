@@ -226,7 +226,7 @@ const bm: TranslationKeys = {
   },
   discover: {
     title: 'Yeli',
-    allChip: 'Bɛɛ',
+    chipAll: 'Bɛɛ',
     emptyTitle: 'Foyi tɛ yan fɔlɔ',
     emptyBody: 'Wideyo si tɛ nin diɲɛ in kɔnɔ. I ka kɛ fɔlɔ ye k’a bila.',
     tileA11y: '%{handle}, %{count} diyara',

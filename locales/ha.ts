@@ -236,7 +236,7 @@ const ha: TranslationKeys = {
   },
   discover: {
     title: 'Gano',
-    allChip: 'Duka',
+    chipAll: 'Duka',
     emptyTitle: 'Babu kome a nan tukuna',
     emptyBody: 'Babu bidiyo a wannan sararin. Ka zama na farko da zai wallafa.',
     tileA11y: '%{handle}, son %{count}',

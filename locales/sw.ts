@@ -236,7 +236,7 @@ const sw: TranslationKeys = {
   },
   discover: {
     title: 'Gundua',
-    allChip: 'Zote',
+    chipAll: 'Zote',
     emptyTitle: 'Hakuna kitu hapa bado',
     emptyBody: 'Hakuna video katika ulimwengu huu. Kuwa wa kwanza kuchapisha.',
     tileA11y: '%{handle}, mapenzi %{count}',

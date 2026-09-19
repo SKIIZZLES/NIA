@@ -236,7 +236,7 @@ const dyo: TranslationKeys = {
   },
   discover: {
     title: 'Gis-gis',
-    allChip: 'Lépp',
+    chipAll: 'Lépp',
     emptyTitle: 'Amul dara fii ba léegi',
     emptyBody: 'Amul benn wideyo ci àddina bii. Nga jëkk a jottali.',
     tileA11y: '%{handle}, %{count} bëgg',

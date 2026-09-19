@@ -238,7 +238,7 @@ const arSD: TranslationKeys = {
   },
   discover: {
     title: 'اكتشف',
-    allChip: 'الكل',
+    chipAll: 'الكل',
     emptyTitle: 'ما في حاجة هنا لسه',
     emptyBody: 'ما في فيديو في العالم دا. كن أول واحد ينشر.',
     tileA11y: '%{handle}، %{count} إعجاب',

@@ -226,7 +226,7 @@ const yo: TranslationKeys = {
   },
   discover: {
     title: 'Ṣàwárí',
-    allChip: 'Gbogbo',
+    chipAll: 'Gbogbo',
     emptyTitle: 'Kò sí nǹkan níbí síbẹ̀',
     emptyBody: 'Kò sí fídíò nínú àgbáyé yìí. Jẹ́ ẹni àkọ́kọ́ láti fi sí.',
     tileA11y: '%{handle}, ìfẹ́ %{count}',

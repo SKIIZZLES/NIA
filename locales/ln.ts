@@ -226,7 +226,7 @@ const ln: TranslationKeys = {
   },
   discover: {
     title: 'Luka',
-    allChip: 'Nyonso',
+    chipAll: 'Nyonso',
     emptyTitle: 'Eloko ezali awa naino te',
     emptyBody: 'Vidéo ezali te na mokili oyo. Zala moto ya liboso ya kotinda.',
     tileA11y: '%{handle}, %{count} balingi',

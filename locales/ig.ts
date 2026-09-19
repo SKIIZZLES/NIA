@@ -226,7 +226,7 @@ const ig: TranslationKeys = {
   },
   discover: {
     title: 'Chọpụta',
-    allChip: 'Niile',
+    chipAll: 'Niile',
     emptyTitle: 'Ọ nweghị ihe dị ebe a ugbu a',
     emptyBody: 'Enweghị vidiyo na ụwa a. Bụrụ onye mbụ dee.',
     tileA11y: '%{handle}, %{count} mmasị',

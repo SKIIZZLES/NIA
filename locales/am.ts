@@ -226,7 +226,7 @@ const am: TranslationKeys = {
   },
   discover: {
     title: 'ያግኙ',
-    allChip: 'ሁሉም',
+    chipAll: 'ሁሉም',
     emptyTitle: 'እስካሁን እዚህ ምንም የለም',
     emptyBody: 'በዚህ ዓለም ውስጥ ምንም ቪዲዮ የለም። መጀመሪያ የሚለጥፉ ይሁኑ።',
     tileA11y: '%{handle}፣ %{count} ወደዱት',

@@ -67,7 +67,7 @@ export default function DiscoverScreen() {
     }
   }, [selected, loadCategoryVideos]);
 
-  /** « Tout » = vidéos du fil triées par j'aime ; sinon filtre par univers. */
+  /** All = vidéos du fil triées par j'aime ; sinon filtre par univers. */
   const gridVideos = useMemo(() => {
     if (!selected) {
       const base = feedVideos.length || isSupabaseConfigured ? feedVideos : DEMO_VIDEOS;
@@ -84,7 +84,7 @@ export default function DiscoverScreen() {
 
   const chips = useMemo(
     () => [
-      { id: null as CategoryId | null, label: t('discover.allChip'), icon: 'sparkles-outline' as const },
+      { id: null as CategoryId | null, label: t('discover.chipAll'), icon: 'sparkles-outline' as const },
       ...DISCOVER_CATEGORIES.map((c) => ({ id: c.id as CategoryId | null, label: c.label, icon: c.icon })),
     ],
     [t],

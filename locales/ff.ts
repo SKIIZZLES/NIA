@@ -226,7 +226,7 @@ const ff: TranslationKeys = {
   },
   discover: {
     title: 'Yiylo',
-    allChip: 'Fof',
+    chipAll: 'Fof',
     emptyTitle: 'Hay huunde ɗoo tawo',
     emptyBody: 'Widewo alaa e nder aduna ngoo. Wonu gadano winndude.',
     tileA11y: '%{handle}, %{count} yiɗde',
