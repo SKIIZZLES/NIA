@@ -64,7 +64,7 @@ export default function HomeScreen() {
       <FeedPager videos={data} bottomInset={bottomInset} />
 
       <View style={[styles.topTabs, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
-        <View style={styles.tabsRow}>
+        <View style={styles.tabsRow} pointerEvents="box-none">
           <View style={styles.tabsSpacer} />
           {TABS.map((t) => {
             const active = t.key === tab;
