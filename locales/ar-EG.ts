@@ -183,6 +183,8 @@ const arEG: TranslationKeys = {
     saveLoginRequired: 'سجّل دخول عشان تحفظ الفيديو.',
     rewind: 'ارجع 5 ثواني',
     forward: 'قدّم 5 ثواني',
+    mute: 'اقفل الصوت',
+    unmute: 'شغّل الصوت',
     pause: 'إيقاف',
     play: 'تشغيل',
     comments: 'التعليقات',

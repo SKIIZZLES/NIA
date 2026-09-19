@@ -183,6 +183,8 @@ const wo: TranslationKeys = {
     saveLoginRequired: 'Duggal ngir denc widewoo.',
     rewind: 'Dellu ci ginaaw 5 saa',
     forward: 'Jàll ci kanam 5 saa',
+    mute: 'Fey son bi',
+    unmute: 'Taal son bi',
     pause: 'Taxaw',
     play: 'Door',
     comments: 'Kàddu',

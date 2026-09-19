@@ -193,6 +193,8 @@ const sw: TranslationKeys = {
     saveLoginRequired: 'Ingia ili uhifadhi video.',
     rewind: 'Rudi nyuma sekunde 5',
     forward: 'Sogeza mbele sekunde 5',
+    mute: 'Zima sauti',
+    unmute: 'Washa sauti',
     pause: 'Sitisha',
     play: 'Cheza',
     comments: 'Maoni',

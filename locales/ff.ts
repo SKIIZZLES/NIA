@@ -183,6 +183,8 @@ const ff: TranslationKeys = {
     saveLoginRequired: 'Naat ngam danndude video.',
     rewind: 'Rutto 5 sekonnde',
     forward: 'Yah yeeso 5 sekonnde',
+    mute: 'Ñifu hito',
+    unmute: 'Huɓɓu hito',
     pause: 'Dartin',
     play: 'Fuɗɗo',
     comments: 'Yowtere',

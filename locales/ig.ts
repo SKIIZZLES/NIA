@@ -183,6 +183,8 @@ const ig: TranslationKeys = {
     saveLoginRequired: 'Banye ka ị chekwaa vidiyo.',
     rewind: 'Laghachi azụ sekọnd 5',
     forward: "Gaa n'ihu sekọnd 5",
+    mute: 'Gbanyụọ ụda',
+    unmute: 'Gbanye ụda',
     pause: 'Kwụsị',
     play: 'Kpọọ',
     comments: 'Nkwupụta',

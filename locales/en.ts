@@ -193,6 +193,8 @@ const en: TranslationKeys = {
     saveLoginRequired: 'Sign in to save a video.',
     rewind: 'Rewind 5 seconds',
     forward: 'Forward 5 seconds',
+    mute: 'Mute sound',
+    unmute: 'Unmute sound',
     pause: 'Pause',
     play: 'Play',
     comments: 'Comments',

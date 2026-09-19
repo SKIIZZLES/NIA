@@ -193,6 +193,8 @@ const ha: TranslationKeys = {
     saveLoginRequired: 'Shiga don ajiye bidiyo.',
     rewind: 'Koma baya da dakiku 5',
     forward: 'Ci gaba da dakiku 5',
+    mute: 'Kashe sauti',
+    unmute: 'Kunna sauti',
     pause: 'Dakata',
     play: 'Kunna',
     comments: 'Sharhi',

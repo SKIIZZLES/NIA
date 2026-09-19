@@ -183,6 +183,8 @@ const bm: TranslationKeys = {
     saveLoginRequired: 'Don ka video maraya.',
     rewind: 'Kɔfɛ 5 seconde',
     forward: 'Ŋɛfɛ 5 seconde',
+    mute: 'Mankan faga',
+    unmute: 'Mankan wuli',
     pause: 'Jɔ',
     play: 'Daminɛ',
     comments: 'Kuma',

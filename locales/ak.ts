@@ -183,6 +183,8 @@ const ak: TranslationKeys = {
     saveLoginRequired: 'Kɔ mu na sie video.',
     rewind: 'San kɔ akyiri seconds 5',
     forward: 'Kɔ anim seconds 5',
+    mute: 'Dum nnyigyei',
+    unmute: 'Sɔ nnyigyei',
     pause: 'Gyae',
     play: 'Bɔ',
     comments: 'Nkyerɛkyerɛmu',

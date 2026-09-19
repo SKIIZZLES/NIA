@@ -193,6 +193,8 @@ const pt: TranslationKeys = {
     saveLoginRequired: 'Inicie sessão para guardar um vídeo.',
     rewind: 'Recuar 5 segundos',
     forward: 'Avançar 5 segundos',
+    mute: 'Silenciar',
+    unmute: 'Ativar som',
     pause: 'Pausa',
     play: 'Reproduzir',
     comments: 'Comentários',

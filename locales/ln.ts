@@ -183,6 +183,8 @@ const ln: TranslationKeys = {
     saveLoginRequired: 'Kota mpo na kobomba vidéo.',
     rewind: 'Zonga nsima secondes 5',
     forward: 'Kende liboso secondes 5',
+    mute: 'Boma mongongo',
+    unmute: 'Fungola mongongo',
     pause: 'Tika',
     play: 'Banda',
     comments: 'Commentaires',

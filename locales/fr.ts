@@ -192,6 +192,8 @@ const fr = {
     saveLoginRequired: 'Connectez-vous pour enregistrer une vidéo.',
     rewind: 'Reculer de 5 secondes',
     forward: 'Avancer de 5 secondes',
+    mute: 'Couper le son',
+    unmute: 'Activer le son',
     pause: 'Pause',
     play: 'Lecture',
     comments: 'Commentaires',

@@ -183,6 +183,8 @@ const am: TranslationKeys = {
     saveLoginRequired: 'ቪዲዮ ለማስቀመጥ ይግቡ።',
     rewind: '5 ሰከንድ ወደ ኋላ',
     forward: '5 ሰከንድ ወደ ፊት',
+    mute: 'ድምጽ አጥፋ',
+    unmute: 'ድምጽ አብራ',
     pause: 'አቁም',
     play: 'አጫውት',
     comments: 'አስተያየቶች',

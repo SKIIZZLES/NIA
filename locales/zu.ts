@@ -183,6 +183,8 @@ const zu: TranslationKeys = {
     saveLoginRequired: 'Ngena ukuze ulondoloze ividiyo.',
     rewind: 'Buyela emuva imizuzwana engu-5',
     forward: 'Dlulela phambili imizuzwana engu-5',
+    mute: 'Cisha umsindo',
+    unmute: 'Vula umsindo',
     pause: 'Misa',
     play: 'Dlala',
     comments: 'Amazwana',

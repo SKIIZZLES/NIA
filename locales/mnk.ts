@@ -183,6 +183,8 @@ const mnk: TranslationKeys = {
     saveLoginRequired: 'Don ka video mara.',
     rewind: 'Kɔfɛ 5 seconde',
     forward: 'Ŋɛfɛ 5 seconde',
+    mute: 'Mankan faga',
+    unmute: 'Mankan wuli',
     pause: 'Lo',
     play: 'A daminɛ',
     comments: 'Kumaw',

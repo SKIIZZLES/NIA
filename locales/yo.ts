@@ -183,6 +183,8 @@ const yo: TranslationKeys = {
     saveLoginRequired: 'Wọlé láti fi fídíò pamọ́.',
     rewind: 'Padà sẹ́yìn ìṣẹ́jú mẹ́ẹ̀ẹ́dọ́gbọ̀n 5',
     forward: 'Lọ síwájú ìṣẹ́jú 5',
+    mute: 'Pa ohùn',
+    unmute: 'Tan ohùn',
     pause: 'Dáwọ́ dúró',
     play: 'Ṣe',
     comments: 'Àwọn àsọyé',

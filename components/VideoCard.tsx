@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  type GestureResponderEvent,
   Image,
   Pressable,
   StyleSheet,
@@ -27,6 +28,8 @@ import { useRouter } from 'expo-router';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SEEK_SEC = 5;
+/** Marge droite de la zone de tap : laisse le rail d'actions cliquable. */
+const TAP_ZONE_RIGHT = 72;
 const DOUBLE_TAP_MS = 280;
 
 type Props = {
@@ -206,11 +209,16 @@ function VideoCardInner({
     }
   }, [player]);
 
-  const onVideoPress = useCallback(() => {
+  const onVideoPress = useCallback((event: GestureResponderEvent) => {
     const now = Date.now();
+    // Le double-tap agit selon la moitié touchée : gauche recule, droite avance.
+    // La zone de tap s'arrête à 72px du bord droit (rail d'actions).
+    const zoneW = SCREEN_W - TAP_ZONE_RIGHT;
+    const onRightHalf = event.nativeEvent.locationX > zoneW / 2;
     if (now - lastTapRef.current < DOUBLE_TAP_MS) {
       lastTapRef.current = 0;
-      rewind();
+      if (onRightHalf) forward();
+      else rewind();
       return;
     }
     lastTapRef.current = now;
@@ -225,7 +233,7 @@ function VideoCardInner({
       });
       lastTapRef.current = 0;
     }, DOUBLE_TAP_MS);
-  }, [rewind, flashPauseIcon]);
+  }, [rewind, forward, flashPauseIcon]);
 
   const onShare = async () => {
     await shareVideo(item);
@@ -385,7 +393,7 @@ function VideoCardInner({
         pointerEvents="none"
       />
 
-      {/* Tap zone: pause/play + double-tap rewind (left-biased) */}
+      {/* Tap zone: simple tap = pause/play, double-tap = reculer (gauche) / avancer (droite) */}
       <Pressable
         style={styles.tapZone}
         onPress={onVideoPress}
@@ -410,7 +418,7 @@ function VideoCardInner({
           onPress={() => setMuted((m) => !m)}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={muted ? 'Activer le son' : 'Couper le son'}
+          accessibilityLabel={muted ? t('feed.unmute') : t('feed.mute')}
         >
           <Ionicons
             name={muted ? 'volume-mute' : 'volume-high'}
@@ -487,7 +495,9 @@ function VideoCardInner({
           {item.country ? (
             <View style={styles.countryChip}>
               <Ionicons name="location-outline" size={12} color={colors.sableMuted} />
-              <Text style={styles.country}>{item.country}</Text>
+              <Text style={[styles.country, { color: colors.sableMuted }]}>
+                {item.country}
+              </Text>
             </View>
           ) : null}
         </View>
@@ -607,7 +617,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 72,
+    right: TAP_ZONE_RIGHT,
     bottom: 120,
     zIndex: 2,
   },
