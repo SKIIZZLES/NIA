@@ -562,3 +562,6 @@ export async function softDeleteOwnVideo(
 ): Promise<OwnerVideoActionResult> {
   return setVideoStatus(userId, videoId, 'deleted');
 }
+
+/** Alias for profile Archives (désarchiver / supprimer). */
+export const updateVideoStatus = setVideoStatus;

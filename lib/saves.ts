@@ -3,6 +3,10 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
+import type { VideoItem } from '@/data/mockVideos';
+import { DEMO_VIDEOS } from '@/data/mockVideos';
+import type { ProfileRow, VideoRow } from '@/types/database';
+import { mapRowToVideoItem, VIDEO_PROFILE_SELECT } from '@/lib/videos';
 
 const LOCAL_SAVES_KEY = '@nia/saved_video_ids';
 
@@ -100,6 +104,58 @@ export async function toggleSave(
     return true;
   }
   return true;
+}
+
+
+type VideoWithProfile = VideoRow & {
+  profiles: Pick<ProfileRow, 'username' | 'avatar_url' | 'display_name'> | null;
+};
+
+/**
+ * Full VideoItems for the current user's saves (table `saves`).
+ * Falls back to DEMO_VIDEOS / feed ids when offline or mock.
+ */
+export async function fetchSavedVideos(userId: string): Promise<VideoItem[]> {
+  const ids = await fetchSavedVideoIds(userId);
+  if (!ids.length) return [];
+
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
+    const byId = new Map(DEMO_VIDEOS.map((v) => [v.id, v]));
+    return ids.map((id) => byId.get(id)).filter((v): v is VideoItem => !!v);
+  }
+
+  const { data, error } = await sb
+    .from('videos')
+    .select(VIDEO_PROFILE_SELECT)
+    .in('id', ids)
+    .eq('status', 'published');
+
+  if (error) {
+    // Soft fallback: try without status filter (pre-002)
+    const fallback = await sb
+      .from('videos')
+      .select(VIDEO_PROFILE_SELECT)
+      .in('id', ids);
+    if (fallback.error || !fallback.data) return [];
+    const rows = fallback.data as unknown as VideoWithProfile[];
+    const items = rows.map((row) => {
+      const { data: urlData } = sb.storage.from('videos').getPublicUrl(row.storage_path);
+      return mapRowToVideoItem(row, urlData.publicUrl);
+    });
+    const order = new Map(ids.map((id, i) => [id, i]));
+    return items
+      .filter((v) => !v.status || v.status === 'published')
+      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  }
+
+  const rows = (data || []) as unknown as VideoWithProfile[];
+  const items = rows.map((row) => {
+    const { data: urlData } = sb.storage.from('videos').getPublicUrl(row.storage_path);
+    return mapRowToVideoItem(row, urlData.publicUrl);
+  });
+  const order = new Map(ids.map((id, i) => [id, i]));
+  return items.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
 }
 
 export { isSupabaseConfigured };

@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -11,22 +12,27 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { MediaThumb } from '@/components/MediaThumb';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { useRouter } from 'expo-router';
-import { MediaThumb } from '@/components/MediaThumb';
 import {
   countFollowers,
   countFollowing,
   fetchVideosByUserId,
 } from '@/lib/profiles';
+import { fetchSavedVideos } from '@/lib/saves';
+import { updateVideoStatus } from '@/lib/videos';
+import type { VideoItem } from '@/data/mockVideos';
 import { formatCount } from '@/data/mockVideos';
+
+type ProfileTab = 'publications' | 'archives' | 'saves';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
-  const { videos } = useFeed();
+  const { videos, savedIds, toggleSave, refresh } = useFeed();
   const { t } = useI18n();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -36,144 +42,304 @@ export default function ProfileScreen() {
 
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<ProfileTab>('publications');
+  const [published, setPublished] = useState<VideoItem[]>([]);
+  const [archived, setArchived] = useState<VideoItem[]>([]);
+  const [saved, setSaved] = useState<VideoItem[]>([]);
 
-  const myVideos = videos.filter(
-    (v) =>
-      user &&
-      (v.userId === user.id ||
-        v.handle === `@${user.username}` ||
-        v.id.startsWith('local_')),
+  const myFeedVideos = useMemo(
+    () =>
+      videos.filter(
+        (v) =>
+          user &&
+          (v.userId === user.id ||
+            v.handle === `@${user.username}` ||
+            v.id.startsWith('local_')),
+      ),
+    [videos, user],
   );
 
-  const [grid, setGrid] = useState(myVideos);
-
-  const loadCounts = useCallback(async () => {
+  const loadProfileData = useCallback(async () => {
     if (!user) {
       setFollowerCount(0);
       setFollowingCount(0);
+      setPublished([]);
+      setArchived([]);
+      setSaved([]);
       return;
     }
     try {
-      const [f1, f2, remote] = await Promise.all([
+      const [f1, f2, remote, savedRemote] = await Promise.all([
         countFollowers(user.id),
         countFollowing(user.id),
         fetchVideosByUserId(user.id, { includeArchived: true }),
+        fetchSavedVideos(user.id),
       ]);
       setFollowerCount(f1);
       setFollowingCount(f2);
-      if (remote.length) setGrid(remote);
-      else setGrid(myVideos.length ? myVideos : []);
+
+      const own =
+        remote.length > 0
+          ? remote
+          : myFeedVideos.filter((v) => v.status !== 'deleted');
+      setPublished(own.filter((v) => !v.status || v.status === 'published'));
+      setArchived(own.filter((v) => v.status === 'archived'));
+
+      if (savedRemote.length) {
+        setSaved(savedRemote);
+      } else if (savedIds.size) {
+        const fromFeed = videos.filter((v) => savedIds.has(v.id));
+        setSaved(fromFeed);
+      } else {
+        setSaved([]);
+      }
     } catch {
-      setGrid(myVideos.length ? myVideos : []);
+      const own = myFeedVideos.filter((v) => v.status !== 'deleted');
+      setPublished(own.filter((v) => !v.status || v.status === 'published'));
+      setArchived(own.filter((v) => v.status === 'archived'));
+      setSaved(videos.filter((v) => savedIds.has(v.id)));
     }
-  }, [user, myVideos.length]);
+  }, [user, myFeedVideos, videos, savedIds]);
 
   useEffect(() => {
-    loadCounts();
-  }, [loadCounts]);
+    void loadProfileData();
+  }, [loadProfileData]);
 
-  useEffect(() => {
-    if (myVideos.length) setGrid(myVideos);
-  }, [videos, user?.id]);
+  const listData =
+    activeTab === 'publications'
+      ? published
+      : activeTab === 'archives'
+        ? archived
+        : saved;
+
+  const emptyMessage =
+    activeTab === 'publications'
+      ? t('profile.empty')
+      : activeTab === 'archives'
+        ? t('profile.emptyArchives')
+        : t('profile.emptySaves');
+
+  const onUnarchive = (item: VideoItem) => {
+    if (!user) return;
+    void (async () => {
+      const result = await updateVideoStatus(user.id, item.id, 'published');
+      if (!result.ok) {
+        Alert.alert(t('common.error'), result.message);
+        return;
+      }
+      setArchived((prev) => prev.filter((v) => v.id !== item.id));
+      setPublished((prev) => [{ ...item, status: 'published' }, ...prev]);
+      void refresh();
+    })();
+  };
+
+  const onDeleteArchived = (item: VideoItem) => {
+    if (!user) return;
+    Alert.alert(t('feed.deleteConfirmTitle'), t('feed.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('feed.delete'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            const result = await updateVideoStatus(user.id, item.id, 'deleted');
+            if (!result.ok) {
+              Alert.alert(t('common.error'), result.message);
+              return;
+            }
+            setArchived((prev) => prev.filter((v) => v.id !== item.id));
+          })();
+        },
+      },
+    ]);
+  };
+
+  const onUnsave = (item: VideoItem) => {
+    toggleSave(item.id);
+    setSaved((prev) => prev.filter((v) => v.id !== item.id));
+  };
+
+  const confirmUnsave = (item: VideoItem) => {
+    Alert.alert(t('profile.unsaveTitle'), t('profile.unsaveBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('profile.unsave'),
+        style: 'destructive',
+        onPress: () => onUnsave(item),
+      },
+    ]);
+  };
+
+  const tabs: { key: ProfileTab; label: string }[] = [
+    { key: 'publications', label: t('profile.tabPublications') },
+    { key: 'archives', label: t('profile.tabArchives') },
+    { key: 'saves', label: t('profile.tabSaves') },
+  ];
+
+  const isGrid = activeTab !== 'archives';
+
+  const header = (
+    <View style={styles.header}>
+      <Image
+        source={{
+          uri: user?.avatarUrl || 'https://i.pravatar.cc/200?u=nia',
+        }}
+        style={styles.avatar}
+      />
+      <Text style={styles.displayName}>
+        {user?.displayName || user?.username || t('common.guest')}
+      </Text>
+      <Text style={styles.username}>@{user?.username || 'invite'}</Text>
+      <Text style={styles.bio}>{user?.bio || t('profile.defaultBio')}</Text>
+      <View style={styles.stats}>
+        <Stat label={t('profile.posts')} value={String(published.length)} />
+        <Stat label={t('profile.followers')} value={formatCount(followerCount)} />
+        <Stat label={t('profile.following')} value={formatCount(followingCount)} />
+      </View>
+      <LanguageToggle />
+      {user ? (
+        <>
+          <Pressable
+            style={styles.editBtn}
+            onPress={() => router.push('/edit-profile')}
+          >
+            <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
+          </Pressable>
+          <Pressable
+            style={styles.linkBtn}
+            onPress={() => router.push(`/user/${user.username}`)}
+          >
+            <Text style={styles.linkText}>{t('profile.viewPublic')}</Text>
+          </Pressable>
+          <Button
+            title={t('profile.signOut')}
+            variant="outline"
+            onPress={async () => {
+              await signOut();
+              router.replace('/welcome');
+            }}
+            style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
+          />
+        </>
+      ) : (
+        <Button
+          title={t('profile.signIn')}
+          variant="gold"
+          onPress={() => router.push('/(auth)/login')}
+          style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
+        />
+      )}
+
+      {user ? (
+        <View style={styles.segment}>
+          {tabs.map((tab) => {
+            const active = tab.key === activeTab;
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
+                style={[styles.segmentItem, active && styles.segmentItemActive]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+              >
+                <Text
+                  style={[styles.segmentLabel, active && styles.segmentLabelActive]}
+                  numberOfLines={1}
+                >
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <FlatList
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Image
-              source={{
-                uri: user?.avatarUrl || 'https://i.pravatar.cc/200?u=nia',
-              }}
-              style={styles.avatar}
-            />
-            <Text style={styles.displayName}>
-              {user?.displayName || user?.username || t('common.guest')}
-            </Text>
-            <Text style={styles.username}>@{user?.username || 'invite'}</Text>
-            <Text style={styles.bio}>{user?.bio || t('profile.defaultBio')}</Text>
-            <View style={styles.stats}>
-              <Stat label={t('profile.posts')} value={String(grid.length)} />
-              <Stat label={t('profile.followers')} value={formatCount(followerCount)} />
-              <Stat label={t('profile.following')} value={formatCount(followingCount)} />
-            </View>
-            <LanguageToggle />
-            {user ? (
-              <>
-                <Pressable
-                  style={styles.editBtn}
-                  onPress={() => router.push('/edit-profile')}
-                >
-                  <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.linkBtn}
-                  onPress={() => router.push(`/user/${user.username}`)}
-                >
-                  <Text style={styles.linkText}>{t('profile.viewPublic')}</Text>
-                </Pressable>
-                <Button
-                  title={t('profile.signOut')}
-                  variant="outline"
-                  onPress={async () => {
-                    await signOut();
-                    router.replace('/welcome');
-                  }}
-                  style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
-                />
-              </>
-            ) : (
-              <Button
-                title={t('profile.signIn')}
-                variant="gold"
-                onPress={() => router.push('/(auth)/login')}
-                style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
-              />
-            )}
-          </View>
-        }
-        data={grid}
+        key={isGrid ? `grid-${activeTab}` : 'archives-list'}
+        ListHeaderComponent={header}
+        data={user ? listData : []}
         keyExtractor={(i) => i.id}
-        numColumns={cols}
-        columnWrapperStyle={{ gap }}
-        contentContainerStyle={{ gap }}
+        numColumns={isGrid ? cols : 1}
+        columnWrapperStyle={isGrid ? { gap } : undefined}
+        contentContainerStyle={{ gap, paddingBottom: Spacing.xxl }}
         ListEmptyComponent={
-          <Text style={styles.empty}>{t('profile.empty')}</Text>
+          user ? <Text style={styles.empty}>{emptyMessage}</Text> : null
         }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/video/${item.id}`)}
-            accessibilityRole="button"
-            accessibilityLabel={t('feed.play')}
-          >
-            <MediaThumb
-              thumbnailUrl={item.thumbnailUrl}
-              mediaType={item.mediaType}
-              videoUrl={item.videoUrl}
-              style={{width: size,
-                height: size * (16 / 9),
-                backgroundColor: Colors.noirSoft,
-                overflow: 'hidden',}}
-            />
-            {item.status === 'archived' ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  left: 6,
-                  bottom: 6,
-                  backgroundColor: 'rgba(11,11,11,0.7)',
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                  borderRadius: 8,
-                }}
-              >
-                <Text style={{ color: Colors.or, fontFamily: Fonts.medium, fontSize: 10 }}>
-                  {t('feed.archivedBadge')}
-                </Text>
+        renderItem={({ item }) => {
+          if (activeTab === 'archives') {
+            return (
+              <View style={styles.archiveRow}>
+                <Pressable
+                  onPress={() => router.push(`/video/${item.id}`)}
+                  style={styles.archiveThumbWrap}
+                >
+                  <MediaThumb
+                    thumbnailUrl={item.thumbnailUrl}
+                    mediaType={item.mediaType}
+                    videoUrl={item.videoUrl}
+                    style={styles.archiveThumb}
+                  />
+                  <View style={styles.archiveBadge}>
+                    <Text style={styles.archiveBadgeText}>
+                      {t('feed.archivedBadge')}
+                    </Text>
+                  </View>
+                </Pressable>
+                <View style={styles.archiveMeta}>
+                  <Text style={styles.archiveCaption} numberOfLines={2}>
+                    {item.caption || item.handle}
+                  </Text>
+                  <View style={styles.archiveActions}>
+                    <Pressable
+                      style={styles.archiveActionBtn}
+                      onPress={() => onUnarchive(item)}
+                    >
+                      <Text style={styles.archiveActionPrimary}>
+                        {t('profile.unarchive')}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.archiveActionBtn}
+                      onPress={() => onDeleteArchived(item)}
+                    >
+                      <Text style={styles.archiveActionDanger}>
+                        {t('feed.delete')}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               </View>
-            ) : null}
-          </Pressable>
-        )}
+            );
+          }
+
+          return (
+            <Pressable
+              onPress={() => router.push(`/video/${item.id}`)}
+              onLongPress={
+                activeTab === 'saves' ? () => confirmUnsave(item) : undefined
+              }
+              delayLongPress={350}
+              accessibilityRole="button"
+              accessibilityLabel={t('feed.play')}
+            >
+              <MediaThumb
+                thumbnailUrl={item.thumbnailUrl}
+                mediaType={item.mediaType}
+                videoUrl={item.videoUrl}
+                style={{
+                  width: size,
+                  height: size * (16 / 9),
+                  backgroundColor: Colors.noirSoft,
+                  overflow: 'hidden',
+                }}
+              />
+            </Pressable>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -193,7 +359,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
+    paddingBottom: Spacing.md,
     paddingTop: Spacing.md,
   },
   avatar: {
@@ -258,10 +424,106 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     fontSize: 13,
   },
+  segment: {
+    marginTop: Spacing.lg,
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    backgroundColor: Colors.noirSoft,
+    borderRadius: Radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.border,
+    padding: 3,
+    gap: 2,
+  },
+  segmentItem: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: Radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentItemActive: {
+    backgroundColor: Colors.noirElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(209, 127, 42, 0.55)',
+  },
+  segmentLabel: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  segmentLabelActive: {
+    color: Colors.or,
+    fontFamily: Fonts.bold,
+  },
   empty: {
     textAlign: 'center',
     color: Colors.textMuted,
     fontFamily: Fonts.regular,
     marginTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+  },
+  archiveRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    alignItems: 'center',
+  },
+  archiveThumbWrap: {
+    position: 'relative',
+  },
+  archiveThumb: {
+    width: 72,
+    height: 72 * (16 / 9),
+    borderRadius: Radii.sm,
+    overflow: 'hidden',
+    backgroundColor: Colors.noirSoft,
+  },
+  archiveBadge: {
+    position: 'absolute',
+    left: 4,
+    bottom: 4,
+    backgroundColor: 'rgba(11,11,11,0.75)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  archiveBadgeText: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 9,
+  },
+  archiveMeta: {
+    flex: 1,
+    gap: 8,
+  },
+  archiveCaption: {
+    color: Colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+  },
+  archiveActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  archiveActionBtn: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  archiveActionPrimary: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+  },
+  archiveActionDanger: {
+    color: Colors.danger,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
   },
 });
