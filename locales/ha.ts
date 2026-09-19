@@ -238,7 +238,8 @@ const ha: TranslationKeys = {
     title: 'Gano',
     chipAll: 'Duka',
     emptyTitle: 'Babu kome a nan tukuna',
-    emptyBody: 'Babu bidiyo a wannan sararin. Ka zama na farko da zai wallafa.',
+    emptyBodyCategory: 'Babu bidiyo a wannan sararin. Ka zama na farko da zai wallafa.',
+    emptyBodyAll: 'Babu bidiyo tukuna. Ka wallafa na farko.',
     tileA11y: '%{handle}, son %{count}',
     categories: {
       afrique: 'Afirka',

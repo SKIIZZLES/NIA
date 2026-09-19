@@ -228,7 +228,8 @@ const yo: TranslationKeys = {
     title: 'Ṣàwárí',
     chipAll: 'Gbogbo',
     emptyTitle: 'Kò sí nǹkan níbí síbẹ̀',
-    emptyBody: 'Kò sí fídíò nínú àgbáyé yìí. Jẹ́ ẹni àkọ́kọ́ láti fi sí.',
+    emptyBodyCategory: 'Kò sí fídíò nínú àgbáyé yìí. Jẹ́ ẹni àkọ́kọ́ láti fi sí.',
+    emptyBodyAll: 'Kò sí fídíò síbẹ̀. Fi àkọ́kọ́ sí.',
     tileA11y: '%{handle}, ìfẹ́ %{count}',
     categories: {
       afrique: 'Áfíríkà',

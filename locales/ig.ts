@@ -228,7 +228,8 @@ const ig: TranslationKeys = {
     title: 'Chọpụta',
     chipAll: 'Niile',
     emptyTitle: 'Ọ nweghị ihe dị ebe a ugbu a',
-    emptyBody: 'Enweghị vidiyo na ụwa a. Bụrụ onye mbụ dee.',
+    emptyBodyCategory: 'Enweghị vidiyo na ụwa a. Bụrụ onye mbụ dee.',
+    emptyBodyAll: 'Enweghị vidiyo ugbu a. Dee nke mbụ.',
     tileA11y: '%{handle}, %{count} mmasị',
     categories: {
       afrique: 'Afrika',

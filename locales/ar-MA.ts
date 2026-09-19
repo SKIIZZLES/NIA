@@ -241,7 +241,8 @@ const arMA: TranslationKeys = {
     title: 'اكتشف',
     chipAll: 'الكل',
     emptyTitle: 'ماكاين والو دابا',
-    emptyBody: 'ماكاين حتى فيديو فهاد العالم. كون الأول اللي ينشر.',
+    emptyBodyCategory: 'ماكاين حتى فيديو فهاد العالم. كون الأول اللي ينشر.',
+    emptyBodyAll: 'ماكاين حتى فيديو دابا. نشر الأول.',
     tileA11y: '%{handle}، %{count} إعجاب',
     categories: {
       afrique: 'أفريقيا',

@@ -238,7 +238,8 @@ const es: TranslationKeys = {
     title: 'Descubrir',
     chipAll: 'Todo',
     emptyTitle: 'Aquí no hay nada todavía',
-    emptyBody: 'No hay vídeos en este universo. Sé el primero en publicar.',
+    emptyBodyCategory: 'No hay vídeos en este universo. Sé el primero en publicar.',
+    emptyBodyAll: 'Todavía no hay vídeos. Publica el primero.',
     tileA11y: '%{handle}, %{count} me gusta',
     categories: {
       afrique: 'África',

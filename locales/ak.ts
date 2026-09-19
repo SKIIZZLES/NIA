@@ -228,7 +228,8 @@ const ak: TranslationKeys = {
     title: 'Hwehwɛ',
     chipAll: 'Nyinaa',
     emptyTitle: 'Biribiara nni ha seesei',
-    emptyBody: 'Video biara nni saa wiase yi mu. Yɛ nea ɔdi kan de to so.',
+    emptyBodyCategory: 'Video biara nni saa wiase yi mu. Yɛ nea ɔdi kan de to so.',
+    emptyBodyAll: 'Video biara nni hɔ seesei. Fa nea edi kan to so.',
     tileA11y: '%{handle}, %{count} ɔdɔ',
     categories: {
       afrique: 'Afrika',

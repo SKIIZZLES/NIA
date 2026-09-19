@@ -228,7 +228,8 @@ const ln: TranslationKeys = {
     title: 'Luka',
     chipAll: 'Nyonso',
     emptyTitle: 'Eloko ezali awa naino te',
-    emptyBody: 'Vidéo ezali te na mokili oyo. Zala moto ya liboso ya kotinda.',
+    emptyBodyCategory: 'Vidéo ezali te na mokili oyo. Zala moto ya liboso ya kotinda.',
+    emptyBodyAll: 'Vidéo ezali naino te. Tinda oyo ya liboso.',
     tileA11y: '%{handle}, %{count} balingi',
     categories: {
       afrique: 'Afrika',

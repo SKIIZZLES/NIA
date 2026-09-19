@@ -228,7 +228,8 @@ const wo: TranslationKeys = {
     title: 'Gis-gis',
     chipAll: 'Lépp',
     emptyTitle: 'Amul dara fii ba léegi',
-    emptyBody: 'Amul benn wideyo ci àddina bii. Nga jëkk a jottali.',
+    emptyBodyCategory: 'Amul benn wideyo ci àddina bii. Nga jëkk a jottali.',
+    emptyBodyAll: 'Amul benn wideyo ba léegi. Jottali bu jëkk bi.',
     tileA11y: '%{handle}, %{count} bëgg',
     categories: {
       afrique: 'Afrig',

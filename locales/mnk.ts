@@ -228,7 +228,8 @@ const mnk: TranslationKeys = {
     title: 'Jeroo',
     chipAll: 'Bee',
     emptyTitle: 'Feŋ te jaŋ foloo',
-    emptyBody: 'Wideyo te ñiŋ duniyaa kono. I ye ke foloo ti ka a landi.',
+    emptyBodyCategory: 'Wideyo te ñiŋ duniyaa kono. I ye ke foloo ti ka a landi.',
+    emptyBodyAll: 'Wideyo te jee foloo. I ye foloo landi.',
     tileA11y: '%{handle}, %{count} lafinna',
     categories: {
       afrique: 'Afirikoo',

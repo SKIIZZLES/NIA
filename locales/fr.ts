@@ -238,7 +238,8 @@ const fr = {
     title: 'Découvrir',
     chipAll: 'Tout',
     emptyTitle: 'Rien ici pour l’instant',
-    emptyBody: 'Aucune vidéo dans cet univers. Sois le premier à publier.',
+    emptyBodyCategory: 'Aucune vidéo dans cet univers. Sois le premier à publier.',
+    emptyBodyAll: 'Aucune vidéo pour le moment. Publie la première.',
     tileA11y: '%{handle}, %{count} j’aime',
     categories: {
       afrique: 'Afrique',

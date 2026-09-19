@@ -228,7 +228,8 @@ const am: TranslationKeys = {
     title: 'ያግኙ',
     chipAll: 'ሁሉም',
     emptyTitle: 'እስካሁን እዚህ ምንም የለም',
-    emptyBody: 'በዚህ ዓለም ውስጥ ምንም ቪዲዮ የለም። መጀመሪያ የሚለጥፉ ይሁኑ።',
+    emptyBodyCategory: 'በዚህ ዓለም ውስጥ ምንም ቪዲዮ የለም። መጀመሪያ የሚለጥፉ ይሁኑ።',
+    emptyBodyAll: 'እስካሁን ቪዲዮዎች የሉም። የመጀመሪያውን ይለጥፉ።',
     tileA11y: '%{handle}፣ %{count} ወደዱት',
     categories: {
       afrique: 'አፍሪካ',

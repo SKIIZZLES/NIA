@@ -228,7 +228,8 @@ const arEG: TranslationKeys = {
     title: 'اكتشف',
     chipAll: 'الكل',
     emptyTitle: 'مفيش حاجة هنا لسه',
-    emptyBody: 'مفيش فيديو في العالم ده. كن أول واحد ينشر.',
+    emptyBodyCategory: 'مفيش فيديو في العالم ده. كن أول واحد ينشر.',
+    emptyBodyAll: 'مفيش فيديوهات لسه. انشر أول واحد.',
     tileA11y: '%{handle}، %{count} إعجاب',
     categories: {
       afrique: 'أفريقيا',

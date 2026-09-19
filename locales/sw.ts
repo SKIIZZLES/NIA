@@ -238,7 +238,8 @@ const sw: TranslationKeys = {
     title: 'Gundua',
     chipAll: 'Zote',
     emptyTitle: 'Hakuna kitu hapa bado',
-    emptyBody: 'Hakuna video katika ulimwengu huu. Kuwa wa kwanza kuchapisha.',
+    emptyBodyCategory: 'Hakuna video katika ulimwengu huu. Kuwa wa kwanza kuchapisha.',
+    emptyBodyAll: 'Bado hakuna video. Chapisha ya kwanza.',
     tileA11y: '%{handle}, mapenzi %{count}',
     categories: {
       afrique: 'Afrika',

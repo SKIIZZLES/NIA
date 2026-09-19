@@ -240,7 +240,8 @@ const arSD: TranslationKeys = {
     title: 'اكتشف',
     chipAll: 'الكل',
     emptyTitle: 'ما في حاجة هنا لسه',
-    emptyBody: 'ما في فيديو في العالم دا. كن أول واحد ينشر.',
+    emptyBodyCategory: 'ما في فيديو في العالم دا. كن أول واحد ينشر.',
+    emptyBodyAll: 'ما في فيديوهات لسه. انشر أول واحد.',
     tileA11y: '%{handle}، %{count} إعجاب',
     categories: {
       afrique: 'أفريقيا',

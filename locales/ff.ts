@@ -228,7 +228,8 @@ const ff: TranslationKeys = {
     title: 'Yiylo',
     chipAll: 'Fof',
     emptyTitle: 'Hay huunde ɗoo tawo',
-    emptyBody: 'Widewo alaa e nder aduna ngoo. Wonu gadano winndude.',
+    emptyBodyCategory: 'Widewo alaa e nder aduna ngoo. Wonu gadano winndude.',
+    emptyBodyAll: 'Widewooji alaa tawo. Winndu gadano oo.',
     tileA11y: '%{handle}, %{count} yiɗde',
     categories: {
       afrique: 'Afiriki',

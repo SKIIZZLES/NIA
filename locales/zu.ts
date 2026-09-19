@@ -228,7 +228,8 @@ const zu: TranslationKeys = {
     title: 'Thola',
     chipAll: 'Konke',
     emptyTitle: 'Ayikho into lapha okwamanje',
-    emptyBody: 'Alikho ividiyo kulomkhakha. Yiba ngowokuqala ukuposa.',
+    emptyBodyCategory: 'Alikho ividiyo kulomkhakha. Yiba ngowokuqala ukuposa.',
+    emptyBodyAll: 'Awekho amavidiyo okwamanje. Thumela elokuqala.',
     tileA11y: '%{handle}, okuthandwayo okungu-%{count}',
     categories: {
       afrique: 'I-Afrika',
