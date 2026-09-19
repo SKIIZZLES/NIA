@@ -25,6 +25,9 @@ export const Radii = {
   create: 14,
 } as const;
 
+/** Hauteur de la barre d'onglets hors zone système (partagée avec le flux). */
+export const TAB_BAR_BASE_HEIGHT = 58;
+
 export const Fonts = {
   light: 'PlusJakartaSans_300Light',
   regular: 'PlusJakartaSans_400Regular',

@@ -21,6 +21,7 @@ type Props = {
   onReport: () => void;
   onBlock: () => void;
   onShare?: () => void;
+  onRepost?: () => void;
   onArchive?: () => void;
   onDelete?: () => void;
   onAddToSeries?: () => void;
@@ -35,6 +36,7 @@ export function VideoMenuSheet({
   onReport,
   onBlock,
   onShare,
+  onRepost,
   onArchive,
   onDelete,
   onAddToSeries,
@@ -63,6 +65,19 @@ export function VideoMenuSheet({
           >
             <Ionicons name="share-outline" size={22} color={Colors.sable} />
             <Text style={styles.rowLabel}>{t('feed.share')}</Text>
+          </Pressable>
+        ) : null}
+
+        {onRepost ? (
+          <Pressable
+            style={styles.row}
+            onPress={() => {
+              onClose();
+              onRepost();
+            }}
+          >
+            <Ionicons name="sync-outline" size={22} color={Colors.or} />
+            <Text style={styles.rowLabel}>{t('feed.repost')}</Text>
           </Pressable>
         ) : null}
 
