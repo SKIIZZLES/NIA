@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Un seul run par référence : un nouveau push annule le précédent.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  check:
+    name: Typecheck & bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      # Rejoue la phase JS d'un build EAS : si le bundle casse ici, il casse
+      # aussi sur EAS. La compilation native (Gradle / Xcode) n'est pas
+      # couverte — seul un vrai build EAS l'exerce.
+      - name: Bundle iOS
+        run: npx expo export --platform ios --output-dir /tmp/export-ios
+
+      - name: Bundle Android
+        run: npx expo export --platform android --output-dir /tmp/export-android
+
+      # Web volontairement absent : `expo export --platform web` échoue déjà
+      # sur main (node:async_hooks non résolu, cf. metro.config.js). L'ajouter
+      # ici rendrait la CI rouge en permanence.
