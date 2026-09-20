@@ -4,7 +4,6 @@
 // shims/supabase-js-native.js is kept in repo but NOT wired here.
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
-const { resolve: metroResolve } = require('metro-resolver');
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
@@ -66,11 +65,13 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     nameToResolve = path.resolve(projectRoot, moduleName.slice(2));
   }
 
-  return metroResolve(
-    { ...context, resolveRequest: undefined },
-    nameToResolve,
-    platform
-  );
+  // Déléguer à la chaîne de résolution d'Expo plutôt que de la court-circuiter.
+  // Expo appelle ce resolveRequest en premier et attend qu'on rende la main via
+  // context.resolveRequest ; l'ancien appel direct à metro-resolver sautait la
+  // chaîne, dont requestNodeExternals — d'où l'échec du bundle serveur web sur
+  // `node:async_hooks`. Pas de récursion : context.resolveRequest est la chaîne
+  // Expo, pas cette fonction.
+  return context.resolveRequest(context, nameToResolve, platform);
 };
 
 module.exports = config;
