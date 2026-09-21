@@ -179,6 +179,13 @@ const arSD: TranslationKeys = {
     minutesAgo: 'قبل %{count} د',
     hoursAgo: 'قبل %{count} س',
     daysAgo: 'قبل %{count} ي',
+    filterAll: 'الكل',
+    filterLikes: 'الإعجابات',
+    filterComments: 'التعليقات',
+    filterFollows: 'المتابعين',
+    sectionToday: 'اليوم',
+    sectionWeek: 'الأسبوع دا',
+    sectionEarlier: 'أقدم',
   },
   feed: {
     repost: 'إعادة نشر',

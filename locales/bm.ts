@@ -167,6 +167,13 @@ const bm: TranslationKeys = {
     minutesAgo: 'miniti %{count} tɛmɛnen',
     hoursAgo: 'lɛrɛ %{count} tɛmɛnen',
     daysAgo: 'tile %{count} tɛmɛnen',
+    filterAll: 'Bɛɛ',
+    filterLikes: 'Diyanye',
+    filterComments: 'Kuma',
+    filterFollows: 'Tɔgɔmɔgw',
+    sectionToday: 'Bi',
+    sectionWeek: 'Dɔgɔkun in',
+    sectionEarlier: 'Kɔrɔlen',
   },
   feed: {
     repost: 'Ka bila kura la',

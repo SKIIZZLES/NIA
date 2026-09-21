@@ -167,6 +167,13 @@ const ff: TranslationKeys = {
     minutesAgo: '%{count} min ɓenni',
     hoursAgo: '%{count} waktuuji ɓenni',
     daysAgo: '%{count} ñalɗi ɓenni',
+    filterAll: 'Fof',
+    filterLikes: 'Yiɗde',
+    filterComments: 'Yowtere',
+    filterFollows: 'Rewotooɓe',
+    sectionToday: 'Hannde',
+    sectionWeek: 'Yontere nde',
+    sectionEarlier: 'Ko ɓenni',
   },
   feed: {
     repost: 'Bayyina kadi',

@@ -167,6 +167,13 @@ const arEG: TranslationKeys = {
     minutesAgo: 'من %{count} د',
     hoursAgo: 'من %{count} س',
     daysAgo: 'من %{count} ي',
+    filterAll: 'الكل',
+    filterLikes: 'اللايكات',
+    filterComments: 'التعليقات',
+    filterFollows: 'متابعين',
+    sectionToday: 'النهاردة',
+    sectionWeek: 'الأسبوع ده',
+    sectionEarlier: 'أقدم',
   },
   feed: {
     repost: 'إعادة نشر',

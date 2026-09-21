@@ -167,6 +167,13 @@ const mnk: TranslationKeys = {
     minutesAgo: 'miniti %{count} tambita',
     hoursAgo: 'waati %{count} tambita',
     daysAgo: 'luŋ %{count} tambita',
+    filterAll: 'Bee',
+    filterLikes: 'Kanu',
+    filterComments: 'Kumaw',
+    filterFollows: 'Noomalalu',
+    sectionToday: 'Bii',
+    sectionWeek: 'Lookuŋ ñiŋ',
+    sectionEarlier: 'Folo',
   },
   feed: {
     repost: 'Ka a samba kotenke',

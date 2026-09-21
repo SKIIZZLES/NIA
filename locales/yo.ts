@@ -167,6 +167,13 @@ const yo: TranslationKeys = {
     minutesAgo: '%{count} ìṣẹ́jú sẹ́yìn',
     hoursAgo: '%{count} wákàtí sẹ́yìn',
     daysAgo: '%{count} ọjọ́ sẹ́yìn',
+    filterAll: 'Gbogbo',
+    filterLikes: 'Ìfẹ́ràn',
+    filterComments: 'Àwọn àsọyé',
+    filterFollows: 'Àwọn olùtẹ̀lé',
+    sectionToday: 'Òní',
+    sectionWeek: 'Ọ̀sẹ̀ yìí',
+    sectionEarlier: 'Tẹ́lẹ̀',
   },
   feed: {
     repost: 'Tún tẹjade',

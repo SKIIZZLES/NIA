@@ -177,6 +177,13 @@ const ha: TranslationKeys = {
     minutesAgo: 'mintoci %{count} da suka wuce',
     hoursAgo: 'awa %{count} da suka wuce',
     daysAgo: 'kwana %{count} da suka wuce',
+    filterAll: 'Duka',
+    filterLikes: 'Abubuwan so',
+    filterComments: 'Sharhi',
+    filterFollows: 'Mabiya',
+    sectionToday: 'Yau',
+    sectionWeek: 'Wannan makon',
+    sectionEarlier: 'Na baya',
   },
   feed: {
     repost: 'Sake wallafa',
