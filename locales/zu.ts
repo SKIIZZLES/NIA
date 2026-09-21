@@ -167,6 +167,13 @@ const zu: TranslationKeys = {
     minutesAgo: 'imizuzu engu-%{count} eyedlule',
     hoursAgo: 'amahora angu-%{count} edlule',
     daysAgo: 'izinsuku ezingu-%{count} ezedlule',
+    filterAll: 'Konke',
+    filterLikes: 'Okuthandwayo',
+    filterComments: 'Amazwana',
+    filterFollows: 'Abalandeli',
+    sectionToday: 'Namuhla',
+    sectionWeek: 'Leli sonto',
+    sectionEarlier: 'Ngaphambili',
   },
   feed: {
     repost: 'Phinda postha',

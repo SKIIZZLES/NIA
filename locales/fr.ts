@@ -176,6 +176,13 @@ const fr = {
     minutesAgo: 'il y a %{count} min',
     hoursAgo: 'il y a %{count} h',
     daysAgo: 'il y a %{count} j',
+    filterAll: 'Tout',
+    filterLikes: 'J’aime',
+    filterComments: 'Commentaires',
+    filterFollows: 'Abonnés',
+    sectionToday: 'Aujourd’hui',
+    sectionWeek: 'Cette semaine',
+    sectionEarlier: 'Plus ancien',
   },
   feed: {
     repost: 'Republier',

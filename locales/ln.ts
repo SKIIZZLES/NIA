@@ -167,6 +167,13 @@ const ln: TranslationKeys = {
     minutesAgo: 'minuti %{count} eleki',
     hoursAgo: 'ngonga %{count} eleki',
     daysAgo: 'mokolo %{count} eleki',
+    filterAll: 'Nyonso',
+    filterLikes: 'Bolingi',
+    filterComments: 'Commentaires',
+    filterFollows: 'Balandi',
+    sectionToday: 'Lelo',
+    sectionWeek: 'Pɔ́sɔ oyo',
+    sectionEarlier: 'Kala',
   },
   feed: {
     repost: 'Kotángola lisúsu',

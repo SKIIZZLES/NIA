@@ -167,6 +167,13 @@ const ig: TranslationKeys = {
     minutesAgo: '%{count} nkeji gara aga',
     hoursAgo: '%{count} awa gara aga',
     daysAgo: '%{count} ụbọchị gara aga',
+    filterAll: 'Niile',
+    filterLikes: 'Mmasị',
+    filterComments: 'Nkwupụta',
+    filterFollows: 'Ndị na-eso',
+    sectionToday: 'Taa',
+    sectionWeek: 'Izu a',
+    sectionEarlier: 'Mbụ',
   },
   feed: {
     repost: 'Tinyegharịa',

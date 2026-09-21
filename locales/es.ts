@@ -177,6 +177,13 @@ const es: TranslationKeys = {
     minutesAgo: 'hace %{count} min',
     hoursAgo: 'hace %{count} h',
     daysAgo: 'hace %{count} d',
+    filterAll: 'Todo',
+    filterLikes: 'Me gusta',
+    filterComments: 'Comentarios',
+    filterFollows: 'Seguidores',
+    sectionToday: 'Hoy',
+    sectionWeek: 'Esta semana',
+    sectionEarlier: 'Anteriores',
   },
   feed: {
     repost: 'Republicar',

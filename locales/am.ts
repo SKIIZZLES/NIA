@@ -167,6 +167,13 @@ const am: TranslationKeys = {
     minutesAgo: 'ከ%{count} ደቂቃ በፊት',
     hoursAgo: 'ከ%{count} ሰዓት በፊት',
     daysAgo: 'ከ%{count} ቀን በፊት',
+    filterAll: 'ሁሉም',
+    filterLikes: 'የወደዱት',
+    filterComments: 'አስተያየቶች',
+    filterFollows: 'ተከታዮች',
+    sectionToday: 'ዛሬ',
+    sectionWeek: 'በዚህ ሳምንት',
+    sectionEarlier: 'ቀደም ያለ',
   },
   feed: {
     repost: 'እንደገና አጋራ',

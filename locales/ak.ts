@@ -167,6 +167,13 @@ const ak: TranslationKeys = {
     minutesAgo: 'simma %{count} a atwam',
     hoursAgo: 'dɔnhwere %{count} a atwam',
     daysAgo: 'da %{count} a atwam',
+    filterAll: 'Nyinaa',
+    filterLikes: 'Ɔpɛ',
+    filterComments: 'Nkyerɛkyerɛmu',
+    filterFollows: 'Akyidifoɔ',
+    sectionToday: 'Ɛnnɛ',
+    sectionWeek: 'Dapɛn yi',
+    sectionEarlier: 'Kan',
   },
   feed: {
     repost: 'San post bio',

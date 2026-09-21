@@ -167,6 +167,13 @@ const wo: TranslationKeys = {
     minutesAgo: '%{count} min ci gannaaw',
     hoursAgo: '%{count} waxtu ci gannaaw',
     daysAgo: '%{count} bés ci gannaaw',
+    filterAll: 'Lépp',
+    filterLikes: 'Bëgg',
+    filterComments: 'Kàddu',
+    filterFollows: 'Topptoo',
+    sectionToday: 'Tey',
+    sectionWeek: 'Ayu-bés bii',
+    sectionEarlier: 'Bu yàgg',
   },
   feed: {
     repost: 'Dellu yónnee',

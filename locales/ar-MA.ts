@@ -180,6 +180,13 @@ const arMA: TranslationKeys = {
     minutesAgo: 'هادي %{count} د',
     hoursAgo: 'هادي %{count} س',
     daysAgo: 'هادي %{count} ي',
+    filterAll: 'الكل',
+    filterLikes: 'الإعجابات',
+    filterComments: 'التعليقات',
+    filterFollows: 'المتابعين',
+    sectionToday: 'اليوم',
+    sectionWeek: 'هاد السيمانة',
+    sectionEarlier: 'قدم',
   },
   feed: {
     repost: 'عاود نشر',

@@ -177,6 +177,13 @@ const sw: TranslationKeys = {
     minutesAgo: 'dak %{count} zilizopita',
     hoursAgo: 'saa %{count} zilizopita',
     daysAgo: 'siku %{count} zilizopita',
+    filterAll: 'Zote',
+    filterLikes: 'Zilizopendwa',
+    filterComments: 'Maoni',
+    filterFollows: 'Wafuasi',
+    sectionToday: 'Leo',
+    sectionWeek: 'Wiki hii',
+    sectionEarlier: 'Za zamani',
   },
   feed: {
     repost: 'Chapisha tena',
