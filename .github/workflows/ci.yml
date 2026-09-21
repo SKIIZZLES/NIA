@@ -40,6 +40,8 @@ jobs:
       - name: Bundle Android
         run: npx expo export --platform android --output-dir /tmp/export-android
 
-      # Web volontairement absent : `expo export --platform web` échoue déjà
-      # sur main (node:async_hooks non résolu, cf. metro.config.js). L'ajouter
-      # ici rendrait la CI rouge en permanence.
+      # Le web inclut le bundle serveur du rendu statique (`output: "static"`),
+      # celui qui cassait sur les builtins Node avant le correctif de
+      # metro.config.js. Le garder en CI empêche la régression.
+      - name: Bundle web
+        run: npx expo export --platform web --output-dir /tmp/export-web

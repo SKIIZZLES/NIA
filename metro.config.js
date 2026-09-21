@@ -4,7 +4,6 @@
 // shims/supabase-js-native.js is kept in repo but NOT wired here.
 const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
-const { resolve: metroResolve } = require('metro-resolver');
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
@@ -66,11 +65,15 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     nameToResolve = path.resolve(projectRoot, moduleName.slice(2));
   }
 
-  return metroResolve(
-    { ...context, resolveRequest: undefined },
-    nameToResolve,
-    platform
-  );
+  // Rendre la main à la chaîne de resolvers d'Expo (chaînage documenté :
+  // https://facebook.github.io/metro/docs/resolution/#resolution-algorithm).
+  // L'appel direct à metroResolve court-circuitait cette chaîne, donc aussi
+  // `requestNodeExternals` : les builtins Node (`node:async_hooks` via
+  // expo-font, `util`/`crypto` via react-dom/server) n'étaient plus
+  // virtualisés pour le bundle serveur du rendu statique ni neutralisés côté
+  // navigateur, et `expo export --platform web` échouait.
+  // Les cas realtime-js / ws / stream / zlib ci-dessus restent traités avant.
+  return context.resolveRequest(context, nameToResolve, platform);
 };
 
 module.exports = config;
