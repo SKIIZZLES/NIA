@@ -71,10 +71,8 @@ const sw: TranslationKeys = {
   },
   create: {
     title: 'Unda',
-    subtitleMock:
-      'Hali ya bandia — midia, maelezo, #hashtags na kategoria. Inachapisha kwenye feed ya ndani.',
-    subtitleSupabase:
-      'Hali ya Supabase — upakiaji Storage + safu ya videos (hali published).',
+    subtitleMock: 'Hali ya onyesho: chapisho lako linabaki kwenye kifaa hiki.',
+    subtitleSupabase: 'Chapisho lako litaonekana kwenye mlisho wa NIA.',
     pickMedia: 'Chagua midia (galeri)',
     noMedia: 'Hakuna midia iliyochaguliwa',
     video: 'Video',
@@ -85,11 +83,10 @@ const sw: TranslationKeys = {
     categoryLabel: 'Kategoria',
     limits: 'Upeo %{minutes} dak · %{mb} MB',
     publish: 'Chapisha',
-    publishedMockTitle: 'Imechapishwa (bandia)',
+    publishedMockTitle: 'Imechapishwa katika hali ya onyesho',
     publishedTitle: 'Imechapishwa',
     publishedMockBody: 'Imeongezwa kwenye feed ya ndani «Kwa ajili yako».',
-    publishedBody:
-      'Video imepakiwa kwenye Supabase Storage + jedwali videos (hali published).',
+    publishedBody: 'Chapisho lako liko mtandaoni. Litafute kwenye mlisho na kwenye wasifu wako.',
     publishFail: 'Uchapishaji umeshindikana',
     alertTooLarge: 'Faili kubwa mno',
     alertTooLong: 'Video ndefu mno',
@@ -100,7 +97,7 @@ const sw: TranslationKeys = {
     errTooLong: 'Video inazidi muda wa juu (%{minutes} dak).',
     errCategoryRequired: 'Chagua kategoria ya chapisho lako.',
     film: 'Rekodi',
-    filmHint: 'Galeria au kamera (expo-image-picker).',
+    filmHint: 'Rekodi sasa au chagua faili kutoka kwenye galeri yako.',
     alertCamera: 'Kamera',
     errCameraDenied: 'Ruhusu kamera iliurekodi video.',
     coverLabel: 'Jalada (si lazima)',

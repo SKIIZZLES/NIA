@@ -52,45 +52,34 @@ type PickedMedia = {
 };
 
 type HubCardDef = {
-  id: CreateMode | 'text' | 'live' | 'event';
-  active: boolean;
+  id: CreateMode | 'live' | 'event';
   icon: React.ComponentProps<typeof Ionicons>['name'];
   titleKey: string;
   descKey: string;
 };
 
+/** Uniquement les modes réellement disponibles — pas de carte « bientôt ». */
 const HUB_CARDS: HubCardDef[] = [
   {
     id: 'video',
-    active: true,
     icon: 'videocam',
     titleKey: 'create.hubVideo',
     descKey: 'create.hubVideoDesc',
   },
   {
     id: 'photo',
-    active: true,
     icon: 'camera',
     titleKey: 'create.hubPhoto',
     descKey: 'create.hubPhotoDesc',
   },
   {
-    id: 'text',
-    active: false,
-    icon: 'create-outline',
-    titleKey: 'create.hubText',
-    descKey: 'create.hubTextDesc',
-  },
-  {
     id: 'live',
-    active: true,
     icon: 'radio-outline',
     titleKey: 'create.hubLive',
     descKey: 'create.hubLiveDesc',
   },
   {
     id: 'event',
-    active: true,
     icon: 'calendar-outline',
     titleKey: 'create.hubEvent',
     descKey: 'create.hubEventDesc',
@@ -370,10 +359,6 @@ export default function CreateScreen() {
       Alert.alert(t('create.alertMediaRequired'), t('create.errNoMedia'));
       return;
     }
-    if (!category) {
-      Alert.alert(t('create.alertCategory'), t('create.errCategoryRequired'));
-      return;
-    }
     if (media?.fileSize != null && media.fileSize > MAX_UPLOAD_BYTES) {
       Alert.alert(
         t('create.alertTooLarge'),
@@ -404,7 +389,7 @@ export default function CreateScreen() {
         coverUri: media?.type === 'video' ? cover?.uri ?? null : null,
         coverMimeType: media?.type === 'video' ? cover?.mimeType ?? null : null,
         coverFileName: media?.type === 'video' ? cover?.fileName ?? null : null,
-        category,
+        category: category ?? undefined,
         hashtags,
         fileSize: media?.fileSize ?? undefined,
         durationMs: media?.durationMs ?? undefined,
@@ -417,7 +402,7 @@ export default function CreateScreen() {
         isMockFeed ? t('create.publishedMockTitle') : t('create.publishedTitle'),
         isMockFeed ? t('create.publishedMockBody') : t('create.publishedBody'),
       );
-      router.push('/(tabs)');
+      router.replace('/(tabs)');
     } catch (e) {
       const msg = e instanceof Error ? e.message : t('create.publishFail');
       Alert.alert(t('common.error'), msg);
@@ -485,10 +470,6 @@ export default function CreateScreen() {
     borderColor: colors.or,
     backgroundColor: colors.noirSoft,
   },
-  hubCardDisabled: {
-    opacity: 0.55,
-    backgroundColor: colors.noirSoft,
-  },
   hubIconWrap: {
     width: 48,
     height: 48,
@@ -498,43 +479,17 @@ export default function CreateScreen() {
     justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
-  hubIconWrapDisabled: {
-    backgroundColor: 'rgba(245, 230, 211, 0.06)',
-  },
   hubCardTitle: {
     color: colors.sable,
     fontFamily: Fonts.bold,
     fontSize: 17,
     marginBottom: 4,
   },
-  hubCardTitleDisabled: {
-    color: colors.textMuted,
-  },
   hubCardDesc: {
     color: colors.textSecondary,
     fontFamily: Fonts.regular,
     fontSize: 12,
     lineHeight: 16,
-  },
-  hubCardDescDisabled: {
-    color: colors.textMuted,
-  },
-  soonBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(245, 230, 211, 0.12)',
-    borderRadius: Radii.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  soonText: {
-    color: colors.textMuted,
-    fontFamily: Fonts.medium,
-    fontSize: 10,
-    letterSpacing: 0.3,
   },
   preview: {
     height: 220,
@@ -729,67 +684,33 @@ export default function CreateScreen() {
           <Text style={styles.subtitle}>{t('create.hubSubtitle')}</Text>
 
           <View style={styles.hubGrid}>
-            {HUB_CARDS.map((card) => {
-              const disabled = !card.active;
-              return (
-                <Pressable
-                  key={card.id}
-                  disabled={disabled}
-                  onPress={() => {
-                    if (card.id === 'event') {
-                      router.push('/events/create');
-                      return;
-                    }
-                    if (card.id === 'live') {
-                      router.push('/live/create');
-                      return;
-                    }
-                    if (card.id === 'video' || card.id === 'photo') {
-                      openMode(card.id);
-                    }
-                  }}
-                  style={({ pressed }) => [
-                    styles.hubCard,
-                    disabled && styles.hubCardDisabled,
-                    !disabled && pressed && styles.hubCardPressed,
-                  ]}
-                >
-                  {disabled ? (
-                    <View style={styles.soonBadge}>
-                      <Text style={styles.soonText}>{t('create.hubSoon')}</Text>
-                    </View>
-                  ) : null}
-                  <View
-                    style={[
-                      styles.hubIconWrap,
-                      disabled && styles.hubIconWrapDisabled,
-                    ]}
-                  >
-                    <Ionicons
-                      name={card.icon}
-                      size={28}
-                      color={disabled ? colors.textMuted : colors.or}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.hubCardTitle,
-                      disabled && styles.hubCardTitleDisabled,
-                    ]}
-                  >
-                    {t(card.titleKey)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.hubCardDesc,
-                      disabled && styles.hubCardDescDisabled,
-                    ]}
-                  >
-                    {t(card.descKey)}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {HUB_CARDS.map((card) => (
+              <Pressable
+                key={card.id}
+                accessibilityRole="button"
+                onPress={() => {
+                  if (card.id === 'event') {
+                    router.push('/events/create');
+                    return;
+                  }
+                  if (card.id === 'live') {
+                    router.push('/live/create');
+                    return;
+                  }
+                  openMode(card.id);
+                }}
+                style={({ pressed }) => [
+                  styles.hubCard,
+                  pressed && styles.hubCardPressed,
+                ]}
+              >
+                <View style={styles.hubIconWrap}>
+                  <Ionicons name={card.icon} size={28} color={colors.or} />
+                </View>
+                <Text style={styles.hubCardTitle}>{t(card.titleKey)}</Text>
+                <Text style={styles.hubCardDesc}>{t(card.descKey)}</Text>
+              </Pressable>
+            ))}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -822,6 +743,7 @@ export default function CreateScreen() {
             <>
               <FilteredMediaPreview
                 uri={media.uri}
+                mediaType={media.type}
                 filter={selectedFilter}
                 style={styles.thumb}
               />

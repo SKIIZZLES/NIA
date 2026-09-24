@@ -74,10 +74,8 @@ const arMA: TranslationKeys = {
   },
   create: {
     title: 'نشر',
-    subtitleMock:
-      'وضع وهمي — ميديا، تعليق، #هاشتاغات وفئة. كينشر فالخلاصة المحلية.',
-    subtitleSupabase:
-      'وضع Supabase — رفع لـ Storage + سطر videos (حالة published).',
+    subtitleMock: 'وضع التجربة: النشر ديالك كيبقى فهاد الجهاز.',
+    subtitleSupabase: 'النشر ديالك غادي يبان فالفيد ديال NIA.',
     pickMedia: 'ختار ميديا (المعرض)',
     noMedia: 'ما خترتيش ميديا',
     video: 'فيديو',
@@ -88,11 +86,10 @@ const arMA: TranslationKeys = {
     categoryLabel: 'الفئة',
     limits: 'أقصى %{minutes} د · %{mb} مو',
     publish: 'انشر',
-    publishedMockTitle: 'تّنشر (وهمي)',
+    publishedMockTitle: 'تنشر فوضع التجربة',
     publishedTitle: 'تّنشر',
     publishedMockBody: 'تزاد للخلاصة المحلية «لك».',
-    publishedBody:
-      'الفيديو تصاوب رفعو لـ Supabase Storage + جدول videos (حالة published).',
+    publishedBody: 'النشر ديالك تنشر. لقاه فالفيد وفالبروفيل ديالك.',
     publishFail: 'النشر ما نجحش',
     alertTooLarge: 'الملف كبير بزاف',
     alertTooLong: 'الفيديو طويل بزاف',
@@ -103,7 +100,7 @@ const arMA: TranslationKeys = {
     errTooLong: 'الفيديو فات المدة القصوى (%{minutes} د).',
     errCategoryRequired: 'ختار فئة للبوست ديالك.',
     film: 'صوّر',
-    filmHint: 'المعرض أو الكاميرا (expo-image-picker).',
+    filmHint: 'صور دابا ولا ختار شي ملف من الݣاليري.',
     alertCamera: 'الكاميرا',
     errCameraDenied: 'سمح ليا بالكاميرا باش تصوّر فيديو.',
     coverLabel: 'غلاف (اختياري)',

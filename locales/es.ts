@@ -71,10 +71,8 @@ const es: TranslationKeys = {
   },
   create: {
     title: 'Crear',
-    subtitleMock:
-      'Modo mock — media, descripción, #hashtags y categoría. Publica en el feed local.',
-    subtitleSupabase:
-      'Modo Supabase — subida a Storage + fila videos (estado published).',
+    subtitleMock: 'Modo demo: tu publicación se queda en este dispositivo.',
+    subtitleSupabase: 'Tu publicación aparecerá en el feed de NIA.',
     pickMedia: 'Elegir media (galería)',
     noMedia: 'Ninguna media seleccionada',
     video: 'Vídeo',
@@ -85,11 +83,10 @@ const es: TranslationKeys = {
     categoryLabel: 'Categoría',
     limits: 'Máx. %{minutes} min · %{mb} MB',
     publish: 'Publicar',
-    publishedMockTitle: 'Publicado (mock)',
+    publishedMockTitle: 'Publicado en modo demo',
     publishedTitle: 'Publicado',
     publishedMockBody: 'Añadido al feed local «Para ti».',
-    publishedBody:
-      'Vídeo subido a Supabase Storage + tabla videos (estado published).',
+    publishedBody: 'Tu publicación está en línea. Encuéntrala en el feed y en tu perfil.',
     publishFail: 'Error al publicar',
     alertTooLarge: 'Archivo demasiado grande',
     alertTooLong: 'Vídeo demasiado largo',
@@ -100,7 +97,7 @@ const es: TranslationKeys = {
     errTooLong: 'El vídeo supera la duración máxima (%{minutes} min).',
     errCategoryRequired: 'Elige una categoría para tu publicación.',
     film: 'Grabar',
-    filmHint: 'Galería o cámara (expo-image-picker).',
+    filmHint: 'Graba ahora o elige un archivo de tu galería.',
     alertCamera: 'Cámara',
     errCameraDenied: 'Permite el acceso a la cámara para grabar.',
     coverLabel: 'Portada (opcional)',

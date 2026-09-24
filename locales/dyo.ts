@@ -71,10 +71,8 @@ const dyo: TranslationKeys = {
   },
   create: {
     title: 'Kajeken',
-    subtitleMock:
-      'Mode mock — média, legende, #hashtags ak kategori. Day publie ci feed bu lokal.',
-    subtitleSupabase:
-      'Mode Supabase — yebbi Storage + rëw videos (estatut published).',
+    subtitleMock: 'Anam demo: sa post bi dina des ci telefon bi.',
+    subtitleSupabase: 'Sa post bi dina feeñ ci fil bu NIA.',
     pickMedia: 'Tànn média (galeri)',
     noMedia: 'Amul média bu ñu tànn',
     video: 'Wideo',
@@ -85,11 +83,10 @@ const dyo: TranslationKeys = {
     categoryLabel: 'Kategori',
     limits: 'Max %{minutes} min · %{mb} MB',
     publish: 'Publie',
-    publishedMockTitle: 'Publie na (mock)',
+    publishedMockTitle: 'Jottalees na ci anam demo',
     publishedTitle: 'Publie na',
     publishedMockBody: 'Yokk nañu ko ci feed bu lokal «Ngir yaw».',
-    publishedBody:
-      'Wideo yebbi nañu ko ci Supabase Storage + table videos (estatut published).',
+    publishedBody: 'Sa post bi jottal na. Gis ko ci fil bi ak ci sa profil.',
     publishFail: 'Publie bi lajj na',
     alertTooLarge: 'Fichier bi mag na lool',
     alertTooLong: 'Wideo bi gudd na lool',
@@ -100,7 +97,7 @@ const dyo: TranslationKeys = {
     errTooLong: 'Wideo bi wees na diir bi (%{minutes} min).',
     errCategoryRequired: 'Tànn kategori ngir sa publikaasiyoŋ.',
     film: 'Tàkk widewoo',
-    filmHint: 'Galeri walla kamera (expo-image-picker).',
+    filmHint: 'Filmal léegi walla tann ab fichier ci sa galeri.',
     alertCamera: 'Kamera',
     errCameraDenied: 'May kamera ngir tàkk widewoo.',
     coverLabel: 'Cover (kajum)',

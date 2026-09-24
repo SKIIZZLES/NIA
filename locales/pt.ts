@@ -71,10 +71,8 @@ const pt: TranslationKeys = {
   },
   create: {
     title: 'Criar',
-    subtitleMock:
-      'Modo mock — média, legenda, #hashtags e categoria. Publica no feed local.',
-    subtitleSupabase:
-      'Modo Supabase — upload Storage + linha videos (estado published).',
+    subtitleMock: 'Modo demo: a tua publicação fica neste aparelho.',
+    subtitleSupabase: 'A tua publicação vai aparecer no feed NIA.',
     pickMedia: 'Escolher média (galeria)',
     noMedia: 'Nenhuma média selecionada',
     video: 'Vídeo',
@@ -85,11 +83,10 @@ const pt: TranslationKeys = {
     categoryLabel: 'Categoria',
     limits: 'Máx. %{minutes} min · %{mb} MB',
     publish: 'Publicar',
-    publishedMockTitle: 'Publicado (mock)',
+    publishedMockTitle: 'Publicado em modo demo',
     publishedTitle: 'Publicado',
     publishedMockBody: 'Adicionado ao feed local «Para ti».',
-    publishedBody:
-      'Vídeo enviado para Supabase Storage + tabela videos (estado published).',
+    publishedBody: 'A tua publicação está online. Encontra-a no feed e no teu perfil.',
     publishFail: 'Falha na publicação',
     alertTooLarge: 'Ficheiro demasiado grande',
     alertTooLong: 'Vídeo demasiado longo',
@@ -100,7 +97,7 @@ const pt: TranslationKeys = {
     errTooLong: 'O vídeo excede a duração máxima (%{minutes} min).',
     errCategoryRequired: 'Escolha uma categoria para a sua publicação.',
     film: 'Filmar',
-    filmHint: 'Galeria ou câmara (expo-image-picker).',
+    filmHint: 'Grava agora ou escolhe um ficheiro da tua galeria.',
     alertCamera: 'Câmara',
     errCameraDenied: 'Autorize a câmara para filmar.',
     coverLabel: 'Capa (opcional)',

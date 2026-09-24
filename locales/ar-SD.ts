@@ -73,10 +73,8 @@ const arSD: TranslationKeys = {
   },
   create: {
     title: 'انشر',
-    subtitleMock:
-      'وضع وهمي — ميديا، تعليق، #هاشتاغات وفئة. بينشر في الخلاصة المحلية.',
-    subtitleSupabase:
-      'وضع Supabase — رفع لـ Storage + صف videos (حالة published).',
+    subtitleMock: 'وضع التجربة: البوست بتاعك بيضل في الجهاز دا.',
+    subtitleSupabase: 'البوست بتاعك حيظهر في فيد NIA.',
     pickMedia: 'اختار ميديا (المعرض)',
     noMedia: 'ما اخترت ميديا',
     video: 'فيديو',
@@ -87,11 +85,10 @@ const arSD: TranslationKeys = {
     categoryLabel: 'الفئة',
     limits: 'أقصى %{minutes} د · %{mb} م.ب',
     publish: 'انشر',
-    publishedMockTitle: 'اتنشر (وهمي)',
+    publishedMockTitle: 'اتنشر في وضع التجربة',
     publishedTitle: 'اتنشر',
     publishedMockBody: 'اتضاف للخلاصة المحلية «ليك».',
-    publishedBody:
-      'الفيديو اترفع لـ Supabase Storage + جدول videos (حالة published).',
+    publishedBody: 'البوست بتاعك اتنشر. تلقاه في الفيد وفي البروفايل بتاعك.',
     publishFail: 'النشر فشل',
     alertTooLarge: 'الملف كبير زيادة',
     alertTooLong: 'الفيديو طويل زيادة',
@@ -102,7 +99,7 @@ const arSD: TranslationKeys = {
     errTooLong: 'الفيديو تجاوز المدة القصوى (%{minutes} د).',
     errCategoryRequired: 'اختار فئة للمنشور بتاعك.',
     film: 'صوّر',
-    filmHint: 'المعرض أو الكاميرا (expo-image-picker).',
+    filmHint: 'صور هسع أو اختار ملف من الجاليري.',
     alertCamera: 'الكاميرا',
     errCameraDenied: 'اسمح بالكاميرا عشان تصوّر فيديو.',
     coverLabel: 'غلاف (اختياري)',

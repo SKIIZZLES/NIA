@@ -71,10 +71,8 @@ const en: TranslationKeys = {
   },
   create: {
     title: 'Create',
-    subtitleMock:
-      'Mock mode — media, caption, #hashtags and category. Publishes to the local feed.',
-    subtitleSupabase:
-      'Supabase mode — Storage upload + videos row (published status).',
+    subtitleMock: 'Demo mode: your post stays on this device.',
+    subtitleSupabase: 'Your post will appear in the NIA feed.',
     pickMedia: 'Choose media (gallery)',
     noMedia: 'No media selected',
     video: 'Video',
@@ -85,11 +83,10 @@ const en: TranslationKeys = {
     categoryLabel: 'Category',
     limits: 'Max %{minutes} min · %{mb} MB',
     publish: 'Publish',
-    publishedMockTitle: 'Published (mock)',
+    publishedMockTitle: 'Published in demo mode',
     publishedTitle: 'Published',
     publishedMockBody: 'Added to the local “For you” feed.',
-    publishedBody:
-      'Video uploaded to Supabase Storage + videos table (published status).',
+    publishedBody: 'Your post is live. Find it in the feed and on your profile.',
     publishFail: 'Publish failed',
     alertTooLarge: 'File too large',
     alertTooLong: 'Video too long',
@@ -100,7 +97,7 @@ const en: TranslationKeys = {
     errTooLong: 'Video exceeds the maximum duration (%{minutes} min).',
     errCategoryRequired: 'Choose a category for your post.',
     film: 'Record',
-    filmHint: 'Gallery or camera (expo-image-picker). No native rebuild if camera is already declared.',
+    filmHint: 'Record now or pick a file from your gallery.',
     alertCamera: 'Camera',
     errCameraDenied: 'Allow camera access to record a video.',
     coverLabel: 'Cover (optional)',
