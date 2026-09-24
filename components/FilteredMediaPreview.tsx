@@ -5,6 +5,11 @@
  * Image -> <Image>. Vidéo -> <VideoView> (expo-video), jamais <Image> :
  * un .mp4 passé à <Image> ne rend rien (cf. lib/mediaThumb.ts).
  * L'aperçu joue en boucle et en sourdine — pas de contrôles natifs.
+ *
+ * Le lecteur ne tourne que quand son écran a le focus. Le parcours de création
+ * est une pile : pousser /create/preview laisse /create/index monté, et deux
+ * décodages du même fichier tourneraient en parallèle. Ce composant n'est
+ * rendu que dans cette pile, donc le contexte de navigation est toujours là.
  */
 import React, { useEffect, useMemo } from 'react';
 import {
@@ -15,6 +20,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useIsFocused } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import {
   getFilterById,
@@ -54,14 +60,24 @@ export function FilteredMediaPreview({
     p.muted = true;
   });
 
+  // expo-router réexporte useIsFocused depuis sa copie de React Navigation
+  // (@react-navigation/native n'est pas une dépendance du projet).
+  const isFocused = useIsFocused();
+
+  // Suspendre, pas détruire : le même lecteur reprend là où il s'est arrêté
+  // quand l'écran revient au premier plan. Le brouillon n'est pas touché.
   useEffect(() => {
     if (!isVideo) return;
     try {
-      player.play();
+      if (isFocused) {
+        player.play();
+      } else {
+        player.pause();
+      }
     } catch {
       // aperçu non lisible : la première frame reste affichée
     }
-  }, [isVideo, player]);
+  }, [isVideo, isFocused, player]);
 
   const filter = filterProp ?? getFilterById(filterId ?? null);
   const overlay = useMemo(
