@@ -71,10 +71,8 @@ const ha: TranslationKeys = {
   },
   create: {
     title: 'Ƙirƙiri',
-    subtitleMock:
-      'Yanayin kwaikwayo — midiya, rubutu, #hashtags da rukuni. Yana wallafa zuwa feed na gida.',
-    subtitleSupabase:
-      'Yanayin Supabase — ɗora Storage + layin videos (matsayi published).',
+    subtitleMock: 'Yanayin gwaji: wallafarka na nan a wannan na’urar.',
+    subtitleSupabase: 'Wallafarka za ta bayyana a jerin NIA.',
     pickMedia: 'Zaɓi midiya (gallery)',
     noMedia: 'Babu midiya da aka zaɓa',
     video: 'Bidiyo',
@@ -85,11 +83,10 @@ const ha: TranslationKeys = {
     categoryLabel: 'Rukuni',
     limits: 'Mafi yawa %{minutes} minti · %{mb} MB',
     publish: 'Wallafa',
-    publishedMockTitle: 'An wallafa (kwaikwayo)',
+    publishedMockTitle: 'An wallafa a yanayin gwaji',
     publishedTitle: 'An wallafa',
     publishedMockBody: 'An ƙara zuwa feed na gida «Don kai».',
-    publishedBody:
-      'An ɗora bidiyo zuwa Supabase Storage + teburin videos (matsayi published).',
+    publishedBody: 'Wallafarka tana kan layi. Nemo ta a jerin da kuma bayananka.',
     publishFail: 'Wallafa ta gaza',
     alertTooLarge: 'Fayil ya yi girma sosai',
     alertTooLong: 'Bidiyo ya yi tsawo sosai',
@@ -100,7 +97,7 @@ const ha: TranslationKeys = {
     errTooLong: 'Bidiyo ya wuce tsawon lokaci mafi yawa (%{minutes} minti).',
     errCategoryRequired: 'Zaɓi rukuni don wallafarka.',
     film: 'Ɗauki bidiyo',
-    filmHint: 'Gallery ko kamara (expo-image-picker).',
+    filmHint: 'Yi rikodi yanzu ko zaɓi fayil daga hotunanka.',
     alertCamera: 'Kamara',
     errCameraDenied: 'Bada izinin kamara don ɗaukar bidiyo.',
     coverLabel: 'Hoton rufe (na zaɓi)',

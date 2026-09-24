@@ -69,10 +69,8 @@ const fr = {
   },
   create: {
     title: 'Créer',
-    subtitleMock:
-      'Mode mock — média, légende, #hashtags et catégorie. Publication dans le feed local.',
-    subtitleSupabase:
-      'Mode Supabase — upload Storage + ligne videos (statut published).',
+    subtitleMock: 'Mode démo : ta publication reste sur cet appareil.',
+    subtitleSupabase: 'Ta publication apparaîtra dans le fil NIA.',
     pickMedia: 'Choisir un média (galerie)',
     noMedia: 'Aucun média sélectionné',
     video: 'Vidéo',
@@ -84,11 +82,10 @@ const fr = {
     categoryLabel: 'Catégorie',
     limits: 'Max %{minutes} min · %{mb} Mo',
     publish: 'Publier',
-    publishedMockTitle: 'Publié (mock)',
+    publishedMockTitle: 'Publié en mode démo',
     publishedTitle: 'Publié',
     publishedMockBody: 'Ajouté au fil local « Pour toi ».',
-    publishedBody:
-      'Vidéo envoyée sur Supabase Storage + table videos (statut published).',
+    publishedBody: 'Ta publication est en ligne. Retrouve-la dans le fil et sur ton profil.',
     publishFail: 'Échec de la publication',
     alertTooLarge: 'Fichier trop volumineux',
     alertTooLong: 'Vidéo trop longue',
@@ -99,7 +96,7 @@ const fr = {
     errTooLong: 'La vidéo dépasse la durée maximale (%{minutes} min).',
     errCategoryRequired: 'Choisissez une catégorie pour votre publication.',
     film: 'Filmer',
-    filmHint: 'Galerie ou caméra (expo-image-picker). Pas de rebuild natif si la caméra est déjà déclarée.',
+    filmHint: 'Filme directement ou choisis un fichier dans ta galerie.',
     alertCamera: 'Caméra',
     errCameraDenied: 'Autorisez l’accès à la caméra pour filmer une vidéo.',
     coverLabel: 'Cover (optionnelle)',
