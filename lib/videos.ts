@@ -5,7 +5,13 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { VideoItem } from '@/data/mockVideos';
 import type { CategoryId } from '@/constants/categories';
 import { isCategoryId } from '@/constants/categories';
-import { parseHashtags } from '@/constants/publish';
+import { MAX_UPLOAD_BYTES, PUBLISH_ERRORS, parseHashtags } from '@/constants/publish';
+import {
+  deleteCachedFile,
+  localFileSize,
+  uploadToStorage,
+  type UploadProgress,
+} from '@/lib/upload';
 import type { ProfileRow, VideoRow } from '@/types/database';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
 
@@ -340,7 +346,32 @@ export type UploadVideoInput = {
   soundId?: string | null;
   /** Optional NIA filter registry id (012) */
   filterId?: string | null;
+  /**
+   * Identifiant stable du brouillon. Le chemin Storage en dérive, donc deux
+   * tentatives pour la même publication visent le même objet : un réessai n'en
+   * crée pas un second, et aucun orphelin ne s'accumule.
+   */
+  uploadId: string;
+  /**
+   * true dès la deuxième tentative : écrase l'objet éventuellement partiel
+   * laissé par la précédente, au lieu d'échouer sur « already exists ».
+   */
+  overwrite?: boolean;
+  /** Progression réelle, en octets remontés par la couche réseau native. */
+  onProgress?: (stage: 'media' | 'cover', progress: UploadProgress) => void;
+  signal?: AbortSignal;
 };
+
+/**
+ * Chemins Storage déjà téléversés pendant cette session.
+ *
+ * Sert au réessai : si l'insert échoue après un envoi réussi, la tentative
+ * suivante saute le téléversement du fichier — ce qui, pour 50 Mo, est la
+ * différence entre un réessai instantané et une minute de réseau. Volontairement
+ * en mémoire : après un redémarrage de l'app on re-téléverse, ce qui reste
+ * correct puisque `overwrite` rend l'opération idempotente.
+ */
+const uploadedPaths = new Set<string>();
 
 export async function uploadVideoToSupabase(
   input: UploadVideoInput,
@@ -351,7 +382,10 @@ export async function uploadVideoToSupabase(
   // RLS videos_insert_own requires user_id = auth.uid() — prefer live session.
   const { data: sessionData } = await sb.auth.getSession();
   const sessionUserId = sessionData.session?.user?.id;
-  if (!sessionUserId) {
+  // Le jeton part en en-tête Authorization du POST Storage : les policies RLS
+  // sur storage.objects exigent auth.uid(), exactement comme via storage-js.
+  const accessToken = sessionData.session?.access_token;
+  if (!sessionUserId || !accessToken) {
     throw new Error('Session expirée. Reconnectez-vous pour publier.');
   }
   if (input.userId && input.userId !== sessionUserId) {
@@ -366,23 +400,49 @@ export async function uploadVideoToSupabase(
     mediaKind: input.mediaKind,
   });
 
-  const path = `${creatorId}/${Date.now()}.${ext}`;
+  // Chemin déterministe : même brouillon → même objet, donc réessai idempotent.
+  const path = `${creatorId}/${input.uploadId}.${ext}`;
 
-  // Critical: do NOT upload a Blob from fetch(uri).blob() on RN Android.
-  // Blob.type is often "text/plain", and @supabase/storage-js FormData path
-  // uses Blob.type and ignores the contentType option → Storage rejects with
-  // "mime type text/plain is not supported". ArrayBuffer sets Content-Type header.
-  const response = await fetch(input.localUri);
-  if (!response.ok) {
-    throw new Error(`Impossible de lire le média local (${response.status})`);
+  // Refuser avant d'ouvrir un socket quand la taille réelle dépasse la limite.
+  // ImagePicker ne renseigne pas toujours fileSize ; le disque, lui, ne ment pas.
+  const realSize = localFileSize(input.localUri);
+  if (realSize != null && realSize > MAX_UPLOAD_BYTES) {
+    throw new Error(PUBLISH_ERRORS.tooLarge);
   }
-  const arrayBuffer = await response.arrayBuffer();
 
-  const { error: upErr } = await sb.storage.from('videos').upload(path, arrayBuffer, {
-    contentType,
-    upsert: false,
-  });
-  if (upErr) throw upErr;
+  // GARDE-FOU ANDROID — conservé, et resserré.
+  // fetch(uri).blob() renvoie souvent Blob.type === "text/plain" sur RN
+  // Android ; la branche Blob de @supabase/storage-js en fait un FormData et
+  // ignore l'option contentType, d'où le rejet « mime type text/plain is not
+  // supported ». Le contournement d'origine passait un ArrayBuffer pour que
+  // storage-js pose un en-tête Content-Type explicite — au prix de ~3,3 fois
+  // la taille du fichier en mémoire JS.
+  // lib/upload.ts pose désormais cet en-tête lui-même, à partir du contentType
+  // résolu ci-dessus, et téléverse en streaming depuis le disque. Le type n'est
+  // plus jamais déduit du fichier par la plateforme.
+  if (!uploadedPaths.has(path)) {
+    await uploadToStorage({
+      bucket: 'videos',
+      path,
+      localUri: input.localUri,
+      contentType,
+      accessToken,
+      upsert: input.overwrite ?? false,
+      onProgress: input.onProgress
+        ? (progress) => input.onProgress?.('media', progress)
+        : undefined,
+      signal: input.signal,
+    });
+    uploadedPaths.add(path);
+  } else if (realSize != null) {
+    // Réessai après un envoi déjà abouti : on ne re-téléverse pas, et on
+    // rapporte la taille réelle du fichier plutôt que des octets inventés.
+    input.onProgress?.('media', {
+      bytesSent: realSize,
+      totalBytes: realSize,
+      ratio: 1,
+    });
+  }
 
   const { data: urlData } = sb.storage.from('videos').getPublicUrl(path);
   const publicUrl = urlData.publicUrl;
@@ -409,21 +469,25 @@ export async function uploadVideoToSupabase(
     const coverExt = coverResolved.ext.match(/^(jpe?g|png|webp)$/i)
       ? coverResolved.ext
       : 'jpg';
-    coverPath = `${creatorId}/covers/${Date.now()}.${coverExt}`;
-    const coverRes = await fetch(input.coverUri);
-    if (!coverRes.ok) {
-      throw new Error(`Impossible de lire la cover (${coverRes.status})`);
-    }
-    const coverBuf = await coverRes.arrayBuffer();
-    const { error: coverErr } = await sb.storage
-      .from('videos')
-      .upload(coverPath, coverBuf, {
-        contentType: coverResolved.contentType.startsWith('image/')
-          ? coverResolved.contentType
-          : 'image/jpeg',
-        upsert: false,
+    coverPath = `${creatorId}/covers/${input.uploadId}.${coverExt}`;
+    const coverContentType = coverResolved.contentType.startsWith('image/')
+      ? coverResolved.contentType
+      : 'image/jpeg';
+    if (!uploadedPaths.has(coverPath)) {
+      await uploadToStorage({
+        bucket: 'videos',
+        path: coverPath,
+        localUri: input.coverUri,
+        contentType: coverContentType,
+        accessToken,
+        upsert: input.overwrite ?? false,
+        onProgress: input.onProgress
+          ? (progress) => input.onProgress?.('cover', progress)
+          : undefined,
+        signal: input.signal,
       });
-    if (coverErr) throw coverErr;
+      uploadedPaths.add(coverPath);
+    }
     const { data: coverUrlData } = sb.storage.from('videos').getPublicUrl(coverPath);
     thumbnailUrl = coverUrlData.publicUrl;
   } else {
@@ -551,6 +615,16 @@ export async function uploadVideoToSupabase(
     item.handle = `@${input.username}`;
     item.avatarUrl = input.avatarUrl || item.avatarUrl;
   }
+
+  // Publication acquise : les copies temporaires du picker n'ont plus d'usage.
+  // deleteCachedFile ne touche que ce qui vit sous Paths.cache — jamais un
+  // fichier de la galerie de l'utilisateur. Le son importé n'est pas supprimé :
+  // il est réutilisable et référencé par sounds.public_url.
+  deleteCachedFile(input.localUri);
+  if (input.coverUri) deleteCachedFile(input.coverUri);
+  uploadedPaths.delete(path);
+  if (coverPath) uploadedPaths.delete(coverPath);
+
   return item;
 }
 

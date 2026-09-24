@@ -17,6 +17,7 @@ import {
   softDeleteOwnVideo,
   type OwnerVideoActionResult,
 } from '@/lib/videos';
+import type { UploadProgress } from '@/lib/upload';
 import {
   MAX_UPLOAD_BYTES,
   MAX_VIDEO_DURATION_SEC,
@@ -53,6 +54,17 @@ type PublishInput = {
   durationMs?: number;
   soundId?: string | null;
   filterId?: string | null;
+  /**
+   * Identifiant stable du brouillon. Deux tentatives pour la même publication
+   * doivent porter la même valeur : le chemin Storage en dérive, donc le
+   * réessai vise le même objet au lieu d'en créer un second.
+   */
+  uploadId: string;
+  /** true dès la deuxième tentative — écrase l'objet partiel éventuel. */
+  overwrite?: boolean;
+  /** Progression réelle, en octets remontés par la couche réseau native. */
+  onProgress?: (stage: 'media' | 'cover', progress: UploadProgress) => void;
+  signal?: AbortSignal;
 };
 
 type FeedContextValue = {
@@ -250,6 +262,10 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           status: 'published',
           soundId: input.soundId || null,
           filterId: input.filterId || null,
+          uploadId: input.uploadId,
+          overwrite: input.overwrite,
+          onProgress: input.onProgress,
+          signal: input.signal,
         });
         setRawVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
       } catch (e) {

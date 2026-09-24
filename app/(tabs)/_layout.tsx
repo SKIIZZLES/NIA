@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Fonts, Radii, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
@@ -11,6 +11,7 @@ export default function TabsLayout() {
   const { t } = useI18n();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const styles = useMemo(
     () =>
@@ -80,6 +81,15 @@ export default function TabsLayout() {
               <Ionicons name="add" size={28} color={colors.onAccent} />
             </View>
           ),
+        }}
+        // Le « + » ouvre le parcours de publication plein écran plutôt que de
+        // sélectionner un onglet : la barre d'onglets n'a pas à rester visible
+        // pendant qu'on publie.
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push('/create');
+          },
         }}
       />
       <Tabs.Screen
