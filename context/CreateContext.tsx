@@ -60,6 +60,17 @@ function inferMimeType(
   return null;
 }
 
+/**
+ * Identifiant de brouillon, régénéré à chaque nouveau média choisi.
+ *
+ * Il ne sert qu'à nommer l'objet Storage : il vit sous le dossier de
+ * l'utilisateur, protégé par les policies RLS, donc Math.random suffit — ce
+ * n'est pas une frontière de sécurité, seulement une clé d'idempotence.
+ */
+function makeUploadId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 type CreateContextValue = {
   mode: CreateMode;
   setMode: (next: CreateMode) => void;
@@ -75,6 +86,12 @@ type CreateContextValue = {
   setFilter: (next: FilterDefinition | null) => void;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
   hashtags: string[];
+  /**
+   * Stable tant que le média ne change pas. Deux tentatives de publication du
+   * même brouillon visent donc le même objet Storage, ce qui rend le réessai
+   * idempotent : pas de doublon, pas d'orphelin.
+   */
+  uploadId: string;
   /** Ouvre la galerie pour le mode courant. */
   pickMedia: () => Promise<void>;
   /** Ouvre la caméra pour le mode courant. */
@@ -96,6 +113,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [category, setCategory] = useState<CategoryId | null>(null);
   const [sound, setSound] = useState<SoundItem | null>(null);
   const [filter, setFilter] = useState<FilterDefinition | null>(null);
+  const [uploadId, setUploadId] = useState<string>(makeUploadId);
 
   const maxMinutes = Math.round(MAX_VIDEO_DURATION_SEC / 60);
   const maxMb = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
@@ -167,6 +185,9 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         durationMs: expected === 'photo' ? null : durationMs,
         type: resolvedType,
       });
+      // Autre fichier, autre objet Storage : sinon un réessai après changement
+      // de média écraserait l'objet du précédent.
+      setUploadId(makeUploadId());
       if (expected !== 'video') setCover(null);
     },
     [t, maxMb, maxMinutes],
@@ -240,6 +261,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       filter,
       setFilter,
       hashtags,
+      uploadId,
       pickMedia,
       captureMedia,
       pickCover,
@@ -257,6 +279,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       sound,
       filter,
       hashtags,
+      uploadId,
       pickMedia,
       captureMedia,
       pickCover,

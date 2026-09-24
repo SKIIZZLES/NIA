@@ -126,6 +126,10 @@ const en: TranslationKeys = {
     stepPublishTitle: 'Publish',
     continue: 'Continue',
     otherFormats: 'Other formats',
+    uploading: 'Uploading…',
+    uploadingCover: 'Uploading cover…',
+    retry: 'Try again',
+    uploadCanceled: 'Upload cancelled.',
   },
   profile: {
     defaultBio: 'NIA profile',

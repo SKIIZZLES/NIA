@@ -5,7 +5,7 @@
  * de l'état d'interface, pas du brouillon. Seul le son retenu remonte dans le
  * CreateContext.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -54,11 +54,19 @@ export default function CreatePublishStep() {
     setSound,
     filter,
     hashtags,
+    uploadId,
     maxMb,
     maxMinutes,
   } = useCreateDraft();
 
   const [busy, setBusy] = useState(false);
+  /** Ratio réel d'envoi (0 → 1), null tant qu'aucun octet n'est parti. */
+  const [progress, setProgress] = useState<number | null>(null);
+  const [progressStage, setProgressStage] = useState<'media' | 'cover'>('media');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  /** > 0 signifie « réessai » : l'objet Storage est alors écrasé. */
+  const [attempts, setAttempts] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
   const [ownSounds, setOwnSounds] = useState<SoundItem[]>([]);
   const [soundPickerOpen, setSoundPickerOpen] = useState(false);
   const [soundBusy, setSoundBusy] = useState(false);
@@ -161,7 +169,12 @@ export default function CreatePublishStep() {
       return;
     }
 
+    const controller = new AbortController();
+    abortRef.current = controller;
     setBusy(true);
+    setUploadError(null);
+    setProgress(null);
+    setProgressStage('media');
     try {
       await publishPost({
         caption,
@@ -178,6 +191,15 @@ export default function CreatePublishStep() {
         durationMs: media?.durationMs ?? undefined,
         soundId: sound?.id ?? null,
         filterId: filter?.id ?? null,
+        uploadId,
+        // Dès la deuxième tentative on écrase l'objet éventuellement partiel
+        // laissé par la précédente, au lieu d'échouer sur « already exists ».
+        overwrite: attempts > 0,
+        onProgress: (stage, p) => {
+          setProgressStage(stage);
+          setProgress(p.ratio);
+        },
+        signal: controller.signal,
       });
       // Pas de reset ici : quitter /create démonte le CreateProvider, donc le
       // brouillon. Le vider avant de naviguer ferait passer cet écran par son
@@ -188,10 +210,23 @@ export default function CreatePublishStep() {
       );
       router.replace('/(tabs)');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : t('create.publishFail');
-      Alert.alert(t('common.error'), msg);
+      const aborted =
+        controller.signal.aborted ||
+        (e instanceof Error && e.name === 'AbortError');
+      setAttempts((n) => n + 1);
+      if (aborted) {
+        // Annulation volontaire : ce n'est pas une erreur à dramatiser.
+        setUploadError(t('create.uploadCanceled'));
+      } else {
+        const msg = e instanceof Error && e.message ? e.message : t('create.publishFail');
+        setUploadError(msg);
+      }
+      // Pas d'Alert : le message reste à l'écran à côté du bouton Réessayer,
+      // et le brouillon est intact — ni le média ni la légende ne sont perdus.
     } finally {
+      abortRef.current = null;
       setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -271,6 +306,36 @@ export default function CreatePublishStep() {
           fontSize: 13,
         },
         catTextOn: { color: colors.sable },
+        progressBlock: { marginTop: Spacing.xl },
+        progressTrack: {
+          height: 6,
+          borderRadius: 3,
+          backgroundColor: colors.noirSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          overflow: 'hidden',
+        },
+        progressFill: {
+          height: '100%',
+          backgroundColor: colors.or,
+        },
+        progressRow: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginTop: Spacing.xs,
+        },
+        progressLabel: {
+          color: colors.textSecondary,
+          fontFamily: Fonts.medium,
+          fontSize: 12,
+        },
+        errorText: {
+          color: colors.textSecondary,
+          fontFamily: Fonts.regular,
+          fontSize: 13,
+          lineHeight: 18,
+          marginTop: Spacing.md,
+        },
         soundSelected: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -425,13 +490,50 @@ export default function CreatePublishStep() {
           })}
         </View>
 
-        <Button
-          title={t('create.publish')}
-          variant="gold"
-          loading={busy}
-          onPress={() => void publish()}
-          style={{ marginTop: Spacing.xl }}
-        />
+        {busy ? (
+          <View style={styles.progressBlock}>
+            {/* Barre pilotée par les octets réellement partis (bytesSent /
+                totalBytes remontés par okhttp ou URLSession). Quand la taille
+                totale est inconnue, on n'affiche pas de pourcentage inventé :
+                la barre reste vide et seul le libellé bouge. */}
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${Math.round((progress ?? 0) * 100)}%` },
+                ]}
+              />
+            </View>
+            <View style={styles.progressRow}>
+              <Text style={styles.progressLabel}>
+                {progressStage === 'cover'
+                  ? t('create.uploadingCover')
+                  : t('create.uploading')}
+              </Text>
+              <Text style={styles.progressLabel}>
+                {progress == null ? '' : `${Math.round(progress * 100)} %`}
+              </Text>
+            </View>
+            <Button
+              title={t('common.cancel')}
+              variant="outline"
+              onPress={() => abortRef.current?.abort()}
+              style={{ marginTop: Spacing.md }}
+            />
+          </View>
+        ) : (
+          <>
+            {uploadError ? (
+              <Text style={styles.errorText}>{uploadError}</Text>
+            ) : null}
+            <Button
+              title={uploadError ? t('create.retry') : t('create.publish')}
+              variant="gold"
+              onPress={() => void publish()}
+              style={{ marginTop: uploadError ? Spacing.md : Spacing.xl }}
+            />
+          </>
+        )}
 
         <Modal
           visible={soundPickerOpen}
