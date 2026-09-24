@@ -126,6 +126,12 @@ const ig: TranslationKeys = {
     addSoundHint:
       'Sons uploadés / originaux uniquement — pas de catalogue commercial.',
     pickSound: 'Choisir un son',
+    stepOf: 'Étape %{n} sur %{total}',
+    stepMediaTitle: 'Ton média',
+    stepStyleTitle: 'Habillage',
+    stepPublishTitle: 'Publication',
+    continue: 'Continuer',
+    otherFormats: 'Autre format',
 },
   profile: {
     defaultBio: 'Profaịlụ NIA',

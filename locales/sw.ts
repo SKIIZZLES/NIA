@@ -131,6 +131,12 @@ const sw: TranslationKeys = {
     addSoundHint:
       'Sauti zilizopakiwa / asili tu — hakuna katalogi ya biashara. Chagua yako au pakia faili ya sauti.',
     pickSound: 'Chagua sauti',
+    stepOf: 'Étape %{n} sur %{total}',
+    stepMediaTitle: 'Ton média',
+    stepStyleTitle: 'Habillage',
+    stepPublishTitle: 'Publication',
+    continue: 'Continuer',
+    otherFormats: 'Autre format',
 },
   profile: {
     defaultBio: 'Wasifu wa NIA',

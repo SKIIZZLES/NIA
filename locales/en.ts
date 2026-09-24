@@ -131,6 +131,12 @@ const en: TranslationKeys = {
     addSoundHint:
       'User-uploaded / original sounds only — no commercial music catalog. Pick one of your sounds or import an audio file.',
     pickSound: 'Choose a sound',
+    stepOf: 'Step %{n} of %{total}',
+    stepMediaTitle: 'Your media',
+    stepStyleTitle: 'Look and feel',
+    stepPublishTitle: 'Publish',
+    continue: 'Continue',
+    otherFormats: 'Other formats',
   },
   profile: {
     defaultBio: 'NIA profile',

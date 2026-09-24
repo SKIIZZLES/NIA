@@ -131,6 +131,12 @@ const pt: TranslationKeys = {
     addSoundHint:
       'Apenas sons enviados / originais — sem catálogo comercial. Escolha um dos seus ou importe um ficheiro de áudio.',
     pickSound: 'Escolher um som',
+    stepOf: 'Étape %{n} sur %{total}',
+    stepMediaTitle: 'Ton média',
+    stepStyleTitle: 'Habillage',
+    stepPublishTitle: 'Publication',
+    continue: 'Continuer',
+    otherFormats: 'Autre format',
 },
   profile: {
     defaultBio: 'Perfil NIA',

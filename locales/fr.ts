@@ -130,6 +130,12 @@ const fr = {
     addSoundHint:
       'Sons uploadés / originaux uniquement — pas de catalogue commercial. Choisissez un de vos sons ou importez un fichier audio.',
     pickSound: 'Choisir un son',
+    stepOf: 'Étape %{n} sur %{total}',
+    stepMediaTitle: 'Ton média',
+    stepStyleTitle: 'Habillage',
+    stepPublishTitle: 'Publication',
+    continue: 'Continuer',
+    otherFormats: 'Autre format',
   },
   profile: {
     defaultBio: 'Profil NIA',

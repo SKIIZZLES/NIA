@@ -131,6 +131,12 @@ const ha: TranslationKeys = {
     addSoundHint:
       'Sautukan da aka ɗora / na asali kawai — babu kasuwanci. Zaɓi naka ko shigo da fayil.',
     pickSound: 'Zaɓi sauti',
+    stepOf: 'Étape %{n} sur %{total}',
+    stepMediaTitle: 'Ton média',
+    stepStyleTitle: 'Habillage',
+    stepPublishTitle: 'Publication',
+    continue: 'Continuer',
+    otherFormats: 'Autre format',
 },
   profile: {
     defaultBio: 'Bayanan martaba na NIA',

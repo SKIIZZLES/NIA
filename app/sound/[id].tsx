@@ -68,7 +68,7 @@ export default function SoundScreen() {
   const onUse = () => {
     if (!soundId) return;
     router.push({
-      pathname: '/(tabs)/create',
+      pathname: '/create',
       params: { soundId, mode: 'video' },
     });
   };
