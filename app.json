@@ -58,6 +58,15 @@
       ],
       "expo-video",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "NIA utilise la cam\u00e9ra pour filmer des vid\u00e9os.",
+          "microphonePermission": "NIA utilise le micro pour enregistrer des vid\u00e9os.",
+          "recordAudioAndroid": true,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.PLACEHOLDER_IOS_CLIENT_ID"

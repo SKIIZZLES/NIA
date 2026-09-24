@@ -21,6 +21,7 @@ export default function CreateLayout() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="camera" />
         <Stack.Screen name="preview" />
         <Stack.Screen name="publish" />
       </Stack>

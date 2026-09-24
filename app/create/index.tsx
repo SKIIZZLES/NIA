@@ -235,7 +235,15 @@ export default function CreateMediaStep() {
             <Button
               title={isPhoto ? t('create.takePhoto') : t('create.film')}
               variant="gold"
-              onPress={() => void captureMedia()}
+              onPress={() => {
+                // Le mode photo garde la caméra système : la caméra NIA V1 ne
+                // couvre que la vidéo.
+                if (isPhoto) {
+                  void captureMedia();
+                  return;
+                }
+                router.push('/create/camera');
+              }}
             />
           </View>
           <View style={styles.action}>
