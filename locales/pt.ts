@@ -145,7 +145,7 @@ const pt: TranslationKeys = {
     otherFormats: 'Outros formatos',
     uploading: 'Enviando…',
     uploadingCover: 'Enviando a capa…',
-    retry: 'Tentar outra vez',
+    retry: 'Tentar novamente',
     uploadCanceled: 'Envio cancelado.',
 },
   profile: {
@@ -482,7 +482,7 @@ const pt: TranslationKeys = {
   },
   appearance: {
     title: 'Aparência',
-    subtitle: 'Personaliza as cores da interface para esta conta. Não altera o conteúdo das publicações.',
+    subtitle: 'Personalize as cores da interface para esta conta. Não altera o conteúdo das publicações.',
     original: 'NIA Original',
     sable: 'Sable',
     terre: 'Terre',
