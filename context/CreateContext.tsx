@@ -27,8 +27,22 @@ import {
 import type { CategoryId } from '@/constants/categories';
 import type { FilterDefinition } from '@/constants/filters';
 import type { SoundItem } from '@/lib/sounds';
+import { resolveUploadContentType } from '@/lib/videos';
+import { localFileSize } from '@/lib/upload';
 
 export type CreateMode = 'video' | 'photo';
+
+/**
+ * Résultat d'un enregistrement de la caméra intégrée.
+ *
+ * recordAsync() ne renvoie qu'une URI : ni taille, ni durée. La durée est donc
+ * mesurée par l'écran caméra, et la taille lue sur le disque.
+ */
+export type CapturedVideo = {
+  uri: string;
+  /** Mesurée pendant l'enregistrement, null si la mesure a échoué. */
+  durationMs: number | null;
+};
 
 export type PickedMedia = {
   uri: string;
@@ -94,8 +108,14 @@ type CreateContextValue = {
   uploadId: string;
   /** Ouvre la galerie pour le mode courant. */
   pickMedia: () => Promise<void>;
-  /** Ouvre la caméra pour le mode courant. */
+  /** Ouvre la caméra système pour le mode courant (repli et mode photo). */
   captureMedia: () => Promise<void>;
+  /**
+   * Enregistre dans le brouillon une vidéo produite par la caméra intégrée.
+   * Renvoie false si le fichier est refusé (trop lourd, trop long) : l'appelant
+   * reste alors sur l'écran caméra au lieu de revenir avec un brouillon vide.
+   */
+  applyCapturedVideo: (captured: CapturedVideo) => boolean;
   pickCover: () => Promise<void>;
   clearCover: () => void;
   maxMb: number;
@@ -219,6 +239,61 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     applyAsset(res.assets[0], mode);
   }, [mode, applyAsset, t]);
 
+  /**
+   * Intègre au brouillon une vidéo filmée par la caméra NIA.
+   *
+   * La taille vient de `localFileSize`, qui interroge le système de fichiers —
+   * le fichier n'est jamais lu en JS. C'est la contrainte héritée de la Phase 2 :
+   * ni fetch(uri), ni arrayBuffer(), ni blob(), ni base64. Le média ne circule
+   * que sous forme d'URI jusqu'à `UploadTask`.
+   *
+   * Le Content-Type est résolu par `resolveUploadContentType`, la même fonction
+   * que le reste du pipeline, plutôt qu'une table dupliquée ici : .mp4 (Android)
+   * et .mov (iOS) y sont déjà couverts.
+   */
+  const applyCapturedVideo = useCallback(
+    ({ uri, durationMs }: CapturedVideo): boolean => {
+      if (!uri) return false;
+
+      const fileSize = localFileSize(uri);
+      if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
+        Alert.alert(
+          t('create.alertTooLarge'),
+          t('create.errTooLarge', { mb: maxMb }),
+        );
+        return false;
+      }
+      if (durationMs != null && durationMs > MAX_VIDEO_DURATION_SEC * 1000) {
+        Alert.alert(
+          t('create.alertTooLong'),
+          t('create.errTooLong', { minutes: maxMinutes }),
+        );
+        return false;
+      }
+
+      const fileName = uri.split('/').pop() || null;
+      const { contentType } = resolveUploadContentType({
+        mimeType: null,
+        localUri: uri,
+        fileName,
+        mediaKind: 'video',
+      });
+
+      setMedia({
+        uri,
+        mimeType: contentType,
+        fileName,
+        fileSize,
+        durationMs,
+        type: 'video',
+      });
+      // Nouveau fichier, nouvel objet Storage — même règle que pour un import.
+      setUploadId(makeUploadId());
+      return true;
+    },
+    [t, maxMb, maxMinutes],
+  );
+
   const pickCover = useCallback(async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -264,6 +339,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       uploadId,
       pickMedia,
       captureMedia,
+      applyCapturedVideo,
       pickCover,
       clearCover,
       maxMb,
@@ -282,6 +358,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       uploadId,
       pickMedia,
       captureMedia,
+      applyCapturedVideo,
       pickCover,
       clearCover,
       maxMb,
