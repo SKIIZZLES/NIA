@@ -227,7 +227,7 @@ const pt: TranslationKeys = {
     archiveConfirmTitle: 'Arquivar este vídeo?',
     archiveConfirmBody: 'Vai sair do feed público, mas continua no seu perfil (Arquivada).',
     deleteConfirmTitle: 'Excluir este vídeo?',
-    deleteConfirmBody: 'O vídeo será retirado do feed e do seu perfil (exclusão reversível).',
+    deleteConfirmBody: 'O vídeo será retirado do feed e do seu perfil.',
     archiveSuccess: 'Vídeo arquivado',
     archiveSuccessBody: 'Retirada do feed público.',
     archiveSuccessMock: 'Arquivada (modo demo).',

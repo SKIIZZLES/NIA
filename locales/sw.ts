@@ -227,7 +227,7 @@ const sw: TranslationKeys = {
     archiveConfirmTitle: 'Weka video hii kwenye kumbukumbu?',
     archiveConfirmBody: 'Itatoka kwenye mlisho wa umma lakini itabaki kwenye wasifu wako (Kwenye kumbukumbu).',
     deleteConfirmTitle: 'Futa video hii?',
-    deleteConfirmBody: 'Video itatolewa kwenye mlisho na wasifu wako (inaweza kurejeshwa).',
+    deleteConfirmBody: 'Video itatolewa kwenye mlisho na wasifu wako.',
     archiveSuccess: 'Video imewekwa kwenye kumbukumbu',
     archiveSuccessBody: 'Imetolewa kwenye mlisho wa umma.',
     archiveSuccessMock: 'Imewekwa kwenye kumbukumbu (hali ya majaribio).',
