@@ -31,6 +31,13 @@ jobs:
       - name: TypeScript
         run: npx tsc --noEmit
 
+      # Logique pure uniquement (i18n, vignettes, partage, mapping feed) plus
+      # les invariants des 20 locales. `tsc` et les exports ci-dessous ne voient
+      # rien de tout ça : `t(scope: string)` n'est pas typé, donc une clé
+      # manquante compile, bundle, et s'affiche brute à l'écran.
+      - name: Tests
+        run: npm test -- --ci
+
       # Rejoue la phase JS d'un build EAS : si le bundle casse ici, il casse
       # aussi sur EAS. La compilation native (Gradle / Xcode) n'est pas
       # couverte — seul un vrai build EAS l'exerce.

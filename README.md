@@ -69,6 +69,28 @@ Puis scanner le QR avec Expo Go (auth **mock**), ou `npx expo start --web` (Supa
 npx tsc --noEmit
 ```
 
+### Tests
+
+```bash
+npm test          # une passe (ce que joue la CI)
+npm run test:watch
+```
+
+`jest-expo` sur de la logique pure : résolution de locale, vignettes de grille,
+messages de partage, mapping des lignes du feed, plus les invariants
+structurels des 20 locales (mêmes clés, mêmes placeholders, aucune valeur
+vide).
+
+Aucun test d'UI pour l'instant. Le jour où il en faudra :
+`npx expo install @testing-library/react-native --dev` — `react-test-renderer`
+seul ne suffit pas à partir de React 19.
+
+Périmètre assumé : ces tests attrapent ce que `tsc --noEmit` et
+`expo export` ne voient pas. `t(scope: string)` n'étant pas typé, une clé
+i18n manquante compile, bundle, et s'affiche brute à l'écran — d'où les
+invariants de `__tests__/locales`. Ce qu'aucun de ces contrôles ne mesure,
+c'est le **sens** d'une traduction ; seule une relecture humaine le fait.
+
 
 ## Démo investisseur
 
