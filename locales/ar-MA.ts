@@ -41,7 +41,7 @@ const arMA: TranslationKeys = {
     registerTitle: 'أنشئ كونط',
     signIn: 'دخل',
     createAccount: 'أنشئ الكونط ديالي',
-    emailPlaceholder: 'enta@email.com',
+    emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'السميت_ديالك',
     loginFail: 'ما قدرناش ندخلوك',
     registerFail: 'ما قدرناش نسجّلوك',

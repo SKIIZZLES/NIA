@@ -40,7 +40,7 @@ const arSD: TranslationKeys = {
     registerTitle: 'افتح حساب',
     signIn: 'ادخل',
     createAccount: 'افتح حسابي',
-    emailPlaceholder: 'enta@email.com',
+    emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'اسمك',
     loginFail: 'ما قدرنا ندخلك',
     registerFail: 'ما قدرنا نسجلك',

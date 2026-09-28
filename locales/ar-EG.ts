@@ -37,7 +37,7 @@ const arEG: TranslationKeys = {
     registerTitle: 'اعمل حساب',
     signIn: 'دخول',
     createAccount: 'اعمل حسابي',
-    emailPlaceholder: 'enta@email.com',
+    emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'اليوزر_بتاعك',
     loginFail: 'مقدرناش نسجّل دخول',
     registerFail: 'مقدرناش نسجّل',
