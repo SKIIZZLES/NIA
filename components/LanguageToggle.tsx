@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import {
-  FlatList,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
-  type ListRenderItemInfo,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -32,10 +31,11 @@ export function LanguageToggle({ compact, style }: Props) {
     setOpen(false);
   };
 
-  const renderItem = ({ item }: ListRenderItemInfo<AppLocale>) => {
+  const renderRow = (item: AppLocale) => {
     const on = locale === item;
     return (
       <Pressable
+        key={item}
         onPress={() => pick(item)}
         style={[styles.row, on && styles.rowOn]}
         accessibilityRole="button"
@@ -90,15 +90,24 @@ export function LanguageToggle({ compact, style }: Props) {
         >
           <View style={styles.handle} />
           <Text style={styles.title}>{t('language.choose')}</Text>
-          <FlatList
-            data={[...APP_LOCALES]}
-            keyExtractor={(code) => code}
-            renderItem={renderItem}
+          {/*
+            ScrollView et pas FlatList : dans cette Modal, react-native-web ne
+            rendait pas la ScrollView interne de la FlatList — le conteneur
+            sortait en `overflow: visible`, donc la liste ne défilait pas et les
+            9 dernières langues (wolof → diola) étaient inatteignables, bouton
+            « Fermer » compris. Vingt entrées fixes ne justifient de toute façon
+            aucune virtualisation. `flexShrink: 1` laisse la liste se plier sous
+            le `maxHeight` de la feuille : sans lui elle garde sa hauteur de
+            contenu et déborde à nouveau.
+          */}
+          <ScrollView
             style={styles.list}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-          />
+          >
+            {APP_LOCALES.map(renderRow)}
+          </ScrollView>
           <Pressable
             style={styles.cancel}
             onPress={() => setOpen(false)}
@@ -182,6 +191,7 @@ const styles = StyleSheet.create({
   },
   list: {
     flexGrow: 0,
+    flexShrink: 1,
   },
   listContent: {
     paddingBottom: Spacing.xs,
