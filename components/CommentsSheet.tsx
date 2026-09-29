@@ -34,6 +34,8 @@ type Props = {
   onClose: () => void;
   /** Incrémente / décrémente le compteur feed (optimiste) */
   onCommentAdded?: (videoId: string, delta?: number) => void;
+  /** 016 : le créateur a désactivé les commentaires (liste en lecture seule). */
+  commentsDisabled?: boolean;
 };
 
 function authorLabel(c: CommentWithAuthor): string {
@@ -48,7 +50,13 @@ function authorAvatar(c: CommentWithAuthor): string {
   return `https://i.pravatar.cc/80?u=${encodeURIComponent(u)}`;
 }
 
-export function CommentsSheet({ visible, videoId, onClose, onCommentAdded }: Props) {
+export function CommentsSheet({
+  visible,
+  videoId,
+  onClose,
+  onCommentAdded,
+  commentsDisabled = false,
+}: Props) {
   const { user } = useAuth();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
@@ -236,7 +244,11 @@ export function CommentsSheet({ visible, videoId, onClose, onCommentAdded }: Pro
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          {user ? (
+          {commentsDisabled ? (
+            <Text style={styles.disabledNote}>{t('feed.commentsDisabled')}</Text>
+          ) : null}
+
+          {user && !commentsDisabled ? (
             <View style={styles.emojiRow}>
               {QUICK_EMOJI.map((e) => (
                 <Pressable
@@ -251,6 +263,7 @@ export function CommentsSheet({ visible, videoId, onClose, onCommentAdded }: Pro
             </View>
           ) : null}
 
+          {commentsDisabled ? null : (
           <View style={styles.composer}>
             <TextInput
               style={styles.input}
@@ -281,6 +294,7 @@ export function CommentsSheet({ visible, videoId, onClose, onCommentAdded }: Pro
               )}
             </Pressable>
           </View>
+          )}
         </KeyboardAvoidingView>
       </View>
 
@@ -394,6 +408,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 14,
     lineHeight: 20,
+  },
+  disabledNote: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: Spacing.md,
   },
   error: {
     color: Colors.danger,

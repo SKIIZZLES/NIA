@@ -136,6 +136,7 @@ export default function VideoPlayerScreen() {
         videoId={item?.id ?? null}
         onClose={() => setCommentsOpen(false)}
         onCommentAdded={(vid, delta) => bumpCommentCount(vid, delta)}
+        commentsDisabled={item?.allowComments === false}
       />
     </View>
   );
