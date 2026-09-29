@@ -4,26 +4,21 @@ Ces pages existent pour satisfaire deux exigences Google Play que le code seul
 ne peut pas couvrir : une **politique de confidentialité** à une URL publique,
 et une **page de demande de suppression de compte**.
 
-## 1. Deux champs à remplir avant publication
+## 1. Identité de l'éditeur — renseignée
 
-Les fichiers contiennent des marqueurs `[[…]]`, affichés en orange sur la page :
-
-| Marqueur | Où | Quoi mettre |
+| Champ | Valeur | Où |
 |---|---|---|
-| `[[NOM DE L'ÉDITEUR]]` / `[[PUBLISHER NAME]]` | `confidentialite.html`, `privacy.html` | Le nom exact affiché comme développeur sur la fiche Google Play. Google exige que l'entité de la fiche apparaisse dans la politique. |
-| `[[ADRESSE E-MAIL DE CONTACT]]` / `[[CONTACT EMAIL ADDRESS]]` | les quatre pages | Une adresse à laquelle répondre aux demandes de suppression et aux questions sur les données. |
+| Éditeur | **NIA** | `confidentialite.html`, `privacy.html` |
+| Contact | **niaapp@outlook.com** | les quatre pages, en lien `mailto:` |
 
-Je n'ai pas rempli ces champs : publier un nom d'entité ou une adresse
-personnelle dans un dépôt public est une décision qui appartient à l'éditeur,
-pas à l'outil.
+Google Play exige que l'entité nommée sur la fiche du store apparaisse dans la
+politique, avec un point de contact. Le nom doit rester identique à celui
+affiché comme développeur sur la fiche : s'il change là-bas, il change ici.
+
+Contrôle qu'aucun marqueur ne subsiste :
 
 ```bash
-# une fois les deux valeurs choisies
 cd docs/legal
-sed -i 's|\[\[NOM DE L.ÉDITEUR[^]]*\]\]|NIA|' confidentialite.html
-sed -i 's|\[\[PUBLISHER NAME[^]]*\]\]|NIA|' privacy.html
-sed -i 's|\[\[ADRESSE E-MAIL DE CONTACT\]\]|contact@exemple.app|g' *.html
-sed -i 's|\[\[CONTACT EMAIL ADDRESS\]\]|contact@exemple.app|g' *.html
 grep -r '\[\[' . || echo "aucun marqueur restant"
 ```
 
