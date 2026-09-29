@@ -11,7 +11,7 @@
  * - zoom au pincement.
  *
  * Après une capture ou un import, le média entre dans le CreateContext et
- * l'écran pousse /create/preview : le reste du parcours est inchangé.
+ * l'écran pousse /create/edit (sprint S3), puis aperçu et publication.
  *
  * Les fichiers produits restent sur le disque (cache de l'app) et ne circulent
  * que sous forme d'URI jusqu'à UploadTask. Aucun fetch, aucun arrayBuffer,
@@ -181,12 +181,12 @@ export default function CreateCameraScreen() {
     })();
   }, [params.soundId, setSound]);
 
-  // --- Un nouveau média (capture, photo, galerie) ouvre l'étape suivante.
-  // Revenir de /create/preview ne repousse rien : le média n'a pas changé.
+  // --- Un nouveau média (capture, photo, galerie) ouvre l'édition (S3).
+  // Revenir de /create/edit ne repousse rien : le média n'a pas changé.
   const lastMediaRef = useRef(media);
   useEffect(() => {
     if (media && media !== lastMediaRef.current && isFocused) {
-      router.push('/create/preview');
+      router.push('/create/edit');
     }
     lastMediaRef.current = media;
   }, [media, isFocused, router]);

@@ -1,14 +1,16 @@
 /**
  * Choix du son depuis la caméra NIA (Sprint S1).
  *
- * Reprend la liste « Mes sons » de l'étape Publier. L'import d'un fichier
- * audio reste à l'étape Publier (il demande un titre). Le son retenu remonte
+ * Reprend la liste « Mes sons » de l'étape Publier, et permet d'importer un
+ * fichier audio sur place (même logique que Publier : lib/soundImport ; le
+ * titre est celui du fichier). Le son importé est choisi d'office. Le son retenu remonte
  * dans le CreateContext : l'étape Publier l'affiche déjà et l'associe à la
  * vidéo. Sprint S2 : écoute du son et choix de son début (SoundTrimControl).
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -24,6 +26,7 @@ import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
+import { importSoundFromDevice } from '@/lib/soundImport';
 import { SoundTrimControl } from '@/components/SoundTrimControl';
 
 type Props = {
@@ -51,6 +54,9 @@ export function CameraSoundSheet({
   const { isMockFeed } = useFeed();
   const [sounds, setSounds] = useState<SoundItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  /** Sons importés depuis cette feuille (utiles en mode démo, sans liste serveur). */
+  const [imported, setImported] = useState<SoundItem[]>([]);
 
   const load = useCallback(async () => {
     if (!user?.id || user.id.startsWith('mock_') || isMockFeed) {
@@ -71,11 +77,36 @@ export function CameraSoundSheet({
     if (visible) void load();
   }, [visible, load]);
 
-  // Le son choisi depuis la page d'un son n'est pas forcément dans « Mes sons ».
+  const importSound = useCallback(async () => {
+    if (!user?.id) {
+      Alert.alert(t('feed.loginRequiredTitle'), t('sound.loginRequired'));
+      return;
+    }
+    try {
+      const created = await importSoundFromDevice({
+        user,
+        isMockFeed,
+        defaultTitle: t('sound.defaultTitle'),
+        onUploadStart: () => setImporting(true),
+      });
+      if (!created) return;
+      setImported((prev) => [created, ...prev.filter((s) => s.id !== created.id)]);
+      onSelect(created);
+      // Rafraîchit « Mes sons » (le nouveau son y figure côté serveur).
+      void load();
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? e.message : t('sound.uploadFail');
+      Alert.alert(t('common.error'), msg);
+    } finally {
+      setImporting(false);
+    }
+  }, [user, isMockFeed, t, onSelect, load]);
+
+  // Sons importés ici + « Mes sons » (sans doublon), et le son choisi depuis
+  // la page d'un son, qui n'est pas forcément dans « Mes sons ».
+  const merged = [...imported, ...sounds.filter((s) => !imported.some((i) => i.id === s.id))];
   const list =
-    selected && !sounds.some((s) => s.id === selected.id)
-      ? [selected, ...sounds]
-      : sounds;
+    selected && !merged.some((s) => s.id === selected.id) ? [selected, ...merged] : merged;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -107,6 +138,28 @@ export function CameraSoundSheet({
           />
         ) : null}
 
+        <Pressable
+          style={[styles.importBtn, { borderColor: colors.or, opacity: importing ? 0.6 : 1 }]}
+          onPress={() => void importSound()}
+          disabled={importing}
+          accessibilityRole="button"
+          accessibilityLabel={t('camera.importSound')}
+        >
+          {importing ? (
+            <ActivityIndicator color={colors.or} />
+          ) : (
+            <Ionicons name="cloud-upload-outline" size={20} color={colors.or} />
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.rowTitle, { color: colors.or }]}>
+              {importing ? t('camera.importingSound') : t('camera.importSound')}
+            </Text>
+            <Text style={[styles.rowMeta, { color: colors.textMuted }]}>
+              {t('camera.importHint')}
+            </Text>
+          </View>
+        </Pressable>
+
         {selected ? (
           <Pressable
             style={[styles.row, { borderBottomColor: colors.border }]}
@@ -130,7 +183,21 @@ export function CameraSoundSheet({
           {loading ? (
             <ActivityIndicator color={colors.or} style={{ marginVertical: Spacing.md }} />
           ) : list.length === 0 ? (
-            <Text style={[styles.hint, { color: colors.textMuted }]}>{t('sound.emptyOwn')}</Text>
+            <View style={styles.empty}>
+              <Text style={[styles.hint, { color: colors.textMuted }]}>
+                {t('camera.soundEmpty')}
+              </Text>
+              <Pressable
+                onPress={() => void importSound()}
+                disabled={importing}
+                accessibilityRole="button"
+                hitSlop={8}
+              >
+                <Text style={[styles.rowTitle, { color: colors.or }]}>
+                  {t('camera.importSound')}
+                </Text>
+              </Pressable>
+            </View>
           ) : (
             list.map((s) => {
               const on = selected?.id === s.id;
@@ -201,6 +268,17 @@ const styles = StyleSheet.create({
   },
   rowTitle: { fontFamily: Fonts.medium, fontSize: 15 },
   rowMeta: { fontFamily: Fonts.regular, fontSize: 11, marginTop: 2 },
+  importBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: Radii.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
+    marginTop: Spacing.sm,
+  },
+  empty: { paddingVertical: Spacing.sm, gap: 6 },
   cancel: { marginTop: Spacing.sm, alignItems: 'center', paddingVertical: 12 },
   cancelText: { fontFamily: Fonts.medium, fontSize: 15 },
 });

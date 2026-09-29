@@ -48,6 +48,13 @@ export type SyncedSoundOptions = {
   offsetMs?: number;
   /** Volume du son, 0 → 1. */
   volume?: number;
+  /**
+   * Vitesse de la vidéo (S3). Le son reste à vitesse normale : il suit la
+   * timeline de la vidéo finale, soit (temps vidéo − origine) / vitesse.
+   */
+  rate?: number;
+  /** Début de la timeline dans le fichier vidéo, en secondes (découpe S3). */
+  originSec?: number;
 };
 
 export function useSyncedSound({
@@ -57,6 +64,8 @@ export function useSyncedSound({
   muted = false,
   offsetMs = 0,
   volume = 1,
+  rate = 1,
+  originSec = 0,
 }: SyncedSoundOptions): AudioPlayer {
   const player = useAudioPlayer(url || null, { updateInterval: 250 });
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
@@ -64,6 +73,8 @@ export function useSyncedSound({
   const lastSeekAtRef = useRef(0);
   const offsetRef = useRef(offsetMs);
   offsetRef.current = offsetMs;
+  const timelineRef = useRef({ rate, originSec });
+  timelineRef.current = { rate: rate > 0 ? rate : 1, originSec };
 
   useEffect(() => {
     if (url) ensureAudioMode();
@@ -112,8 +123,9 @@ export function useSyncedSound({
     (force: boolean) => {
       try {
         const duration = player.duration;
+        const { rate: r, originSec: o } = timelineRef.current;
         const expected = soundTargetSec(
-          video ? video.currentTime : 0,
+          video ? Math.max(0, video.currentTime - o) / r : 0,
           offsetRef.current,
           duration,
         );
@@ -146,11 +158,11 @@ export function useSyncedSound({
     }
   }, [shouldPlay, url, player, resync]);
 
-  // Un nouveau début de son s'applique tout de suite pendant la lecture.
+  // Un nouveau début de son (ou vitesse, ou découpe) s'applique tout de suite.
   useEffect(() => {
     if (shouldPlay) resync(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [offsetMs]);
+  }, [offsetMs, rate, originSec]);
 
   // Chargement tardif : la durée n'est connue qu'une fois le son prêt.
   useEffect(() => {

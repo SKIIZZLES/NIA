@@ -47,6 +47,8 @@ type Props = {
   volume?: number;
   /** Son ajouté, joué en synchro. */
   sound?: { url: string; offsetMs?: number; volume?: number } | null;
+  /** Vitesse de lecture choisie à l'édition (S3), 1 par défaut. */
+  playbackRate?: number;
 };
 
 export function FilteredMediaPreview({
@@ -60,6 +62,7 @@ export function FilteredMediaPreview({
   muted = true,
   volume = 1,
   sound = null,
+  playbackRate = 1,
 }: Props) {
   const isVideo =
     mediaType === 'video' ||
@@ -97,10 +100,12 @@ export function FilteredMediaPreview({
     try {
       player.muted = muted || volume <= 0;
       player.volume = Math.max(0, Math.min(1, volume));
+      player.preservesPitch = true;
+      player.playbackRate = playbackRate > 0 ? playbackRate : 1;
     } catch {
       // lecteur libéré
     }
-  }, [isVideo, player, muted, volume]);
+  }, [isVideo, player, muted, volume, playbackRate]);
 
   const filter = filterProp ?? getFilterById(filterId ?? null);
   const overlay = useMemo(
@@ -117,6 +122,7 @@ export function FilteredMediaPreview({
           active={isFocused}
           offsetMs={sound.offsetMs ?? 0}
           volume={sound.volume ?? 1}
+          rate={isVideo ? playbackRate : 1}
         />
       ) : null}
       {isVideo ? (

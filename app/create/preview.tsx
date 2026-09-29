@@ -6,6 +6,9 @@
  *
  * Sprint S2 : l'aperçu joue le son choisi en synchro, avec son début et le
  * volume du son original (réglages locaux au brouillon jusqu'à S5).
+ * Sprint S3 : ces réglages se font à l'édition (/create/edit) ; l'aperçu
+ * applique aussi la vitesse, et la couverture se choisit parmi les images de
+ * la vidéo (galerie toujours possible).
  */
 import React, { useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -15,7 +18,7 @@ import { Button } from '@/components/Button';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { FilterCarousel } from '@/components/FilterCarousel';
 import { FilteredMediaPreview } from '@/components/FilteredMediaPreview';
-import { SoundTrimControl } from '@/components/SoundTrimControl';
+import { CoverFramePicker } from '@/components/CoverFramePicker';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -34,10 +37,10 @@ export default function CreateStyleStep() {
     clearCover,
     sound,
     soundOffsetMs,
-    setSoundOffsetMs,
     soundVolume,
     originalVolume,
-    setOriginalVolume,
+    playbackSpeed,
+    setCoverFromFrame,
   } = useCreateDraft();
 
   const styles = useMemo(
@@ -124,6 +127,7 @@ export default function CreateStyleStep() {
             style={styles.thumb}
             muted={false}
             volume={sound ? originalVolume : 1}
+            playbackRate={media.type === 'video' ? playbackSpeed : 1}
             sound={
               sound?.publicUrl
                 ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
@@ -143,27 +147,20 @@ export default function CreateStyleStep() {
           onSelect={setFilter}
         />
 
-        {sound ? (
-          <View>
-            <Text style={styles.label}>{t('create.addSound')}</Text>
-            <SoundTrimControl
-              sound={sound}
-              offsetMs={soundOffsetMs}
-              onChangeOffset={setSoundOffsetMs}
-              previewable={false}
-              originalVolume={media.type === 'video' ? originalVolume : undefined}
-              onChangeOriginalVolume={
-                media.type === 'video' ? setOriginalVolume : undefined
-              }
-              showLocalNote
-            />
-          </View>
-        ) : null}
 
         {media.type === 'video' ? (
           <View>
             <Text style={styles.label}>{t('create.coverLabel')}</Text>
             <Text style={styles.hint}>{t('create.coverHint')}</Text>
+            <Text style={[styles.hint, { marginTop: Spacing.sm }]}>
+              {t('create.coverFromVideo')}
+            </Text>
+            <CoverFramePicker
+              uri={media.uri}
+              durationMs={media.durationMs}
+              selectedUri={cover?.uri ?? null}
+              onPick={(uri) => setCoverFromFrame(uri)}
+            />
             {cover?.uri ? (
               <Image source={{ uri: cover.uri }} style={styles.coverPreview} />
             ) : null}
