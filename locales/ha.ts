@@ -173,6 +173,9 @@ const ha: TranslationKeys = {
     appearance: 'Kamanni',
     deleteAccount: 'Share asusuna',
     privacyPolicy: 'Manufar sirri',
+    menu: 'Menu',
+    settingsTitle: 'Saituna da sirri',
+    closeMenu: 'Rufe',
   },
   notifications: {
     title: 'Sanarwa',

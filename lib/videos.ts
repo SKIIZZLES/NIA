@@ -700,6 +700,7 @@ export type OwnerVideoActionResult =
 /**
  * Owner-only soft status change (archive / soft-delete / restore publish).
  * Requires videos_update_own RLS + status check including archived|deleted (005).
+ * Soft delete goes through RPC soft_delete_own_video (015) — see comment below.
  */
 export async function setVideoStatus(
   userId: string,
@@ -712,6 +713,21 @@ export async function setVideoStatus(
   }
   if (!userId || !videoId) {
     return { ok: false, message: 'missing_ids' };
+  }
+
+  if (status === 'deleted') {
+    // RLS SELECT masque status='deleted' même au propriétaire : un UPDATE
+    // PostgREST (RETURNING) échouerait. RPC owner-only (migration 015).
+    const { data: deleted, error: rpcError } = await sb.rpc('soft_delete_own_video', {
+      p_video_id: videoId,
+    });
+    if (rpcError) {
+      return { ok: false, message: rpcError.message || 'delete_fail' };
+    }
+    if (!deleted) {
+      return { ok: false, message: 'not_owner_or_missing' };
+    }
+    return { ok: true, status: 'deleted' };
   }
 
   const { data, error } = await sb

@@ -5,6 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -37,6 +38,11 @@ export default function VideoPlayerScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  // Plein écran sans barre d'onglets : l'overlay du bas (légende, @handle,
+  // temps, barre de progression) doit rester au-dessus de la barre de
+  // navigation Android. Repli si l'inset remonte à 0 en edge-to-edge.
+  const bottomSafe =
+    insets.bottom > 0 ? insets.bottom : Platform.OS === 'android' ? 24 : 0;
   const { t } = useI18n();
   const { videos, bumpCommentCount } = useFeed();
   const [remote, setRemote] = useState<VideoItem | null>(null);
@@ -115,8 +121,9 @@ export default function VideoPlayerScreen() {
         <VideoCard
           item={item}
           isActive
-          bottomInset={0}
+          bottomInset={bottomSafe}
           onOpenComments={() => setCommentsOpen(true)}
+          muteBesideHandle
         />
       ) : (
         <View style={styles.center}>
