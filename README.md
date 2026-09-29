@@ -207,18 +207,20 @@ installer l'app.
 
 Profil → « Supprimer mon compte », sous « Se déconnecter ». Confirmation
 explicite, puis appel de la RPC `delete_own_account` (migration
-`013_account_deletion.sql`), déconnexion, retour à l'écran d'accueil.
+`014_account_deletion.sql`, qui remplace la fonction de 013), déconnexion,
+retour à l'écran d'accueil. Conception détaillée : `docs/account-deletion.md`.
 
 Ce que la suppression efface, vérifié dans les migrations :
 
 | Effacé | Par quoi |
 |---|---|
-| Fichiers du bucket `videos` | suppression explicite dans la RPC (préfixe `{user_id}/`) |
+| Fichiers du bucket `videos` | purge asynchrone par l'Edge Function `purge-user-storage` (API Storage, préfixe `{user_id}/`), mise en file par la RPC (migration 014) |
 | Ligne `auth.users` | suppression explicite dans la RPC |
-| Profil, vidéos, likes, commentaires, abonnements, signalements, blocages, reposts, sauvegardes, sons, événements, participations, lives, séries | cascade `on delete cascade` depuis `auth.users` → `profiles` → le reste |
+| Profil, vidéos, likes, commentaires, abonnements, signalements faits, blocages, reposts, sauvegardes, sons, événements, participations, lives, séries | cascade `on delete cascade` depuis `auth.users` → `profiles` → le reste |
+| Reposts de ses vidéos faits par d'autres (lignes `videos` qui copient son média et sa légende) | suppression explicite dans la RPC (014) |
+| Notifications dont il est l'auteur (`actor_id`, en `set null`) | suppression explicite dans la RPC (014) |
 
-Seule exception : `notifications.actor_id` est en `on delete set null`. Les
-notifications déjà reçues par d'autres personnes restent, sans auteur.
+Conservés : les signalements faits par d'autres à son sujet (modération).
 
 ### Côté Google Play Console
 
@@ -230,10 +232,13 @@ Deux champs restent à remplir à la main, ils ne peuvent pas venir du dépôt :
 
 ### Appliquer la migration
 
-`013_account_deletion.sql` dans Supabase Dashboard → SQL Editor, après
-`012_filters.sql`. La fonction est `security definer` : elle doit appartenir à
-un rôle capable d'écrire dans `auth.users` et `storage.objects`, ce qui est le
-cas quand on l'exécute depuis l'éditeur SQL du dashboard.
+`014_account_deletion.sql` dans Supabase Dashboard → SQL Editor, après
+`013_account_deletion.sql` (ne jamais ré-exécuter 013 ensuite : sa version de la
+fonction échoue sur le trigger Storage `protect_delete`, qui interdit tout
+`DELETE` SQL sur `storage.objects`). La fonction est `security definer` : elle
+doit appartenir à un rôle capable d'écrire dans `auth.users`, ce qui est le cas
+quand on l'exécute depuis l'éditeur SQL du dashboard. Puis déployer et
+planifier l'Edge Function : `supabase/functions/purge-user-storage/README.md`.
 
 
 ## Architecture
