@@ -1,4 +1,5 @@
 import type { CategoryId } from '@/constants/categories';
+import type { OverlayDoc } from '@/lib/overlays';
 
 export type VideoItem = {
   id: string;
@@ -32,6 +33,11 @@ export type VideoItem = {
   soundCreatorHandle?: string;
   /** URL du fichier audio du son, lu en synchro avec la vidéo (sprint S2). */
   soundUrl?: string;
+  /**
+   * Calques texte / stickers (S4), lus depuis edit_meta.overlays à partir de
+   * S5. Absent pour toutes les vidéos publiées avant.
+   */
+  overlays?: OverlayDoc;
   /** Filtre NIA (012_filters) — registry id */
   filterId?: string;
 };

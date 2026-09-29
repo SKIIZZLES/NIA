@@ -26,6 +26,7 @@ import { shareVideo } from '@/lib/share';
 import { VideoProgressBar } from '@/components/VideoProgressBar';
 import { useIsFocused, useRouter } from 'expo-router';
 import { SyncedSound } from '@/components/SyncedSound';
+import { OverlayLayer } from '@/components/OverlayLayer';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SEEK_SEC = 5;
@@ -416,6 +417,9 @@ function VideoCardInner({
           nativeControls={false}
         />
       )}
+      {/* Sprint S4 : calques texte / stickers dans le repère du cadre. Aucune
+          vidéo publiée n'en a avant S5 (edit_meta). */}
+      <OverlayLayer doc={item.overlays} timeMs={isImagePost ? null : currentTime * 1000} />
       <LinearGradient
         colors={['rgba(11,11,11,0.65)', 'rgba(11,11,11,0)']}
         style={styles.gradientTop}

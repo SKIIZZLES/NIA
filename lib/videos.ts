@@ -14,6 +14,7 @@ import {
 } from '@/lib/upload';
 import type { ProfileRow, VideoRow } from '@/types/database';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
+import { overlaysFromEditMeta } from '@/lib/overlays';
 
 /**
  * Disambiguate videos→profiles embed.
@@ -126,6 +127,8 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     soundId: row.sounds?.id || row.sound_id || undefined,
     soundTitle: row.sounds?.title || undefined,
     soundUrl: soundPublicUrl(row.sounds?.storage_path),
+    // S5 : edit_meta n'est pas encore sélectionné (colonne absente avant 016).
+    overlays: overlaysFromEditMeta((row as { edit_meta?: unknown }).edit_meta),
     soundCreatorHandle: row.sounds?.profiles?.username
       ? `@${row.sounds.profiles.username}`
       : undefined,

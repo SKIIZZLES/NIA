@@ -23,7 +23,7 @@ type Toolkit = {
   getThumbnail: (
     uri: string,
     options?: { timeMs?: number; quality?: number; maxWidth?: number },
-  ) => Promise<{ uri: string; duration: number }>;
+  ) => Promise<{ uri: string; duration: number; width?: number; height?: number }>;
 };
 
 let cached: Toolkit | null | undefined;
@@ -52,13 +52,14 @@ export function clampTrimRange(
   startMs: number,
   endMs: number,
   durationMs: number,
+  minMs: number = MIN_TRIM_MS,
 ): { startMs: number; endMs: number } {
   const dur = Math.max(0, Math.round(durationMs));
-  let s = Math.max(0, Math.min(Math.round(startMs), Math.max(0, dur - MIN_TRIM_MS)));
+  let s = Math.max(0, Math.min(Math.round(startMs), Math.max(0, dur - minMs)));
   let e = Math.max(0, Math.min(Math.round(endMs), dur));
-  if (e - s < MIN_TRIM_MS) {
-    e = Math.min(dur, s + MIN_TRIM_MS);
-    s = Math.max(0, e - MIN_TRIM_MS);
+  if (e - s < minMs) {
+    e = Math.min(dur, s + minMs);
+    s = Math.max(0, e - minMs);
   }
   return { startMs: s, endMs: e };
 }
@@ -110,6 +111,30 @@ export async function videoFrameAt(
     return res?.uri ? toFileUri(res.uri) : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Format largeur / hauteur de la vidéo, orientation corrigée (sprint S4 :
+ * repère des calques). expo-video donne la taille brute du flux, sans la
+ * rotation d'une vidéo filmée en portrait : on passe donc par le toolkit.
+ */
+export async function videoAspect(
+  uri: string,
+): Promise<{ aspect: number | null; frameUri: string | null }> {
+  const toolkit = loadToolkit();
+  if (!toolkit) return { aspect: null, frameUri: null };
+  try {
+    const res = await toolkit.getThumbnail(uri, { timeMs: 0, quality: 30, maxWidth: 32 });
+    const w = Number(res?.width);
+    const h = Number(res?.height);
+    return {
+      aspect: w > 0 && h > 0 ? w / h : null,
+      // Miniature jetable : à supprimer par l'appelant (lib/upload).
+      frameUri: res?.uri ? toFileUri(res.uri) : null,
+    };
+  } catch {
+    return { aspect: null, frameUri: null };
   }
 }
 

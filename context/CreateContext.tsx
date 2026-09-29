@@ -32,6 +32,14 @@ import type { SoundItem } from '@/lib/sounds';
 import { clampSoundOffsetMs } from '@/lib/soundSync';
 import { resolveUploadContentType } from '@/lib/videos';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
+import {
+  canAddOverlay,
+  clampOverlayTimes,
+  emptyOverlayDoc,
+  sanitizeOverlayDoc,
+  type Overlay,
+  type OverlayDoc,
+} from '@/lib/overlays';
 
 export type CreateMode = 'video' | 'photo';
 
@@ -146,6 +154,17 @@ type CreateContextValue = {
   setPlaybackSpeed: (next: number) => void;
   /** Couverture tirée d'une image de la vidéo (fichier JPEG local). */
   setCoverFromFrame: (uri: string, fileSize?: number | null) => void;
+  /**
+   * Calques texte / stickers (sprint S4), au format de edit_meta.overlays.
+   * Locaux au brouillon jusqu'à S5 : la publication ne les envoie pas encore.
+   */
+  overlays: OverlayDoc;
+  /** Format du cadre (largeur / hauteur) mesuré sur le média. */
+  setOverlayAspect: (aspect: number) => void;
+  /** false si un plafond (nombre, taille) serait dépassé. */
+  addOverlay: (overlay: Overlay) => boolean;
+  updateOverlay: (id: string, patch: Partial<Overlay>) => void;
+  removeOverlay: (id: string) => void;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
   hashtags: string[];
   /**
@@ -194,6 +213,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   /** Source remise en place par clearTrim : pas un nouvel import. */
   const restoredSourceRef = useRef<string | null>(null);
   const [filter, setFilter] = useState<FilterDefinition | null>(null);
+  const [overlays, setOverlays] = useState<OverlayDoc>(() => emptyOverlayDoc());
   const [uploadId, setUploadId] = useState<string>(makeUploadId);
 
   /** Un autre son repart de son début ; le même son garde son réglage. */
@@ -442,6 +462,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     if (!media) {
       setSourceMedia(null);
       setTrimRange(null);
+      setOverlays((cur) => (cur.items.length ? emptyOverlayDoc() : cur));
       return;
     }
     if (media.uri === trimOutputRef.current) return;
@@ -456,6 +477,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     setSourceMedia(media);
     setTrimRange(null);
     setPlaybackSpeedState(1);
+    setOverlays(emptyOverlayDoc());
   }, [media]);
 
   const applyTrimmedVideo = useCallback(
@@ -474,6 +496,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         type: 'video',
       });
       setTrimRange(range);
+      // Les fenêtres d'affichage des calques suivent la nouvelle durée.
+      setOverlays((cur) => ({
+        ...cur,
+        items: clampOverlayTimes(cur.items, Math.max(0, range.endMs - range.startMs)),
+      }));
       // Nouveau fichier, nouvel objet Storage.
       setUploadId(makeUploadId());
     },
@@ -514,6 +541,50 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setOverlayAspect = useCallback((aspect: number) => {
+    setOverlays((cur) => {
+      const next = sanitizeOverlayDoc({ ...cur, aspect });
+      return next.aspect === cur.aspect ? cur : { ...cur, aspect: next.aspect };
+    });
+  }, []);
+
+  // Lu dans un ref : addOverlay répond tout de suite (plafond atteint ou non).
+  const overlaysRef = useRef(overlays);
+  overlaysRef.current = overlays;
+
+  const addOverlay = useCallback((overlay: Overlay) => {
+    const cur = overlaysRef.current;
+    const clean = sanitizeOverlayDoc({ ...cur, items: [overlay] }).items[0];
+    if (!clean || !canAddOverlay(cur, clean)) return false;
+    const next = { ...cur, items: [...cur.items, clean] };
+    overlaysRef.current = next;
+    setOverlays(next);
+    return true;
+  }, []);
+
+  const updateOverlay = useCallback((id: string, patch: Partial<Overlay>) => {
+    setOverlays((cur) => {
+      const idx = cur.items.findIndex((o) => o.id === id);
+      if (idx < 0) return cur;
+      const merged = { ...cur.items[idx], ...patch, id } as Overlay;
+      const clean = sanitizeOverlayDoc({ ...cur, items: [merged] }).items[0];
+      if (!clean) return cur;
+      const items = cur.items.slice();
+      items[idx] = clean;
+      const next = sanitizeOverlayDoc({ ...cur, items });
+      // Modification refusée si elle ferait sortir du plafond d'octets.
+      return next.items.length === items.length ? next : cur;
+    });
+  }, []);
+
+  const removeOverlay = useCallback((id: string) => {
+    setOverlays((cur) =>
+      cur.items.some((o) => o.id === id)
+        ? { ...cur, items: cur.items.filter((o) => o.id !== id) }
+        : cur,
+    );
+  }, []);
+
   const value = useMemo<CreateContextValue>(
     () => ({
       mode,
@@ -541,6 +612,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       playbackSpeed,
       setPlaybackSpeed,
       setCoverFromFrame,
+      overlays,
+      setOverlayAspect,
+      addOverlay,
+      updateOverlay,
+      removeOverlay,
       hashtags,
       uploadId,
       pickMedia,
@@ -575,6 +651,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       playbackSpeed,
       setPlaybackSpeed,
       setCoverFromFrame,
+      overlays,
+      setOverlayAspect,
+      addOverlay,
+      updateOverlay,
+      removeOverlay,
       hashtags,
       uploadId,
       pickMedia,
