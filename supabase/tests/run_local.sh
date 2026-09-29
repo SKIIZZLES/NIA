@@ -37,5 +37,10 @@ run "$ROOT/supabase/migrations/014_account_deletion.sql"
 run "$ROOT/supabase/migrations/014_account_deletion.sql"   # idempotence : 2e passage
 echo "--- 014 appliquée deux fois"
 run "$ROOT/supabase/tests/014_account_deletion.test.sql"
+run "$ROOT/supabase/migrations/015_video_soft_delete.sql"
+run "$ROOT/supabase/migrations/016_publish_options.sql"
+run "$ROOT/supabase/migrations/016_publish_options.sql"   # idempotence : 2e passage
+echo "--- 015 puis 016 (deux fois) appliquées"
+run "$ROOT/supabase/tests/016_publish_options.test.sql"
 "${PSQL[@]}" -d postgres -c "drop database $DB" >/dev/null
 echo "=== TOUS LES TESTS SQL PASSENT ==="

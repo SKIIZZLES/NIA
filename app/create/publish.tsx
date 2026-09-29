@@ -1,5 +1,7 @@
 /**
- * Étape 3 — la publication : son, légende, hashtags, catégorie.
+ * Étape 3 — la publication : son, légende (suggestions #/@), hashtags,
+ * catégorie, options de publication (S5, migration 016) et envoi des
+ * réglages d'édition (edit_meta).
  *
  * Le choix du son garde son état localement (modale, import en cours) : c'est
  * de l'état d'interface, pas du brouillon. Seul le son retenu remonte dans le
@@ -22,6 +24,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { SoundTrimControl } from '@/components/SoundTrimControl';
+import { MentionSuggestions } from '@/components/MentionSuggestions';
+import { PublishOptionsSection } from '@/components/PublishOptionsSection';
 import { useAuth } from '@/context/AuthContext';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useFeed } from '@/context/FeedContext';
@@ -32,6 +36,8 @@ import { DISCOVER_CATEGORIES } from '@/constants/categories';
 import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
 import { importSoundFromDevice } from '@/lib/soundImport';
+import { applyMention, DEFAULT_PUBLISH_OPTIONS } from '@/lib/publishOptions';
+import { probePublishOptionsSupport } from '@/lib/videos';
 
 export default function CreatePublishStep() {
   const router = useRouter();
@@ -56,7 +62,33 @@ export default function CreatePublishStep() {
     uploadId,
     maxMb,
     maxMinutes,
+    publishOptions,
+    setPublishOptions,
+    buildPublishEditMeta,
   } = useCreateDraft();
+
+  // 016 appliquée ? En mode démo, les options restent locales : toujours oui.
+  const [optionsSupported, setOptionsSupported] = useState<boolean | null>(
+    isMockFeed ? true : null,
+  );
+  useEffect(() => {
+    if (isMockFeed) return;
+    let alive = true;
+    void probePublishOptionsSupport().then((ok) => {
+      if (!alive) return;
+      setOptionsSupported(ok);
+      // 016 absente : on revient aux réglages que le serveur sait honorer.
+      if (!ok) setPublishOptions(DEFAULT_PUBLISH_OPTIONS);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [isMockFeed, setPublishOptions]);
+
+  // Curseur de la légende (suggestions #/@) ; `forcedSelection` ne sert
+  // qu'une fois, juste après l'insertion d'une suggestion.
+  const [captionCursor, setCaptionCursor] = useState(caption.length);
+  const [forcedSelection, setForcedSelection] = useState<{ start: number; end: number } | undefined>();
 
   const [busy, setBusy] = useState(false);
   /** Ratio réel d'envoi (0 → 1), null tant qu'aucun octet n'est parti. */
@@ -162,6 +194,10 @@ export default function CreatePublishStep() {
         soundUrl: sound?.publicUrl ?? null,
         soundTitle: sound?.title ?? null,
         filterId: filter?.id ?? null,
+        // 016 absente : pas d'options (publication comme avant) ; edit_meta
+        // est tenté puis retiré sans bruit par la publication.
+        publishOptions: optionsSupported === false ? undefined : publishOptions,
+        editMeta: buildPublishEditMeta(),
         uploadId,
         // Dès la deuxième tentative on écrase l'objet éventuellement partiel
         // laissé par la précédente, au lieu d'échouer sur « already exists ».
@@ -415,7 +451,6 @@ export default function CreatePublishStep() {
             offsetMs={soundOffsetMs}
             onChangeOffset={setSoundOffsetMs}
             paused={busy}
-            showLocalNote
           />
           </>
         ) : (
@@ -435,9 +470,28 @@ export default function CreatePublishStep() {
           style={styles.input}
           multiline
           value={caption}
-          onChangeText={setCaption}
+          onChangeText={(v) => {
+            setCaption(v);
+            setForcedSelection(undefined);
+          }}
+          selection={forcedSelection}
+          onSelectionChange={(e) => {
+            setCaptionCursor(e.nativeEvent.selection.end);
+            if (forcedSelection) setForcedSelection(undefined);
+          }}
           placeholder={t('create.captionPlaceholder')}
           placeholderTextColor={colors.textMuted}
+        />
+        <MentionSuggestions
+          text={caption}
+          cursor={Math.min(captionCursor, caption.length)}
+          enabled={!busy && !isMockFeed}
+          onPick={(token, value) => {
+            const next = applyMention(caption, token, value);
+            setCaption(next.text);
+            setCaptionCursor(next.cursor);
+            setForcedSelection({ start: next.cursor, end: next.cursor });
+          }}
         />
         {hashtags.length > 0 ? (
           <View style={styles.tagRow}>
@@ -470,6 +524,14 @@ export default function CreatePublishStep() {
             );
           })}
         </View>
+
+        <PublishOptionsSection
+          value={publishOptions}
+          onChange={setPublishOptions}
+          supported={optionsSupported}
+          disabled={busy}
+          isVideo={media?.type === 'video'}
+        />
 
         {busy ? (
           <View style={styles.progressBlock}>

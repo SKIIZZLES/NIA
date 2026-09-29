@@ -32,6 +32,8 @@ import type { SoundItem } from '@/lib/sounds';
 import { clampSoundOffsetMs } from '@/lib/soundSync';
 import { resolveUploadContentType } from '@/lib/videos';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
+import { EDIT_SPEEDS, buildEditMeta, type EditMeta } from '@/lib/editMeta';
+import { DEFAULT_PUBLISH_OPTIONS, type PublishOptions } from '@/lib/publishOptions';
 import {
   canAddOverlay,
   clampOverlayTimes,
@@ -67,7 +69,8 @@ export type TrimRange = { startMs: number; endMs: number };
 export type TrimmedVideo = { uri: string; durationMs: number; size: number };
 
 /** Vitesses proposées à l'édition (lecture seulement jusqu'à S5). */
-export const PLAYBACK_SPEEDS = [0.5, 1, 1.5, 2] as const;
+/** Vitesses proposées : les mêmes que celles relues dans edit_meta (016). */
+export const PLAYBACK_SPEEDS = EDIT_SPEEDS;
 
 export type PickedMedia = {
   uri: string;
@@ -165,6 +168,11 @@ type CreateContextValue = {
   addOverlay: (overlay: Overlay) => boolean;
   updateOverlay: (id: string, patch: Partial<Overlay>) => void;
   removeOverlay: (id: string) => void;
+  /** Options de publication (S5, colonnes 016). */
+  publishOptions: PublishOptions;
+  setPublishOptions: (patch: Partial<PublishOptions>) => void;
+  /** Réglages d'édition à publier (edit_meta, 016) ; null si tout est par défaut. */
+  buildPublishEditMeta: () => EditMeta | null;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
   hashtags: string[];
   /**
@@ -214,6 +222,9 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const restoredSourceRef = useRef<string | null>(null);
   const [filter, setFilter] = useState<FilterDefinition | null>(null);
   const [overlays, setOverlays] = useState<OverlayDoc>(() => emptyOverlayDoc());
+  const [publishOptions, setPublishOptionsState] = useState<PublishOptions>(
+    DEFAULT_PUBLISH_OPTIONS,
+  );
   const [uploadId, setUploadId] = useState<string>(makeUploadId);
 
   /** Un autre son repart de son début ; le même son garde son réglage. */
@@ -585,6 +596,38 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const setPublishOptions = useCallback((patch: Partial<PublishOptions>) => {
+    // Non public ⇒ jamais republiable : appliqué à l'envoi
+    // (publishOptionsPayload), le choix de l'utilisateur est conservé ici.
+    setPublishOptionsState((cur) => ({ ...cur, ...patch }));
+  }, []);
+
+  const buildPublishEditMeta = useCallback(
+    () =>
+      buildEditMeta({
+        trim: trimRange,
+        sourceDurationMs: sourceMedia?.durationMs ?? null,
+        speed: playbackSpeed,
+        hasSound: !!sound,
+        soundOffsetMs,
+        soundVolume,
+        originalVolume,
+        overlays,
+        isVideo: media?.type === 'video',
+      }),
+    [
+      trimRange,
+      sourceMedia?.durationMs,
+      playbackSpeed,
+      sound,
+      soundOffsetMs,
+      soundVolume,
+      originalVolume,
+      overlays,
+      media?.type,
+    ],
+  );
+
   const value = useMemo<CreateContextValue>(
     () => ({
       mode,
@@ -617,6 +660,9 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       addOverlay,
       updateOverlay,
       removeOverlay,
+      publishOptions,
+      setPublishOptions,
+      buildPublishEditMeta,
       hashtags,
       uploadId,
       pickMedia,
@@ -656,6 +702,9 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       addOverlay,
       updateOverlay,
       removeOverlay,
+      publishOptions,
+      setPublishOptions,
+      buildPublishEditMeta,
       hashtags,
       uploadId,
       pickMedia,

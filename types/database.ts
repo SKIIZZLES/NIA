@@ -14,6 +14,9 @@ export type VideoStatus =
   | 'archived'
   | 'deleted';
 
+/** 016 — public : tout le monde ; followers : abonnés ; private : créateur seul. */
+export type VideoVisibility = 'public' | 'followers' | 'private';
+
 export type NotificationType = 'like' | 'comment' | 'follow' | 'system' | string;
 
 export type ReportTargetType = 'video' | 'user' | 'comment';
@@ -71,6 +74,15 @@ export type Database = {
           event_id: string | null;
           filter_id: string | null;
           created_at: string;
+          /** 016 — absents tant que la migration n'est pas appliquée. */
+          visibility?: VideoVisibility;
+          allow_comments?: boolean;
+          allow_reuse?: boolean;
+          ai_generated?: boolean;
+          alt_text?: string | null;
+          location_text?: string | null;
+          /** 016 — réglages d'édition (lib/editMeta.ts), ≤ 16 Ko. */
+          edit_meta?: Json | null;
         };
         Insert: {
           id?: string;
@@ -93,6 +105,13 @@ export type Database = {
           event_id?: string | null;
           filter_id?: string | null;
           created_at?: string;
+          visibility?: VideoVisibility;
+          allow_comments?: boolean;
+          allow_reuse?: boolean;
+          ai_generated?: boolean;
+          alt_text?: string | null;
+          location_text?: string | null;
+          edit_meta?: Json | null;
         };
         Update: {
           id?: string;
@@ -111,6 +130,13 @@ export type Database = {
           save_count?: number;
           event_id?: string | null;
           created_at?: string;
+          visibility?: VideoVisibility;
+          allow_comments?: boolean;
+          allow_reuse?: boolean;
+          ai_generated?: boolean;
+          alt_text?: string | null;
+          location_text?: string | null;
+          edit_meta?: Json | null;
         };
         Relationships: [
           {
