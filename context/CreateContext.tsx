@@ -44,6 +44,11 @@ export type CapturedVideo = {
   durationMs: number | null;
 };
 
+/** Photo prise par la caméra intégrée (takePictureAsync). */
+export type CapturedPhoto = {
+  uri: string;
+};
+
 export type PickedMedia = {
   uri: string;
   mimeType: string | null;
@@ -116,6 +121,8 @@ type CreateContextValue = {
    * reste alors sur l'écran caméra au lieu de revenir avec un brouillon vide.
    */
   applyCapturedVideo: (captured: CapturedVideo) => boolean;
+  /** Même contrat que applyCapturedVideo, pour une photo de la caméra NIA. */
+  applyCapturedPhoto: (captured: CapturedPhoto) => boolean;
   pickCover: () => Promise<void>;
   clearCover: () => void;
   maxMb: number;
@@ -294,6 +301,37 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     [t, maxMb, maxMinutes],
   );
 
+  /**
+   * Intègre au brouillon une photo prise par la caméra NIA. Même règle que la
+   * vidéo : le fichier n'est jamais lu en JS, seule sa taille est interrogée.
+   * takePictureAsync produit un JPEG dans le cache de l'app.
+   */
+  const applyCapturedPhoto = useCallback(
+    ({ uri }: CapturedPhoto): boolean => {
+      if (!uri) return false;
+      const fileSize = localFileSize(uri);
+      if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
+        Alert.alert(
+          t('create.alertTooLarge'),
+          t('create.errTooLarge', { mb: maxMb }),
+        );
+        return false;
+      }
+      setMedia({
+        uri,
+        mimeType: 'image/jpeg',
+        fileName: uri.split('/').pop() || null,
+        fileSize,
+        durationMs: null,
+        type: 'image',
+      });
+      setUploadId(makeUploadId());
+      setCover(null);
+      return true;
+    },
+    [t, maxMb],
+  );
+
   const pickCover = useCallback(async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -340,6 +378,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       pickMedia,
       captureMedia,
       applyCapturedVideo,
+      applyCapturedPhoto,
       pickCover,
       clearCover,
       maxMb,
@@ -359,6 +398,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       pickMedia,
       captureMedia,
       applyCapturedVideo,
+      applyCapturedPhoto,
       pickCover,
       clearCover,
       maxMb,
