@@ -8,6 +8,7 @@ import {
 } from '@/lib/videos';
 import type { VideoItem } from '@/data/mockVideos';
 import type { ProfileRow, VideoRow } from '@/types/database';
+import { canRepostItem } from '@/lib/publishOptions';
 
 type VideoWithProfile = VideoRow & {
   profiles: Pick<ProfileRow, 'username' | 'avatar_url' | 'display_name'> | null;
@@ -41,6 +42,12 @@ export async function createRepost(
 ): Promise<RepostResult> {
   if (!userId) {
     return { ok: false, message: 'login_required' };
+  }
+
+  // 016 : le créateur peut refuser la republication (et une vidéo non
+  // publique ne se republie jamais). La base applique la même règle.
+  if (!canRepostItem(item)) {
+    return { ok: false, message: 'not_allowed' };
   }
 
   const originalId = resolveOriginalId(item);
@@ -116,6 +123,10 @@ export async function createRepost(
   }
 
   const original = orig as unknown as VideoWithProfile;
+  if (!canRepostItem({ visibility: original.visibility, allowReuse: original.allow_reuse })) {
+    await sb.from('reposts').delete().eq('user_id', userId).eq('video_id', originalId);
+    return { ok: false, message: 'not_allowed' };
+  }
   const originalHandle = original.profiles?.username
     ? `@${original.profiles.username}`
     : item.originalHandle || item.handle;
@@ -134,6 +145,13 @@ export async function createRepost(
     status: 'published',
     repost_of: originalId,
   };
+  // 016 : la republication se lit comme l'original (réglages, calques, label IA).
+  if ('edit_meta' in original) {
+    insertPayload.edit_meta = original.edit_meta ?? null;
+    insertPayload.ai_generated = original.ai_generated ?? false;
+    insertPayload.alt_text = original.alt_text ?? null;
+    insertPayload.location_text = original.location_text ?? null;
+  }
 
   const { data: inserted, error: insErr } = await sb
     .from('videos')

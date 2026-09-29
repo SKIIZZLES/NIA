@@ -3,6 +3,12 @@
  *
  * L'aperçu occupe la hauteur utile : c'est le seul endroit où l'utilisateur
  * juge l'effet du filtre avant de publier.
+ *
+ * Sprint S2 : l'aperçu joue le son choisi en synchro, avec son début et le
+ * volume du son original (réglages locaux au brouillon jusqu'à S5).
+ * Sprint S3 : ces réglages se font à l'édition (/create/edit) ; l'aperçu
+ * applique aussi la vitesse, et la couverture se choisit parmi les images de
+ * la vidéo (galerie toujours possible).
  */
 import React, { useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -12,6 +18,7 @@ import { Button } from '@/components/Button';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { FilterCarousel } from '@/components/FilterCarousel';
 import { FilteredMediaPreview } from '@/components/FilteredMediaPreview';
+import { CoverFramePicker } from '@/components/CoverFramePicker';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -21,8 +28,21 @@ export default function CreateStyleStep() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
-  const { media, cover, filter, setFilter, pickCover, clearCover } =
-    useCreateDraft();
+  const {
+    media,
+    cover,
+    filter,
+    setFilter,
+    pickCover,
+    clearCover,
+    sound,
+    soundOffsetMs,
+    soundVolume,
+    originalVolume,
+    playbackSpeed,
+    setCoverFromFrame,
+    overlays,
+  } = useCreateDraft();
 
   const styles = useMemo(
     () =>
@@ -106,6 +126,15 @@ export default function CreateStyleStep() {
             mediaType={media.type}
             filter={filter}
             style={styles.thumb}
+            muted={false}
+            volume={sound ? originalVolume : 1}
+            playbackRate={media.type === 'video' ? playbackSpeed : 1}
+            overlays={overlays}
+            sound={
+              sound?.publicUrl
+                ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
+                : null
+            }
           />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
@@ -120,10 +149,20 @@ export default function CreateStyleStep() {
           onSelect={setFilter}
         />
 
+
         {media.type === 'video' ? (
           <View>
             <Text style={styles.label}>{t('create.coverLabel')}</Text>
             <Text style={styles.hint}>{t('create.coverHint')}</Text>
+            <Text style={[styles.hint, { marginTop: Spacing.sm }]}>
+              {t('create.coverFromVideo')}
+            </Text>
+            <CoverFramePicker
+              uri={media.uri}
+              durationMs={media.durationMs}
+              selectedUri={cover?.uri ?? null}
+              onPick={(uri) => setCoverFromFrame(uri)}
+            />
             {cover?.uri ? (
               <Image source={{ uri: cover.uri }} style={styles.coverPreview} />
             ) : null}

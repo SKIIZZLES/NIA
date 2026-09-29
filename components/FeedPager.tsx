@@ -107,6 +107,10 @@ export function FeedPager({ videos, bottomInset = 80 }: Props) {
         videoId={commentsVideoId}
         onClose={() => setCommentsVideoId(null)}
         onCommentAdded={bumpCommentCount}
+        commentsDisabled={
+          !!commentsVideoId &&
+          videos.find((v) => v.id === commentsVideoId)?.allowComments === false
+        }
       />
     </View>
   );

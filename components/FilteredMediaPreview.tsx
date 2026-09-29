@@ -4,7 +4,9 @@
  *
  * Image -> <Image>. Vidéo -> <VideoView> (expo-video), jamais <Image> :
  * un .mp4 passé à <Image> ne rend rien (cf. lib/mediaThumb.ts).
- * L'aperçu joue en boucle et en sourdine — pas de contrôles natifs.
+ * L'aperçu joue en boucle, en sourdine par défaut — pas de contrôles natifs.
+ * Sprint S2 : `muted={false}` + `volume` règlent le son original, et `sound`
+ * joue le son choisi en synchro avec la vidéo (ou en boucle sur une photo).
  *
  * Le lecteur ne tourne que quand son écran a le focus. Le parcours de création
  * est une pile : pousser /create/preview laisse /create/index monté, et deux
@@ -28,6 +30,9 @@ import {
   type FilterDefinition,
 } from '@/constants/filters';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
+import { SyncedSound } from '@/components/SyncedSound';
+import { OverlayLayer } from '@/components/OverlayLayer';
+import type { OverlayDoc } from '@/lib/overlays';
 
 type Props = {
   uri: string;
@@ -38,6 +43,16 @@ type Props = {
   intensity?: number;
   style?: StyleProp<ViewStyle>;
   imageStyle?: StyleProp<ImageStyle>;
+  /** Son original de la vidéo coupé (défaut : true, comme avant S2). */
+  muted?: boolean;
+  /** Volume du son original, 0 → 1. */
+  volume?: number;
+  /** Son ajouté, joué en synchro. */
+  sound?: { url: string; offsetMs?: number; volume?: number } | null;
+  /** Vitesse de lecture choisie à l'édition (S3), 1 par défaut. */
+  playbackRate?: number;
+  /** Calques texte / stickers du brouillon (S4), au-dessus du filtre. */
+  overlays?: OverlayDoc | null;
 };
 
 export function FilteredMediaPreview({
@@ -48,6 +63,11 @@ export function FilteredMediaPreview({
   intensity,
   style,
   imageStyle,
+  muted = true,
+  volume = 1,
+  sound = null,
+  playbackRate = 1,
+  overlays = null,
 }: Props) {
   const isVideo =
     mediaType === 'video' ||
@@ -58,6 +78,7 @@ export function FilteredMediaPreview({
   const player = useVideoPlayer(isVideo ? uri : null, (p) => {
     p.loop = true;
     p.muted = true;
+    p.timeUpdateEventInterval = 0.25;
   });
 
   // expo-router réexporte useIsFocused depuis sa copie de React Navigation
@@ -79,6 +100,18 @@ export function FilteredMediaPreview({
     }
   }, [isVideo, isFocused, player]);
 
+  useEffect(() => {
+    if (!isVideo) return;
+    try {
+      player.muted = muted || volume <= 0;
+      player.volume = Math.max(0, Math.min(1, volume));
+      player.preservesPitch = true;
+      player.playbackRate = playbackRate > 0 ? playbackRate : 1;
+    } catch {
+      // lecteur libéré
+    }
+  }, [isVideo, player, muted, volume, playbackRate]);
+
   const filter = filterProp ?? getFilterById(filterId ?? null);
   const overlay = useMemo(
     () => getFilterOverlayStyle(filter, intensity),
@@ -87,6 +120,16 @@ export function FilteredMediaPreview({
 
   return (
     <View style={[styles.wrap, style]}>
+      {sound?.url ? (
+        <SyncedSound
+          url={sound.url}
+          video={isVideo ? player : null}
+          active={isFocused}
+          offsetMs={sound.offsetMs ?? 0}
+          volume={sound.volume ?? 1}
+          rate={isVideo ? playbackRate : 1}
+        />
+      ) : null}
       {isVideo ? (
         <VideoView
           player={player}
@@ -113,6 +156,7 @@ export function FilteredMediaPreview({
           ]}
         />
       ) : null}
+      <OverlayLayer doc={overlays} player={isVideo ? player : null} timeMs={isVideo ? undefined : null} />
     </View>
   );
 }

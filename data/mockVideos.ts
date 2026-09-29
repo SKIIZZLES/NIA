@@ -1,4 +1,7 @@
 import type { CategoryId } from '@/constants/categories';
+import type { EditMeta } from '@/lib/editMeta';
+import type { OverlayDoc } from '@/lib/overlays';
+import type { VideoVisibility } from '@/types/database';
 
 export type VideoItem = {
   id: string;
@@ -30,6 +33,22 @@ export type VideoItem = {
   soundId?: string;
   soundTitle?: string;
   soundCreatorHandle?: string;
+  /** URL du fichier audio du son, lu en synchro avec la vidéo (sprint S2). */
+  soundUrl?: string;
+  /**
+   * Calques texte / stickers (S4), lus depuis edit_meta.overlays (016).
+   * Absent pour les vidéos publiées avant.
+   */
+  overlays?: OverlayDoc;
+  /** Réglages d'édition (016) : vitesse, son, volumes. Absent = lecture normale. */
+  editMeta?: EditMeta;
+  /** Options de publication (016). Absentes = valeurs par défaut d'avant 016. */
+  visibility?: VideoVisibility;
+  allowComments?: boolean;
+  allowReuse?: boolean;
+  aiGenerated?: boolean;
+  altText?: string;
+  locationText?: string;
   /** Filtre NIA (012_filters) — registry id */
   filterId?: string;
 };
