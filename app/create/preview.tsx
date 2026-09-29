@@ -41,6 +41,7 @@ export default function CreateStyleStep() {
     originalVolume,
     playbackSpeed,
     setCoverFromFrame,
+    overlays,
   } = useCreateDraft();
 
   const styles = useMemo(
@@ -128,6 +129,7 @@ export default function CreateStyleStep() {
             muted={false}
             volume={sound ? originalVolume : 1}
             playbackRate={media.type === 'video' ? playbackSpeed : 1}
+            overlays={overlays}
             sound={
               sound?.publicUrl
                 ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
@@ -141,6 +143,10 @@ export default function CreateStyleStep() {
             </Text>
           </View>
         </View>
+
+        {overlays.items.length > 0 ? (
+          <Text style={styles.hint}>{t('create.layerLocalNote')}</Text>
+        ) : null}
 
         <FilterCarousel
           selectedId={filter?.id ?? null}

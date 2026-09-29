@@ -31,6 +31,8 @@ import {
 } from '@/constants/filters';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
 import { SyncedSound } from '@/components/SyncedSound';
+import { OverlayLayer } from '@/components/OverlayLayer';
+import type { OverlayDoc } from '@/lib/overlays';
 
 type Props = {
   uri: string;
@@ -49,6 +51,8 @@ type Props = {
   sound?: { url: string; offsetMs?: number; volume?: number } | null;
   /** Vitesse de lecture choisie à l'édition (S3), 1 par défaut. */
   playbackRate?: number;
+  /** Calques texte / stickers du brouillon (S4), au-dessus du filtre. */
+  overlays?: OverlayDoc | null;
 };
 
 export function FilteredMediaPreview({
@@ -63,6 +67,7 @@ export function FilteredMediaPreview({
   volume = 1,
   sound = null,
   playbackRate = 1,
+  overlays = null,
 }: Props) {
   const isVideo =
     mediaType === 'video' ||
@@ -151,6 +156,7 @@ export function FilteredMediaPreview({
           ]}
         />
       ) : null}
+      <OverlayLayer doc={overlays} player={isVideo ? player : null} timeMs={isVideo ? undefined : null} />
     </View>
   );
 }

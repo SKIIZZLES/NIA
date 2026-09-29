@@ -35,6 +35,12 @@ type Props = {
   onDragEnd?: (which: 'start' | 'end') => void;
   startLabel: string;
   endLabel: string;
+  /**
+   * S4 (fenêtre d'affichage d'un calque) : la barre couvre [originMs,
+   * originMs + durationMs] du fichier, et l'écart minimal est réglable.
+   */
+  originMs?: number;
+  minRangeMs?: number;
 };
 
 export function TrimBar({
@@ -48,6 +54,8 @@ export function TrimBar({
   onDragEnd,
   startLabel,
   endLabel,
+  originMs = 0,
+  minRangeMs = MIN_TRIM_MS,
 }: Props) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
@@ -61,7 +69,7 @@ export function TrimBar({
     setFrames([]);
     void (async () => {
       for (const time of frameTimes(durationMs, FRAME_COUNT)) {
-        const f = await videoFrameAt(uri, time, 120);
+        const f = await videoFrameAt(uri, originMs + time, 120);
         if (!alive) {
           if (f) deleteCachedFile(f);
           return;
@@ -74,10 +82,10 @@ export function TrimBar({
       alive = false;
       made.forEach((f) => deleteCachedFile(f));
     };
-  }, [uri, durationMs]);
+  }, [uri, durationMs, originMs]);
 
-  const live = useRef({ startMs, endMs, width, durationMs, maxRangeMs });
-  live.current = { startMs, endMs, width, durationMs, maxRangeMs };
+  const live = useRef({ startMs, endMs, width, durationMs, maxRangeMs, minRangeMs });
+  live.current = { startMs, endMs, width, durationMs, maxRangeMs, minRangeMs };
   const cbs = useRef({ onChange, onDragStart, onDragEnd });
   cbs.current = { onChange, onDragStart, onDragEnd };
 
@@ -92,18 +100,25 @@ export function TrimBar({
         cbs.current.onDragStart?.();
       },
       onPanResponderMove: (_, g) => {
-        const { width: w, durationMs: d, startMs: s, endMs: e, maxRangeMs: max } = live.current;
+        const {
+          width: w,
+          durationMs: d,
+          startMs: s,
+          endMs: e,
+          maxRangeMs: max,
+          minRangeMs: min,
+        } = live.current;
         const track = Math.max(1, w - HANDLE_W * 2);
         const ms = origin + (g.dx / track) * d;
         if (which === 'start') {
-          let ns = Math.min(ms, e - MIN_TRIM_MS);
+          let ns = Math.min(ms, e - min);
           if (max && e - ns > max) ns = e - max;
-          const r = clampTrimRange(ns, e, d);
+          const r = clampTrimRange(ns, e, d, min);
           cbs.current.onChange(r.startMs, r.endMs);
         } else {
-          let ne = Math.max(ms, s + MIN_TRIM_MS);
+          let ne = Math.max(ms, s + min);
           if (max && ne - s > max) ne = s + max;
-          const r = clampTrimRange(s, ne, d);
+          const r = clampTrimRange(s, ne, d, min);
           cbs.current.onChange(r.startMs, r.endMs);
         }
       },
