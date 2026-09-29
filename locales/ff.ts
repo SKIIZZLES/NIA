@@ -167,6 +167,7 @@ const ff: TranslationKeys = {
     language: 'Ɗemngal',
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
+    privacyPolicy: 'Politique de confidentialité',
   },
   notifications: {
     title: 'Tintine',

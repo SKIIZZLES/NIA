@@ -172,6 +172,7 @@ const ha: TranslationKeys = {
     language: 'Harshe',
     appearance: 'Kamanni',
     deleteAccount: 'Share asusuna',
+    privacyPolicy: 'Manufar sirri',
   },
   notifications: {
     title: 'Sanarwa',

@@ -172,6 +172,7 @@ const es: TranslationKeys = {
     language: 'Idioma',
     appearance: 'Apariencia',
     deleteAccount: 'Eliminar mi cuenta',
+    privacyPolicy: 'Política de privacidad',
   },
   notifications: {
     title: 'Notificaciones',

@@ -167,6 +167,7 @@ const zu: TranslationKeys = {
     language: 'Ulimi',
     appearance: 'Ukubukeka',
     deleteAccount: 'Cima i-akhawunti yami',
+    privacyPolicy: 'Inqubomgomo yobumfihlo',
   },
   notifications: {
     title: 'Izaziso',

@@ -175,6 +175,7 @@ const arMA: TranslationKeys = {
     language: 'اللغة',
     appearance: 'المظهر',
     deleteAccount: 'حيّد الكونط ديالي',
+    privacyPolicy: 'سياسة الخصوصية',
   },
   notifications: {
     title: 'الإشعارات',

@@ -174,6 +174,7 @@ const arSD: TranslationKeys = {
     language: 'اللغة',
     appearance: 'المظهر',
     deleteAccount: 'امسح حسابي',
+    privacyPolicy: 'سياسة الخصوصية',
   },
   notifications: {
     title: 'الإشعارات',

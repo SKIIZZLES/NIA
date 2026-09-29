@@ -167,6 +167,7 @@ const ig: TranslationKeys = {
     language: 'Asụsụ',
     appearance: 'Ọdịdị',
     deleteAccount: 'Hichapụ akaụntụ m',
+    privacyPolicy: 'Iwu nzuzo',
   },
   notifications: {
     title: 'Ọkwa',

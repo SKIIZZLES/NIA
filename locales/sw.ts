@@ -172,6 +172,7 @@ const sw: TranslationKeys = {
     language: 'Lugha',
     appearance: 'Mwonekano',
     deleteAccount: 'Futa akaunti yangu',
+    privacyPolicy: 'Sera ya faragha',
   },
   notifications: {
     title: 'Arifa',

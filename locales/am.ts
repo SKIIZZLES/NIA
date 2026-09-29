@@ -167,6 +167,7 @@ const am: TranslationKeys = {
     language: 'ቋንቋ',
     appearance: 'መልክ',
     deleteAccount: 'መለያዬን አጥፋ',
+    privacyPolicy: 'የግላዊነት ፖሊሲ',
   },
   notifications: {
     title: 'ማሳወቂያዎች',
