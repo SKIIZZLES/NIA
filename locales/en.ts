@@ -173,6 +173,9 @@ const en: TranslationKeys = {
     appearance: 'Appearance',
     deleteAccount: 'Delete my account',
     privacyPolicy: 'Privacy policy',
+    menu: 'Menu',
+    settingsTitle: 'Settings and privacy',
+    closeMenu: 'Close',
   },
   notifications: {
     title: 'Notifications',

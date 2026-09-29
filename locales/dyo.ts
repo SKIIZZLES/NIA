@@ -173,6 +173,9 @@ const dyo: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    menu: 'Menu',
+    settingsTitle: 'Paramètres et confidentialité',
+    closeMenu: 'Kaƥ',
   },
   notifications: {
     title: 'Kibaar',

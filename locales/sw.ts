@@ -173,6 +173,9 @@ const sw: TranslationKeys = {
     appearance: 'Mwonekano',
     deleteAccount: 'Futa akaunti yangu',
     privacyPolicy: 'Sera ya faragha',
+    menu: 'Menyu',
+    settingsTitle: 'Mipangilio na faragha',
+    closeMenu: 'Funga',
   },
   notifications: {
     title: 'Arifa',
