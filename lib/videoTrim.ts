@@ -20,6 +20,10 @@ type Toolkit = {
     uri: string,
     options: { startTime: number; endTime: number; outputPath?: string },
   ) => Promise<{ uri: string; duration: number; size: number }>;
+  getThumbnail: (
+    uri: string,
+    options?: { timeMs?: number; quality?: number; maxWidth?: number },
+  ) => Promise<{ uri: string; duration: number }>;
 };
 
 let cached: Toolkit | null | undefined;
@@ -75,10 +79,43 @@ export async function trimVideoFile(
     startTime: Math.round(startMs),
     endTime: Math.round(endMs),
   });
-  const out = res.uri.startsWith('file://') || res.uri.includes('://') ? res.uri : `file://${res.uri}`;
   return {
-    uri: out,
+    uri: toFileUri(res.uri),
     durationMs: Math.round(res.duration || endMs - startMs),
     size: res.size || 0,
   };
+}
+
+function toFileUri(path: string): string {
+  return path.includes('://') ? path : `file://${path}`;
+}
+
+/**
+ * Image JPEG extraite à `timeMs` (bande de découpe, choix de couverture).
+ * Fichier dans le cache de l'app ; null si le module natif est absent.
+ */
+export async function videoFrameAt(
+  uri: string,
+  timeMs: number,
+  maxWidth = 160,
+): Promise<string | null> {
+  const toolkit = loadToolkit();
+  if (!toolkit) return null;
+  try {
+    const res = await toolkit.getThumbnail(uri, {
+      timeMs: Math.max(0, Math.round(timeMs)),
+      quality: maxWidth > 400 ? 90 : 70,
+      maxWidth,
+    });
+    return res?.uri ? toFileUri(res.uri) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Instants régulièrement espacés dans [0, durée[ (bande d'images). */
+export function frameTimes(durationMs: number, count: number): number[] {
+  if (!(durationMs > 0) || count <= 0) return [];
+  const step = durationMs / count;
+  return Array.from({ length: count }, (_, i) => Math.round(step * i + step / 2));
 }

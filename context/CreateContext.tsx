@@ -13,6 +13,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -30,7 +31,7 @@ import type { FilterDefinition } from '@/constants/filters';
 import type { SoundItem } from '@/lib/sounds';
 import { clampSoundOffsetMs } from '@/lib/soundSync';
 import { resolveUploadContentType } from '@/lib/videos';
-import { localFileSize } from '@/lib/upload';
+import { deleteCachedFile, localFileSize } from '@/lib/upload';
 
 export type CreateMode = 'video' | 'photo';
 
@@ -50,6 +51,15 @@ export type CapturedVideo = {
 export type CapturedPhoto = {
   uri: string;
 };
+
+/** Sélection de découpe, en millisecondes dans le fichier source. */
+export type TrimRange = { startMs: number; endMs: number };
+
+/** Fichier produit par la découpe (lib/videoTrim). */
+export type TrimmedVideo = { uri: string; durationMs: number; size: number };
+
+/** Vitesses proposées à l'édition (lecture seulement jusqu'à S5). */
+export const PLAYBACK_SPEEDS = [0.5, 1, 1.5, 2] as const;
 
 export type PickedMedia = {
   uri: string;
@@ -118,6 +128,24 @@ type CreateContextValue = {
   setOriginalVolume: (next: number) => void;
   filter: FilterDefinition | null;
   setFilter: (next: FilterDefinition | null) => void;
+  /**
+   * Édition (sprint S3). `sourceMedia` est le fichier capturé/importé, jamais
+   * modifié : on peut revenir sur une découpe. `media` devient le fichier
+   * découpé après applyTrimmedVideo, et c'est lui qui est publié.
+   */
+  sourceMedia: PickedMedia | null;
+  trimRange: TrimRange | null;
+  applyTrimmedVideo: (trimmed: TrimmedVideo, range: TrimRange) => void;
+  /** Annule la découpe : le brouillon repasse sur le fichier source. */
+  clearTrim: () => void;
+  /**
+   * Vitesse de lecture choisie à l'édition. Locale au brouillon : appliquée à
+   * l'aperçu via playbackRate, la vidéo publiée est lue en 1x jusqu'à S5.
+   */
+  playbackSpeed: number;
+  setPlaybackSpeed: (next: number) => void;
+  /** Couverture tirée d'une image de la vidéo (fichier JPEG local). */
+  setCoverFromFrame: (uri: string, fileSize?: number | null) => void;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
   hashtags: string[];
   /**
@@ -158,6 +186,13 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [soundVolume, setSoundVolumeState] = useState(1);
   const [originalVolume, setOriginalVolumeState] = useState(1);
   const soundIdRef = useRef<string | null>(null);
+  const [sourceMedia, setSourceMedia] = useState<PickedMedia | null>(null);
+  const [trimRange, setTrimRange] = useState<TrimRange | null>(null);
+  const [playbackSpeed, setPlaybackSpeedState] = useState(1);
+  /** URI du dernier fichier découpé : ne doit pas devenir une nouvelle source. */
+  const trimOutputRef = useRef<string | null>(null);
+  /** Source remise en place par clearTrim : pas un nouvel import. */
+  const restoredSourceRef = useRef<string | null>(null);
   const [filter, setFilter] = useState<FilterDefinition | null>(null);
   const [uploadId, setUploadId] = useState<string>(makeUploadId);
 
@@ -401,6 +436,84 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
 
   const clearCover = useCallback(() => setCover(null), []);
 
+  // Tout nouveau média capturé ou importé devient la source de l'édition, et
+  // remet découpe et vitesse à zéro. Le fichier découpé, lui, n'en est pas une.
+  useEffect(() => {
+    if (!media) {
+      setSourceMedia(null);
+      setTrimRange(null);
+      return;
+    }
+    if (media.uri === trimOutputRef.current) return;
+    if (media.uri === restoredSourceRef.current) {
+      restoredSourceRef.current = null;
+      return;
+    }
+    if (trimOutputRef.current) {
+      deleteCachedFile(trimOutputRef.current);
+      trimOutputRef.current = null;
+    }
+    setSourceMedia(media);
+    setTrimRange(null);
+    setPlaybackSpeedState(1);
+  }, [media]);
+
+  const applyTrimmedVideo = useCallback(
+    (trimmed: TrimmedVideo, range: TrimRange) => {
+      const src = sourceMedia;
+      if (!src || !trimmed.uri) return;
+      const previous = trimOutputRef.current;
+      trimOutputRef.current = trimmed.uri;
+      if (previous && previous !== trimmed.uri) deleteCachedFile(previous);
+      setMedia({
+        uri: trimmed.uri,
+        mimeType: 'video/mp4',
+        fileName: trimmed.uri.split('/').pop() || null,
+        fileSize: trimmed.size > 0 ? trimmed.size : localFileSize(trimmed.uri),
+        durationMs: trimmed.durationMs,
+        type: 'video',
+      });
+      setTrimRange(range);
+      // Nouveau fichier, nouvel objet Storage.
+      setUploadId(makeUploadId());
+    },
+    [sourceMedia],
+  );
+
+  const clearTrim = useCallback(() => {
+    const src = sourceMedia;
+    const previous = trimOutputRef.current;
+    if (!src || !previous) {
+      setTrimRange(null);
+      return;
+    }
+    // Le média redevient la source : l'effet ci-dessus ne doit pas la traiter
+    // comme un nouvel import (la vitesse est conservée).
+    trimOutputRef.current = null;
+    restoredSourceRef.current = src.uri;
+    deleteCachedFile(previous);
+    setMedia(src);
+    setTrimRange(null);
+    setUploadId(makeUploadId());
+  }, [sourceMedia]);
+
+  const setPlaybackSpeed = useCallback((next: number) => {
+    const ok = (PLAYBACK_SPEEDS as readonly number[]).includes(next);
+    setPlaybackSpeedState(ok ? next : 1);
+  }, []);
+
+  const setCoverFromFrame = useCallback((uri: string, fileSize?: number | null) => {
+    if (!uri) return;
+    setCover({
+      uri,
+      mimeType: 'image/jpeg',
+      fileName: uri.split('/').pop() || null,
+      fileSize: fileSize ?? localFileSize(uri),
+      durationMs: null,
+      type: 'image',
+    });
+  }, []);
+
   const value = useMemo<CreateContextValue>(
     () => ({
       mode,
@@ -421,6 +534,13 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       setOriginalVolume,
       filter,
       setFilter,
+      sourceMedia,
+      trimRange,
+      applyTrimmedVideo,
+      clearTrim,
+      playbackSpeed,
+      setPlaybackSpeed,
+      setCoverFromFrame,
       hashtags,
       uploadId,
       pickMedia,
@@ -448,6 +568,13 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       originalVolume,
       setOriginalVolume,
       filter,
+      sourceMedia,
+      trimRange,
+      applyTrimmedVideo,
+      clearTrim,
+      playbackSpeed,
+      setPlaybackSpeed,
+      setCoverFromFrame,
       hashtags,
       uploadId,
       pickMedia,

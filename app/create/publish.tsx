@@ -17,7 +17,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as DocumentPicker from 'expo-document-picker';
 import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
@@ -31,11 +30,8 @@ import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { DISCOVER_CATEGORIES } from '@/constants/categories';
 import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
-import {
-  createSound,
-  listSoundsByUser,
-  type SoundItem,
-} from '@/lib/sounds';
+import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
+import { importSoundFromDevice } from '@/lib/soundImport';
 
 export default function CreatePublishStep() {
   const router = useRouter();
@@ -97,45 +93,15 @@ export default function CreatePublishStep() {
       return;
     }
     try {
-      const res = await DocumentPicker.getDocumentAsync({
-        type: ['audio/*', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-m4a'],
-        copyToCacheDirectory: true,
-        multiple: false,
+      // Logique partagée avec la feuille son de la caméra (lib/soundImport).
+      const created = await importSoundFromDevice({
+        user,
+        isMockFeed,
+        title: newSoundTitle,
+        defaultTitle: t('sound.defaultTitle'),
+        onUploadStart: () => setSoundBusy(true),
       });
-      if (res.canceled || !res.assets?.[0]) return;
-      const asset = res.assets[0];
-      const title =
-        (newSoundTitle || '').trim() ||
-        (asset.name ? asset.name.replace(/\.[^.]+$/, '') : '') ||
-        t('sound.defaultTitle');
-
-      if (isMockFeed || user.id.startsWith('mock_')) {
-        const mock: SoundItem = {
-          id: `local_sound_${Date.now()}`,
-          userId: user.id,
-          title,
-          storagePath: '',
-          publicUrl: asset.uri,
-          durationMs: null,
-          useCount: 0,
-          createdAt: new Date().toISOString(),
-          handle: `@${user.username}`,
-        };
-        setSound(mock);
-        setOwnSounds((prev) => [mock, ...prev]);
-        setSoundPickerOpen(false);
-        setNewSoundTitle('');
-        return;
-      }
-
-      setSoundBusy(true);
-      const created = await createSound({
-        userId: user.id,
-        title,
-        localUri: asset.uri,
-        mimeType: asset.mimeType ?? null,
-        fileName: asset.name ?? null,
-      });
+      if (!created) return;
       setSound(created);
       setOwnSounds((prev) => [created, ...prev.filter((s) => s.id !== created.id)]);
       setSoundPickerOpen(false);
