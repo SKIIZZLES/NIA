@@ -174,6 +174,7 @@ const arMA: TranslationKeys = {
     unsaveBody: 'هاد الفيديو ما غاديش يبقى فالمحفوظات ديالك.',
     language: 'اللغة',
     appearance: 'المظهر',
+    deleteAccount: 'حيّد الكونط ديالي',
   },
   notifications: {
     title: 'الإشعارات',
@@ -522,6 +523,13 @@ const arMA: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: 'تحيّد هاد الكونط نهائيا؟',
+    deleteBody: 'الفيديوات ديالك وگاع الداتا ديالك غادي يتحيّدو. هاد الخطوة ما كاترجعش.',
+    deleteConfirm: 'حيّد نهائيا',
+    deleteError: 'ما تحيّدش. عاود جرب.',
+    deleteMock: 'وضع ديمو: ما كاين حتى كونط حقيقي باش يتحيّد.',
   },
 };
 

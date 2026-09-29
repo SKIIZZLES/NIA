@@ -166,6 +166,7 @@ const ig: TranslationKeys = {
     unsaveBody: 'Vidiyo a agaghị apụtakwa n\'ime ihe ị chekwara.',
     language: 'Asụsụ',
     appearance: 'Ọdịdị',
+    deleteAccount: 'Hichapụ akaụntụ m',
   },
   notifications: {
     title: 'Ọkwa',
@@ -514,6 +515,13 @@ const ig: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'Hichapụ akaụntụ a kpamkpam?',
+    deleteBody: 'A ga-ehichapụ vidiyo gị na data gị niile. Enweghị ike ịkpaghachi ya.',
+    deleteConfirm: 'Hichapụ kpamkpam',
+    deleteError: 'Nhichapụ dara. Nwaa ọzọ.',
+    deleteMock: 'Ọnọdụ nnwale: ọ dịghị akaụntụ ezigbo a ga-ehichapụ.',
+  },
 };
 
 export default ig;

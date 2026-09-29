@@ -166,6 +166,7 @@ const zu: TranslationKeys = {
     unsaveBody: 'Le vidiyo ngeke isabonakala kokulondoloziwe kwakho.',
     language: 'Ulimi',
     appearance: 'Ukubukeka',
+    deleteAccount: 'Cima i-akhawunti yami',
   },
   notifications: {
     title: 'Izaziso',
@@ -514,6 +515,13 @@ const zu: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'Cima le akhawunti unomphela?',
+    deleteBody: 'Amavidiyo akho nayo yonke idatha yakho kuzocishwa. Lokhu akubuyiseleki.',
+    deleteConfirm: 'Cima unomphela',
+    deleteError: 'Ukucima kwehlulekile. Zama futhi.',
+    deleteMock: 'Imodi yedemo: ayikho i-akhawunti yangempela okumele icinywe.',
+  },
 };
 
 export default zu;

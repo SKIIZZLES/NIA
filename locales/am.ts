@@ -166,6 +166,7 @@ const am: TranslationKeys = {
     unsaveBody: 'ይህ ቪዲዮ ከተቀመጡት ውስጥ ከእንግዲህ አይታይም።',
     language: 'ቋንቋ',
     appearance: 'መልክ',
+    deleteAccount: 'መለያዬን አጥፋ',
   },
   notifications: {
     title: 'ማሳወቂያዎች',
@@ -514,6 +515,13 @@ const am: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'ይህን መለያ በቋሚነት ያጥፉ?',
+    deleteBody: 'ቪዲዮዎችዎ እና ሁሉም ውሂብዎ ይጠፋሉ። ይህ እርምጃ አይመለስም።',
+    deleteConfirm: 'በቋሚነት አጥፋ',
+    deleteError: 'ማጥፋት አልተሳካም። እንደገና ሞክር።',
+    deleteMock: 'የሙከራ ሁነታ፦ የሚጠፋ እውነተኛ መለያ የለም።',
+  },
 };
 
 export default am;

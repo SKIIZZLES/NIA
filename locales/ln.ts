@@ -166,6 +166,7 @@ const ln: TranslationKeys = {
     unsaveBody: 'Cette vidéo ne figuera plus dans vos enregistrements.',
     language: 'Lokotá',
     appearance: 'Apparence',
+    deleteAccount: 'Supprimer mon compte',
   },
   notifications: {
     title: 'Banotifikasiyo',
@@ -514,6 +515,13 @@ const ln: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'Supprimer définitivement ce compte ?',
+    deleteBody: 'Vos vidéos et toutes vos données seront effacées. Cette action est irréversible.',
+    deleteConfirm: 'Supprimer définitivement',
+    deleteError: 'Suppression impossible. Réessayez.',
+    deleteMock: 'Mode démo : aucun compte réel à supprimer.',
+  },
 };
 
 export default ln;

@@ -24,6 +24,7 @@ import {
   countFollowing,
   fetchVideosByUserId,
 } from '@/lib/profiles';
+import { deleteOwnAccount } from '@/lib/account';
 import { fetchSavedVideos } from '@/lib/saves';
 import { updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
@@ -50,6 +51,7 @@ export default function ProfileScreen() {
   const [archived, setArchived] = useState<VideoItem[]>([]);
   const [saved, setSaved] = useState<VideoItem[]>([]);
   const [seriesList, setSeriesList] = useState<SeriesListItem[]>([]);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const myFeedVideos = useMemo(
     () =>
@@ -160,6 +162,37 @@ export default function ProfileScreen() {
               return;
             }
             setArchived((prev) => prev.filter((v) => v.id !== item.id));
+          })();
+        },
+      },
+    ]);
+  };
+
+  /**
+   * Suppression de compte — exigence Google Play. Irreversible : une seule
+   * confirmation, explicite sur ce qui part, puis deconnexion.
+   */
+  const onDeleteAccount = () => {
+    Alert.alert(t('account.deleteTitle'), t('account.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('account.deleteConfirm'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            setDeletingAccount(true);
+            const result = await deleteOwnAccount(user?.id);
+            setDeletingAccount(false);
+            if (!result.ok) {
+              Alert.alert(t('common.error'), result.message || t('account.deleteError'));
+              return;
+            }
+            if (result.mock) {
+              Alert.alert(t('common.error'), t('account.deleteMock'));
+              return;
+            }
+            await signOut();
+            router.replace('/welcome');
           })();
         },
       },
@@ -280,6 +313,18 @@ export default function ProfileScreen() {
     fontSize: 14,
   },
   linkBtn: { marginTop: Spacing.sm, padding: 6 },
+  deleteAccountBtn: {
+    marginTop: Spacing.lg,
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  deleteAccountText: {
+    color: colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
   linkText: {
     color: colors.or,
     fontFamily: Fonts.medium,
@@ -478,6 +523,18 @@ export default function ProfileScreen() {
             }}
             style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
           />
+          <Pressable
+            style={styles.deleteAccountBtn}
+            onPress={onDeleteAccount}
+            disabled={deletingAccount}
+            accessibilityRole="button"
+            accessibilityLabel={t('profile.deleteAccount')}
+            accessibilityState={{ disabled: deletingAccount }}
+          >
+            <Text style={styles.deleteAccountText}>
+              {t('profile.deleteAccount')}
+            </Text>
+          </Pressable>
         </>
       ) : (
         <Button

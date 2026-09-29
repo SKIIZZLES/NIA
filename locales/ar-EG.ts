@@ -166,6 +166,7 @@ const arEG: TranslationKeys = {
     unsaveBody: 'الفيديو ده مش هيفضل في المحفوظات بتاعتك.',
     language: 'اللغة',
     appearance: 'المظهر',
+    deleteAccount: 'امسح حسابي',
   },
   notifications: {
     title: 'الإشعارات',
@@ -514,6 +515,13 @@ const arEG: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'تمسح الحساب ده نهائي؟',
+    deleteBody: 'الفيديوهات بتاعتك وكل بياناتك هتتمسح. الخطوة دي مش بترجع.',
+    deleteConfirm: 'امسح نهائي',
+    deleteError: 'المسح مانفعش. جرّب تاني.',
+    deleteMock: 'وضع تجريبي: مفيش حساب حقيقي يتمسح.',
+  },
 };
 
 export default arEG;

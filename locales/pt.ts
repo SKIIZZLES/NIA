@@ -171,6 +171,7 @@ const pt: TranslationKeys = {
     unsaveBody: 'Este vídeo deixará de aparecer nos seus salvos.',
     language: 'Idioma',
     appearance: 'Aparência',
+    deleteAccount: 'Excluir a minha conta',
   },
   notifications: {
     title: 'Notificações',
@@ -519,6 +520,13 @@ const pt: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: 'Excluir definitivamente esta conta?',
+    deleteBody: 'Os seus vídeos e todos os seus dados serão apagados. Esta ação é irreversível.',
+    deleteConfirm: 'Excluir definitivamente',
+    deleteError: 'Não foi possível excluir. Tente novamente.',
+    deleteMock: 'Modo demo: não há conta real para excluir.',
   },
 };
 
