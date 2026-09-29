@@ -704,6 +704,11 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      /** 015_video_soft_delete — soft delete d'une vidéo par son propriétaire. */
+      soft_delete_own_video: {
+        Args: { p_video_id: string };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;
