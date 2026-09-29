@@ -14,7 +14,8 @@ import {
   formatFeedLoadError,
   uploadVideoToSupabase,
   archiveOwnVideo,
-  softDeleteOwnVideo,
+  deleteOwnVideoForGood,
+  type DeleteOwnVideoResult,
   type OwnerVideoActionResult,
 } from '@/lib/videos';
 import type { UploadProgress } from '@/lib/upload';
@@ -85,7 +86,7 @@ type FeedContextValue = {
   bumpCommentCount: (videoId: string, delta?: number) => void;
   repostVideo: (item: VideoItem) => Promise<RepostResult>;
   archiveOwnVideoInFeed: (videoId: string) => Promise<OwnerVideoActionResult>;
-  deleteOwnVideoInFeed: (videoId: string) => Promise<OwnerVideoActionResult>;
+  deleteOwnVideoInFeed: (videoId: string) => Promise<DeleteOwnVideoResult>;
   isMockFeed: boolean;
   feedError: string | null;
 };
@@ -469,9 +470,10 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
   );
 
   const deleteOwnVideoInFeed = useCallback(
-    async (videoId: string): Promise<OwnerVideoActionResult> => {
+    async (videoId: string): Promise<DeleteOwnVideoResult> => {
       if (!user) return { ok: false, message: 'login_required' };
-      const result = await softDeleteOwnVideo(user.id, videoId);
+      // Suppression definitive, fichier compris.
+      const result = await deleteOwnVideoForGood(user.id, videoId);
       if (result.ok) {
         setRawVideos((prev) => prev.filter((v) => v.id !== videoId));
       }

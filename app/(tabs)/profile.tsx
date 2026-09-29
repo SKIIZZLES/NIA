@@ -31,7 +31,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { deleteOwnAccount } from '@/lib/account';
 import { privacyPolicyUrl, termsOfServiceUrl } from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
-import { updateVideoStatus } from '@/lib/videos';
+import { deleteOwnVideoForGood, updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
 import type { VideoItem } from '@/data/mockVideos';
 import { formatCount } from '@/data/mockVideos';
@@ -163,12 +163,15 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: () => {
           void (async () => {
-            const result = await updateVideoStatus(user.id, item.id, 'deleted');
+            const result = await deleteOwnVideoForGood(user.id, item.id);
             if (!result.ok) {
               Alert.alert(t('common.error'), result.message);
               return;
             }
             setArchived((prev) => prev.filter((v) => v.id !== item.id));
+            if (result.fileError) {
+              Alert.alert(t('feed.deleteSuccess'), t('feed.deleteFileKept'));
+            }
           })();
         },
       },
