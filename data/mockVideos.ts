@@ -30,6 +30,8 @@ export type VideoItem = {
   soundId?: string;
   soundTitle?: string;
   soundCreatorHandle?: string;
+  /** URL du fichier audio du son, lu en synchro avec la vidéo (sprint S2). */
+  soundUrl?: string;
   /** Filtre NIA (012_filters) — registry id */
   filterId?: string;
 };

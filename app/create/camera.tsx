@@ -4,7 +4,8 @@
  * Premier écran du « + », plein écran, façon TikTok :
  * - colonne latérale : retourner, flash (torche en vidéo), minuteur 3 s / 10 s,
  *   filtres NIA V2.6 (teinte d'aperçu sur le viseur) ;
- * - en haut : fermer, choix du son (la lecture arrive au sprint S2) ;
+ * - en haut : fermer, choix du son ; le son est joué pendant l'enregistrement
+ *   (sprint S2, option « Écoute ») et le micro est alors coupé pour éviter l'écho ;
  * - en bas : durée (3 min / 60 s / 15 s / Photo), déclencheur, galerie
  *   (sélecteur système, aucune permission médias), onglets Vidéo / Photo / Live ;
  * - zoom au pincement.
@@ -50,6 +51,7 @@ import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { getFilterOverlayStyle } from '@/constants/filters';
 import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { deleteCachedFile } from '@/lib/upload';
+import { SyncedSound } from '@/components/SyncedSound';
 import { fetchSoundById } from '@/lib/sounds';
 
 /**
@@ -97,6 +99,9 @@ export default function CreateCameraScreen() {
     setFilter,
     sound,
     setSound,
+    soundOffsetMs,
+    setSoundOffsetMs,
+    soundVolume,
     applyCapturedVideo,
     applyCapturedPhoto,
     captureMedia,
@@ -121,6 +126,8 @@ export default function CreateCameraScreen() {
   const [zoom, setZoom] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
+  /** Jouer le son choisi pendant l'enregistrement (micro coupé, anti-écho). */
+  const [hearSound, setHearSound] = useState(true);
 
   /** Marque un enregistrement dont le résultat doit être jeté (abandon). */
   const abandonRef = useRef(false);
@@ -139,6 +146,16 @@ export default function CreateCameraScreen() {
 
   const micGranted = micPermission?.granted === true;
   const busy = phase !== 'idle';
+  const playSoundWhileRecording = !!sound?.publicUrl && hearSound;
+
+  // Après un retournement ou un changement de mode, la session native est
+  // recréée : le déclencheur attend onCameraReady. Filet de sécurité si
+  // l'événement n'arrivait pas (certains appareils) : réarmement après 3 s.
+  useEffect(() => {
+    if (ready || !isFocused) return;
+    const id = setTimeout(() => setReady(true), 3000);
+    return () => clearTimeout(id);
+  }, [ready, isFocused, facing, mode]);
 
   // --- Paramètres d'entrée (page d'un son : /create/camera?soundId=…&mode=video).
   // Chaque valeur n'est appliquée qu'une fois, comme à l'étape 1.
@@ -381,6 +398,7 @@ export default function CreateCameraScreen() {
   const switchMode = useCallback(
     (next: 'video' | 'photo') => {
       if (busy || next === mode) return;
+      setReady(false);
       setMode(next);
     },
     [busy, mode, setMode],
@@ -388,6 +406,7 @@ export default function CreateCameraScreen() {
 
   const flipCamera = useCallback(() => {
     if (busy) return;
+    setReady(false);
     setZoom(0);
     setFacing((f) => (f === 'back' ? 'front' : 'back'));
   }, [busy]);
@@ -741,7 +760,7 @@ export default function CreateCameraScreen() {
           facing={facing}
           mode={isPhoto ? 'picture' : 'video'}
           videoQuality={VIDEO_QUALITY}
-          mute={!micGranted}
+          mute={!micGranted || playSoundWhileRecording}
           zoom={zoom}
           flash={isPhoto ? cameraFlash : 'off'}
           enableTorch={!isPhoto && torch && torchUsable}
@@ -872,6 +891,19 @@ export default function CreateCameraScreen() {
           color={chrome}
           activeColor={colors.or}
         />
+        {sound && !isPhoto ? (
+          <SideButton
+            icon={hearSound ? 'headset' : 'headset-outline'}
+            label={t('camera.hearSound')}
+            a11y={hearSound ? t('camera.hearSoundOn') : t('camera.hearSoundOff')}
+            onPress={() => setHearSound((v) => !v)}
+            disabled={busy}
+            active={hearSound}
+            styles={styles}
+            color={chrome}
+            activeColor={colors.or}
+          />
+        ) : null}
       </View>
 
       {!micGranted && !isPhoto ? (
@@ -1032,10 +1064,23 @@ export default function CreateCameraScreen() {
         </Pressable>
       ) : null}
 
+      {/* Son joué pendant l'enregistrement, depuis le début choisi. Il s'arrête
+          avec l'enregistrement, la perte de focus ou le passage en arrière-plan. */}
+      {sound?.publicUrl ? (
+        <SyncedSound
+          url={sound.publicUrl}
+          active={playSoundWhileRecording && phase === 'recording' && isFocused}
+          offsetMs={soundOffsetMs}
+          volume={soundVolume}
+        />
+      ) : null}
+
       <CameraSoundSheet
         visible={soundSheetOpen}
         selected={sound}
         onSelect={setSound}
+        offsetMs={soundOffsetMs}
+        onChangeOffset={setSoundOffsetMs}
         onClose={() => setSoundSheetOpen(false)}
       />
     </View>

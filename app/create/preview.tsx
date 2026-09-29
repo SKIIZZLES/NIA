@@ -3,6 +3,9 @@
  *
  * L'aperçu occupe la hauteur utile : c'est le seul endroit où l'utilisateur
  * juge l'effet du filtre avant de publier.
+ *
+ * Sprint S2 : l'aperçu joue le son choisi en synchro, avec son début et le
+ * volume du son original (réglages locaux au brouillon jusqu'à S5).
  */
 import React, { useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -12,6 +15,7 @@ import { Button } from '@/components/Button';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { FilterCarousel } from '@/components/FilterCarousel';
 import { FilteredMediaPreview } from '@/components/FilteredMediaPreview';
+import { SoundTrimControl } from '@/components/SoundTrimControl';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -21,8 +25,20 @@ export default function CreateStyleStep() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
-  const { media, cover, filter, setFilter, pickCover, clearCover } =
-    useCreateDraft();
+  const {
+    media,
+    cover,
+    filter,
+    setFilter,
+    pickCover,
+    clearCover,
+    sound,
+    soundOffsetMs,
+    setSoundOffsetMs,
+    soundVolume,
+    originalVolume,
+    setOriginalVolume,
+  } = useCreateDraft();
 
   const styles = useMemo(
     () =>
@@ -106,6 +122,13 @@ export default function CreateStyleStep() {
             mediaType={media.type}
             filter={filter}
             style={styles.thumb}
+            muted={false}
+            volume={sound ? originalVolume : 1}
+            sound={
+              sound?.publicUrl
+                ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
+                : null
+            }
           />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
@@ -119,6 +142,23 @@ export default function CreateStyleStep() {
           selectedId={filter?.id ?? null}
           onSelect={setFilter}
         />
+
+        {sound ? (
+          <View>
+            <Text style={styles.label}>{t('create.addSound')}</Text>
+            <SoundTrimControl
+              sound={sound}
+              offsetMs={soundOffsetMs}
+              onChangeOffset={setSoundOffsetMs}
+              previewable={false}
+              originalVolume={media.type === 'video' ? originalVolume : undefined}
+              onChangeOriginalVolume={
+                media.type === 'video' ? setOriginalVolume : undefined
+              }
+              showLocalNote
+            />
+          </View>
+        ) : null}
 
         {media.type === 'video' ? (
           <View>

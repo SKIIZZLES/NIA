@@ -10,6 +10,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "buffer": "^6.0.3",
     "expo": "~57.0.23",
+    "expo-audio": "~57.0.5",
     "expo-auth-session": "~57.0.12",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.18",

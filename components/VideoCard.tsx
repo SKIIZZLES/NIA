@@ -24,7 +24,8 @@ import { VideoMenuSheet } from '@/components/VideoMenuSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { shareVideo } from '@/lib/share';
 import { VideoProgressBar } from '@/components/VideoProgressBar';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
+import { SyncedSound } from '@/components/SyncedSound';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SEEK_SEC = 5;
@@ -88,6 +89,17 @@ function VideoCardInner({
       : item.handle === `@${user.username}`);
   const [muted, setMuted] = useState(false);
   const [pausedByUser, setPausedByUser] = useState(false);
+  // Écran sans focus (onglet quitté, page poussée par-dessus) : ni la vidéo
+  // ni le son ne doivent continuer à jouer derrière.
+  const isFocused = useIsFocused();
+  const visible = isActive && isFocused;
+  // Le fichier du son n'est chargé qu'une fois la carte devenue active :
+  // pas de téléchargement pour chaque carte montée par la liste.
+  const [soundArmed, setSoundArmed] = useState(false);
+  useEffect(() => {
+    if (isActive) setSoundArmed(true);
+  }, [isActive]);
+  const canMute = !isImagePost || !!item.soundUrl;
   const [showPauseIcon, setShowPauseIcon] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -117,7 +129,7 @@ function VideoCardInner({
     try {
       if (isImagePost) {
         try { player.pause(); } catch { /* ignore */ }
-      } else if (isActive && !pausedByUser) {
+      } else if (visible && !pausedByUser) {
         player.play();
       } else {
         player.pause();
@@ -125,7 +137,7 @@ function VideoCardInner({
     } catch {
       // ignore playback race
     }
-  }, [isActive, pausedByUser, player, isImagePost]);
+  }, [visible, pausedByUser, player, isImagePost]);
 
   useEffect(() => {
     if (!isActive) {
@@ -379,6 +391,17 @@ function VideoCardInner({
 
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
+      {/* Sprint S2 : son du post joué en synchro (début 0, volumes par défaut
+          tant que la base ne stocke pas les réglages). Suit pause, seek,
+          boucle et bouton son. */}
+      {soundArmed && item.soundUrl ? (
+        <SyncedSound
+          url={item.soundUrl}
+          video={isImagePost ? null : player}
+          active={visible && !pausedByUser}
+          muted={muted}
+        />
+      ) : null}
       {isImagePost ? (
         <Image
           source={{ uri: item.thumbnailUrl || item.videoUrl }}
@@ -424,7 +447,7 @@ function VideoCardInner({
         </View>
       ) : null}
 
-      {!isImagePost && !muteBesideHandle ? (
+      {canMute && !muteBesideHandle ? (
         <Pressable
           style={[styles.muteBtn, { top: insets.top + 4 }]}
           onPress={() => setMuted((m) => !m)}
@@ -504,7 +527,7 @@ function VideoCardInner({
           <Pressable onPress={openProfile}>
             <Text style={styles.handle}>{item.handle}</Text>
           </Pressable>
-          {!isImagePost && muteBesideHandle ? (
+          {canMute && muteBesideHandle ? (
             <Pressable
               onPress={() => setMuted((m) => !m)}
               hitSlop={10}

@@ -54,6 +54,9 @@ type PublishInput = {
   fileSize?: number;
   durationMs?: number;
   soundId?: string | null;
+  /** Fichier audio et titre du son : lecture immédiate dans le feed (S2). */
+  soundUrl?: string | null;
+  soundTitle?: string | null;
   filterId?: string | null;
   /**
    * Identifiant stable du brouillon. Deux tentatives pour la même publication
@@ -235,6 +238,8 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           userId: user?.id,
           category: input.category as VideoItem['category'],
           soundId: input.soundId || undefined,
+          soundUrl: input.soundUrl || undefined,
+          soundTitle: input.soundTitle || undefined,
           filterId: input.filterId || undefined,
         };
         setRawVideos((prev) => [item, ...prev]);
@@ -268,6 +273,10 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           onProgress: input.onProgress,
           signal: input.signal,
         });
+        if (input.soundId && input.soundUrl && !item.soundUrl) {
+          item.soundUrl = input.soundUrl;
+          item.soundTitle = item.soundTitle || input.soundTitle || undefined;
+        }
         setRawVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
       } catch (e) {
         const msg =
