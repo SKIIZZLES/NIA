@@ -171,6 +171,7 @@ const ha: TranslationKeys = {
     unsaveBody: 'Wannan bidiyo ba za ta ƙara bayyana a cikin ajiyayyunka ba.',
     language: 'Harshe',
     appearance: 'Kamanni',
+    deleteAccount: 'Share asusuna',
   },
   notifications: {
     title: 'Sanarwa',
@@ -519,6 +520,13 @@ const ha: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: 'A share wannan asusu gaba ɗaya?',
+    deleteBody: 'Za a share bidiyoyinka da duk bayananka. Ba za a iya dawo da su ba.',
+    deleteConfirm: 'Share gaba ɗaya',
+    deleteError: 'Sharewa ta gaza. Sake gwadawa.',
+    deleteMock: 'Yanayin gwaji: babu asusu na gaske da za a share.',
   },
 };
 

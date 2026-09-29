@@ -166,6 +166,7 @@ const mnk: TranslationKeys = {
     unsaveBody: 'Cette vidéo ne figuera plus dans vos enregistrements.',
     language: 'Kaŋo',
     appearance: 'Apparence',
+    deleteAccount: 'Supprimer mon compte',
   },
   notifications: {
     title: 'Kibaaroolu',
@@ -514,6 +515,13 @@ const mnk: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'Supprimer définitivement ce compte ?',
+    deleteBody: 'Vos vidéos et toutes vos données seront effacées. Cette action est irréversible.',
+    deleteConfirm: 'Supprimer définitivement',
+    deleteError: 'Suppression impossible. Réessayez.',
+    deleteMock: 'Mode démo : aucun compte réel à supprimer.',
+  },
 };
 
 export default mnk;

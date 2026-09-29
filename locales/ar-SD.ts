@@ -173,6 +173,7 @@ const arSD: TranslationKeys = {
     unsaveBody: 'الفيديو دا ما حيفضل في المحفوظات بتاعتك.',
     language: 'اللغة',
     appearance: 'المظهر',
+    deleteAccount: 'امسح حسابي',
   },
   notifications: {
     title: 'الإشعارات',
@@ -521,6 +522,13 @@ const arSD: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: 'تمسح الحساب ده نهائي؟',
+    deleteBody: 'الفيديوهات بتاعتك وكل بياناتك حتتمسح. الخطوة دي ما بترجع.',
+    deleteConfirm: 'امسح نهائي',
+    deleteError: 'ما اتمسح. جرّب تاني.',
+    deleteMock: 'وضع تجريبي: ما في حساب حقيقي يتمسح.',
   },
 };
 

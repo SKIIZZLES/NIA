@@ -699,7 +699,11 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      /** 013_account_deletion — supprime le compte appelant et ses fichiers. */
+      delete_own_account: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

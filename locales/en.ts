@@ -171,6 +171,7 @@ const en: TranslationKeys = {
     unsaveBody: 'This video will no longer appear in your saved list.',
     language: 'Language',
     appearance: 'Appearance',
+    deleteAccount: 'Delete my account',
   },
   notifications: {
     title: 'Notifications',
@@ -521,6 +522,13 @@ const en: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: 'Permanently delete this account?',
+    deleteBody: 'Your videos and all your data will be erased. This cannot be undone.',
+    deleteConfirm: 'Delete permanently',
+    deleteError: 'Deletion failed. Please try again.',
+    deleteMock: 'Demo mode: no real account to delete.',
   },
 };
 

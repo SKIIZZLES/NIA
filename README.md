@@ -197,6 +197,45 @@ Si le SQL n’a pas créé le bucket (droits), créez-le manuellement nommé `vi
 4. Fichier dans Storage `videos/{user_id}/…` + row dans `videos`.
 5. Feed recharge les vidéos distantes (table vide = feed vide ; erreur réseau = message, pas de démo).
 
+## Suppression de compte (exigence Google Play)
+
+Google Play exige, pour toute application permettant de créer un compte, **deux**
+chemins de suppression : un dans l'application, et une **URL web** accessible sans
+installer l'app.
+
+### Dans l'app
+
+Profil → « Supprimer mon compte », sous « Se déconnecter ». Confirmation
+explicite, puis appel de la RPC `delete_own_account` (migration
+`013_account_deletion.sql`), déconnexion, retour à l'écran d'accueil.
+
+Ce que la suppression efface, vérifié dans les migrations :
+
+| Effacé | Par quoi |
+|---|---|
+| Fichiers du bucket `videos` | suppression explicite dans la RPC (préfixe `{user_id}/`) |
+| Ligne `auth.users` | suppression explicite dans la RPC |
+| Profil, vidéos, likes, commentaires, abonnements, signalements, blocages, reposts, sauvegardes, sons, événements, participations, lives, séries | cascade `on delete cascade` depuis `auth.users` → `profiles` → le reste |
+
+Seule exception : `notifications.actor_id` est en `on delete set null`. Les
+notifications déjà reçues par d'autres personnes restent, sans auteur.
+
+### Côté Google Play Console
+
+Deux champs restent à remplir à la main, ils ne peuvent pas venir du dépôt :
+
+1. **URL de demande de suppression de compte** (App content → Data safety →
+   Account deletion). Une page web publique décrivant la procédure. À héberger.
+2. **Politique de confidentialité**. URL publique obligatoire.
+
+### Appliquer la migration
+
+`013_account_deletion.sql` dans Supabase Dashboard → SQL Editor, après
+`012_filters.sql`. La fonction est `security definer` : elle doit appartenir à
+un rôle capable d'écrire dans `auth.users` et `storage.objects`, ce qui est le
+cas quand on l'exécute depuis l'éditeur SQL du dashboard.
+
+
 ## Architecture
 
 ```

@@ -171,6 +171,7 @@ const sw: TranslationKeys = {
     unsaveBody: 'Cette vidéo ne figuera plus dans vos enregistrements.',
     language: 'Lugha',
     appearance: 'Mwonekano',
+    deleteAccount: 'Futa akaunti yangu',
   },
   notifications: {
     title: 'Arifa',
@@ -519,6 +520,13 @@ const sw: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: 'Kufuta akaunti hii kabisa?',
+    deleteBody: 'Video zako na data zako zote zitafutwa. Hatua hii hairudishwi.',
+    deleteConfirm: 'Futa kabisa',
+    deleteError: 'Imeshindikana kufuta. Jaribu tena.',
+    deleteMock: 'Hali ya onyesho: hakuna akaunti halisi ya kufuta.',
   },
 };
 

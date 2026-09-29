@@ -171,6 +171,7 @@ const es: TranslationKeys = {
     unsaveBody: 'Este video ya no aparecerá en tus guardados.',
     language: 'Idioma',
     appearance: 'Apariencia',
+    deleteAccount: 'Eliminar mi cuenta',
   },
   notifications: {
     title: 'Notificaciones',
@@ -518,6 +519,13 @@ const es: TranslationKeys = {
     ak: 'Akan',
     mnk: 'Mandingue',
     dyo: 'Diola',
+  },
+  account: {
+    deleteTitle: '¿Eliminar definitivamente esta cuenta?',
+    deleteBody: 'Tus videos y todos tus datos se borrarán. Esta acción es irreversible.',
+    deleteConfirm: 'Eliminar definitivamente',
+    deleteError: 'No se pudo eliminar. Inténtalo de nuevo.',
+    deleteMock: 'Modo demo: no hay ninguna cuenta real que eliminar.',
   },
 };
 

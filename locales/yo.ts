@@ -166,6 +166,7 @@ const yo: TranslationKeys = {
     unsaveBody: 'Fídíò yìí kò ní farahàn mọ́ nínú àwọn tí o fi pamọ́.',
     language: 'Èdè',
     appearance: 'Ìrísí',
+    deleteAccount: 'Paarẹ́ àkántì mi',
   },
   notifications: {
     title: 'Ìfitónilétí',
@@ -514,6 +515,13 @@ const yo: TranslationKeys = {
     dyo: 'Diola',
   },
 
+  account: {
+    deleteTitle: 'Paarẹ́ àkántì yìí pátápátá?',
+    deleteBody: 'A ó pa àwọn fídíò rẹ àti gbogbo dátà rẹ rẹ́. A kò lè yí i padà.',
+    deleteConfirm: 'Paarẹ́ pátápátá',
+    deleteError: 'Pípaarẹ́ kùnà. Gbìyànjú lẹ́ẹ̀kan sí i.',
+    deleteMock: 'Ipò àṣefihàn: kò sí àkántì gidi láti paarẹ́.',
+  },
 };
 
 export default yo;
