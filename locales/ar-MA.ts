@@ -41,6 +41,7 @@ const arMA: TranslationKeys = {
     registerTitle: 'أنشئ كونط',
     signIn: 'دخل',
     createAccount: 'أنشئ الكونط ديالي',
+    legalAccept: 'ملي كتصاوب كونط، كتوافق على:',
     emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'السميت_ديالك',
     loginFail: 'ما قدرناش ندخلوك',
@@ -176,6 +177,7 @@ const arMA: TranslationKeys = {
     appearance: 'المظهر',
     deleteAccount: 'حيّد الكونط ديالي',
     privacyPolicy: 'سياسة الخصوصية',
+    terms: 'شروط الاستخدام',
   },
   notifications: {
     title: 'الإشعارات',

@@ -37,6 +37,7 @@ const bm: TranslationKeys = {
     registerTitle: 'Konto da',
     signIn: 'Don',
     createAccount: 'N ka konto da',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'i@email.com',
     usernamePlaceholder: 'i_tɔgɔ',
     loginFail: 'A ma se ka don',
@@ -168,6 +169,7 @@ const bm: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Kibaaruw',

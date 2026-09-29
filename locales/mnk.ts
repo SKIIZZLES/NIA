@@ -37,6 +37,7 @@ const mnk: TranslationKeys = {
     registerTitle: 'Kontoo daa',
     signIn: 'Duŋ',
     createAccount: 'N na kontoo daa',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'ite@email.com',
     usernamePlaceholder: 'i_too',
     loginFail: 'A maŋ duŋ noo',
@@ -168,6 +169,7 @@ const mnk: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Kibaaroolu',

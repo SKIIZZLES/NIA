@@ -38,6 +38,7 @@ const sw: TranslationKeys = {
     registerTitle: 'Fungua akaunti',
     signIn: 'Ingia',
     createAccount: 'Fungua akaunti yangu',
+    legalAccept: 'Kwa kufungua akaunti, unakubali:',
     emailPlaceholder: 'wewe@email.com',
     usernamePlaceholder: 'jina_lako',
     loginFail: 'Imeshindikana kuingia',
@@ -173,6 +174,7 @@ const sw: TranslationKeys = {
     appearance: 'Mwonekano',
     deleteAccount: 'Futa akaunti yangu',
     privacyPolicy: 'Sera ya faragha',
+    terms: 'Masharti ya matumizi',
   },
   notifications: {
     title: 'Arifa',

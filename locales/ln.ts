@@ -37,6 +37,7 @@ const ln: TranslationKeys = {
     registerTitle: 'Kosala compte',
     signIn: 'Kokɔta',
     createAccount: 'Kosala compte na ngai',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'yo@email.com',
     usernamePlaceholder: 'nkombo_na_yo',
     loginFail: 'Ekoki te kokɔta',
@@ -168,6 +169,7 @@ const ln: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Banotifikasiyo',

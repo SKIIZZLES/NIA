@@ -37,6 +37,7 @@ const wo: TranslationKeys = {
     registerTitle: 'Sos ab kont',
     signIn: 'Dugg',
     createAccount: 'Sos sama kont',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'yaw@email.com',
     usernamePlaceholder: 'sa_tur',
     loginFail: 'Mënuloo dugg',
@@ -168,6 +169,7 @@ const wo: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Xibaar',

@@ -38,6 +38,7 @@ const dyo: TranslationKeys = {
     registerTitle: 'Kajeken kont',
     signIn: 'Kaj',
     createAccount: 'Kajeken sama kont',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'yaw@email.com',
     usernamePlaceholder: 'sa_tur',
     loginFail: 'Mënul kaj',
@@ -173,6 +174,7 @@ const dyo: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Kibaar',

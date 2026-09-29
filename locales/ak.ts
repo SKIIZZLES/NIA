@@ -37,6 +37,7 @@ const ak: TranslationKeys = {
     registerTitle: 'Yɛ account',
     signIn: 'Kɔ mu',
     createAccount: 'Yɛ me account',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'wo@email.com',
     usernamePlaceholder: 'wo_din',
     loginFail: 'Antumi ankɔ mu',
@@ -168,6 +169,7 @@ const ak: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Amanneɛbɔ',

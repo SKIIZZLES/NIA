@@ -37,6 +37,7 @@ const zu: TranslationKeys = {
     registerTitle: 'Dala i-akhawunti',
     signIn: 'Ngena',
     createAccount: 'Dala i-akhawunti yami',
+    legalAccept: 'Ngokudala i-akhawunti, uyavuma:',
     emailPlaceholder: 'wena@email.com',
     usernamePlaceholder: 'igama_lakho',
     loginFail: 'Ayikwazanga ukungena',
@@ -168,6 +169,7 @@ const zu: TranslationKeys = {
     appearance: 'Ukubukeka',
     deleteAccount: 'Cima i-akhawunti yami',
     privacyPolicy: 'Inqubomgomo yobumfihlo',
+    terms: 'Imigomo yokusebenzisa',
   },
   notifications: {
     title: 'Izaziso',

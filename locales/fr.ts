@@ -36,6 +36,7 @@ const fr = {
     registerTitle: 'Créer un compte',
     signIn: 'Se connecter',
     createAccount: 'Créer mon compte',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'vous@email.com',
     usernamePlaceholder: 'votre_handle',
     loginFail: 'Connexion impossible',
@@ -172,6 +173,7 @@ const fr = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Notifications',

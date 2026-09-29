@@ -38,6 +38,7 @@ const pt: TranslationKeys = {
     registerTitle: 'Criar uma conta',
     signIn: 'Entrar',
     createAccount: 'Criar a minha conta',
+    legalAccept: 'Ao criar uma conta, aceita:',
     emailPlaceholder: 'voce@email.com',
     usernamePlaceholder: 'seu_handle',
     loginFail: 'Não foi possível entrar',
@@ -173,6 +174,7 @@ const pt: TranslationKeys = {
     appearance: 'Aparência',
     deleteAccount: 'Excluir a minha conta',
     privacyPolicy: 'Política de privacidade',
+    terms: 'Condições de utilização',
   },
   notifications: {
     title: 'Notificações',

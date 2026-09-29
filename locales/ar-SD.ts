@@ -40,6 +40,7 @@ const arSD: TranslationKeys = {
     registerTitle: 'افتح حساب',
     signIn: 'ادخل',
     createAccount: 'افتح حسابي',
+    legalAccept: 'بإنشاء حساب، أنت توافق على:',
     emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'اسمك',
     loginFail: 'ما قدرنا ندخلك',
@@ -175,6 +176,7 @@ const arSD: TranslationKeys = {
     appearance: 'المظهر',
     deleteAccount: 'امسح حسابي',
     privacyPolicy: 'سياسة الخصوصية',
+    terms: 'شروط الاستخدام',
   },
   notifications: {
     title: 'الإشعارات',

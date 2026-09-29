@@ -37,6 +37,7 @@ const yo: TranslationKeys = {
     registerTitle: 'Ṣẹ̀dá àkántì',
     signIn: 'Wọlé',
     createAccount: 'Ṣẹ̀dá àkántì mi',
+    legalAccept: 'Nípa ṣíṣẹ̀dá àkántì, o gbà pẹ̀lú:',
     emailPlaceholder: 'iwọ@email.com',
     usernamePlaceholder: 'oruko_re',
     loginFail: 'Kò le wọlé',
@@ -168,6 +169,7 @@ const yo: TranslationKeys = {
     appearance: 'Ìrísí',
     deleteAccount: 'Paarẹ́ àkántì mi',
     privacyPolicy: 'Ìlànà àṣírí',
+    terms: 'Àwọn òfin ìlò',
   },
   notifications: {
     title: 'Ìfitónilétí',

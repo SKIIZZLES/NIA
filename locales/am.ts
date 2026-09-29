@@ -37,6 +37,7 @@ const am: TranslationKeys = {
     registerTitle: 'መለያ ፍጠር',
     signIn: 'ግባ',
     createAccount: 'መለያዬን ፍጠር',
+    legalAccept: 'መለያ በመፍጠር የሚከተሉትን ይቀበላሉ፦',
     emailPlaceholder: 'እርስዎ@email.com',
     usernamePlaceholder: 'የእርስዎ_ስም',
     loginFail: 'መግባት አልተቻለም',
@@ -168,6 +169,7 @@ const am: TranslationKeys = {
     appearance: 'መልክ',
     deleteAccount: 'መለያዬን አጥፋ',
     privacyPolicy: 'የግላዊነት ፖሊሲ',
+    terms: 'የአገልግሎት ውሎች',
   },
   notifications: {
     title: 'ማሳወቂያዎች',

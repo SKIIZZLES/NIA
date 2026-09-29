@@ -20,3 +20,12 @@ export function privacyPolicyUrl(locale: string): string {
 export function accountDeletionUrl(locale: string): string {
   return locale === 'en' ? `${BASE}/delete-account.html` : `${BASE}/suppression-compte.html`;
 }
+
+/**
+ * Conditions d'utilisation. Réclamées par le portail développeur Snapchat
+ * à côté de la politique, et attendues par la fiche Play dès qu'une app
+ * héberge des contenus publiés par ses utilisateurs.
+ */
+export function termsOfServiceUrl(locale: string): string {
+  return locale === 'en' ? `${BASE}/terms.html` : `${BASE}/conditions.html`;
+}

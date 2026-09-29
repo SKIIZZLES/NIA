@@ -3,12 +3,15 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { privacyPolicyUrl, termsOfServiceUrl } from '@/constants/legal';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
@@ -18,7 +21,7 @@ import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
 
 export default function RegisterScreen() {
   const { signUp, isMockAuth } = useAuth();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -99,6 +102,36 @@ export default function RegisterScreen() {
       />
       <GoogleSignInButton />
       <SnapchatSignInButton />
+
+      {/*
+        Les deux textes que l'utilisateur accepte doivent etre lisibles avant
+        la creation du compte, pas seulement apres. Snap comme Google exigent
+        que les CGU soient atteignables ; les afficher ici est le seul endroit
+        ou la personne les voit au moment ou elle s'engage.
+      */}
+      <Text style={styles.legalNotice}>{t('auth.legalAccept')}</Text>
+      <View style={styles.legalRow}>
+        <Pressable
+          onPress={() => {
+            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.terms')}
+          style={styles.legalBtn}
+        >
+          <Text style={styles.legalLink}>{t('profile.terms')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            void WebBrowser.openBrowserAsync(privacyPolicyUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.privacyPolicy')}
+          style={styles.legalBtn}
+        >
+          <Text style={styles.legalLink}>{t('profile.privacyPolicy')}</Text>
+        </Pressable>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -134,6 +167,27 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     fontSize: 13,
     marginBottom: 6,
+  },
+  legalNotice: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: Spacing.lg,
+    textAlign: 'center',
+  },
+  legalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  legalBtn: { paddingVertical: 6, paddingHorizontal: 8 },
+  legalLink: {
+    color: Colors.textSecondary,
+    fontFamily: Fonts.medium,
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
   input: {
     backgroundColor: Colors.noirSoft,

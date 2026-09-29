@@ -37,6 +37,7 @@ const ff: TranslationKeys = {
     registerTitle: 'Taggu konte',
     signIn: 'Naatu',
     createAccount: 'Taggu konte am',
+    legalAccept: 'En créant un compte, vous acceptez :',
     emailPlaceholder: 'aan@email.com',
     usernamePlaceholder: 'innde_maa',
     loginFail: 'Waawaa naatde',
@@ -168,6 +169,7 @@ const ff: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    terms: 'Conditions d\'utilisation',
   },
   notifications: {
     title: 'Tintine',

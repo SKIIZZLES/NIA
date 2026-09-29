@@ -8,8 +8,8 @@ et une **page de demande de suppression de compte**.
 
 | Champ | Valeur | Où |
 |---|---|---|
-| Éditeur | **NIA** | `confidentialite.html`, `privacy.html` |
-| Contact | **niaapp@outlook.com** | les quatre pages, en lien `mailto:` |
+| Éditeur | **NIA** | `confidentialite.html`, `privacy.html`, `conditions.html`, `terms.html` |
+| Contact | **niaapp@outlook.com** | les six pages, en lien `mailto:` |
 
 Google Play exige que l'entité nommée sur la fiche du store apparaisse dans la
 politique, avec un point de contact. Le nom doit rester identique à celui
@@ -40,6 +40,8 @@ URL obtenues, une à deux minutes après :
 | Privacy (EN) | `https://skiizzles.github.io/NIA/legal/privacy.html` |
 | Suppression (FR) | `https://skiizzles.github.io/NIA/legal/suppression-compte.html` |
 | Deletion (EN) | `https://skiizzles.github.io/NIA/legal/delete-account.html` |
+| Conditions d'utilisation (FR) | `https://skiizzles.github.io/NIA/legal/conditions.html` |
+| Terms of Service (EN) | `https://skiizzles.github.io/NIA/legal/terms.html` |
 
 Ces URL sont déjà câblées dans `constants/legal.ts` et couvertes par
 `__tests__/constants/legal.test.ts`. Changer de domaine plus tard veut dire
@@ -51,6 +53,13 @@ changer ce fichier — les tests le rappelleront.
 |---|---|
 | Store listing → Privacy policy | `…/legal/confidentialite.html` |
 | App content → Data safety → Account deletion → URL | `…/legal/suppression-compte.html` |
+
+Portail développeur Snapchat (client `7ea8f803-6cf0-40a0-98fe-ba9f3b3765ae`) :
+
+| Champ | Valeur |
+|---|---|
+| Privacy policy URL | `…/legal/privacy.html` |
+| Terms of Service URL | `…/legal/terms.html` |
 
 ## 4. Formulaire Data safety
 
@@ -86,14 +95,23 @@ Le champ « région » d'une vidéo est un texte que l'utilisateur saisit ou
 choisit. Ce n'est pas une donnée de localisation au sens du formulaire, et
 l'app ne lit jamais la position de l'appareil.
 
-## 5. Vérifier après mise en ligne
+## 5. Point ouvert dans les CGU — droit applicable
+
+La section 12 des CGU dit que le droit applicable est celui du pays où
+l'éditeur de NIA est établi, sans le nommer. C'est la seule donnée que le dépôt
+ne contient pas, et elle n'a pas été inventée. Pour nommer un pays et un
+tribunal compétent, remplacer la première phrase de la section 12 dans
+`conditions.html` **et** `terms.html` — les deux, sinon les versions se
+contredisent.
+
+## 6. Vérifier après mise en ligne
 
 ```bash
-for u in confidentialite privacy suppression-compte delete-account; do
+for u in confidentialite privacy suppression-compte delete-account conditions terms; do
   echo -n "$u : "
   curl -s -o /dev/null -w "%{http_code}\n" "https://skiizzles.github.io/NIA/legal/$u.html"
 done
 ```
 
-Les quatre doivent répondre `200`. Google vérifie que l'URL est joignable
+Les six doivent répondre `200`. Google vérifie que l'URL est joignable
 publiquement et sans géo-restriction.

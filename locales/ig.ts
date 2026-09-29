@@ -37,6 +37,7 @@ const ig: TranslationKeys = {
     registerTitle: 'Mepụta akaụntụ',
     signIn: 'Banye',
     createAccount: 'Mepụta akaụntụ m',
+    legalAccept: 'Site n\'imepụta akaụntụ, ị kwenyere na:',
     emailPlaceholder: 'gi@email.com',
     usernamePlaceholder: 'aha_gi',
     loginFail: 'Enweghị ike ịbanye',
@@ -168,6 +169,7 @@ const ig: TranslationKeys = {
     appearance: 'Ọdịdị',
     deleteAccount: 'Hichapụ akaụntụ m',
     privacyPolicy: 'Iwu nzuzo',
+    terms: 'Usoro ojiji',
   },
   notifications: {
     title: 'Ọkwa',

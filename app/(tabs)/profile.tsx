@@ -26,7 +26,7 @@ import {
 } from '@/lib/profiles';
 import * as WebBrowser from 'expo-web-browser';
 import { deleteOwnAccount } from '@/lib/account';
-import { privacyPolicyUrl } from '@/constants/legal';
+import { privacyPolicyUrl, termsOfServiceUrl } from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
 import { updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
@@ -315,6 +315,12 @@ export default function ProfileScreen() {
     fontSize: 14,
   },
   linkBtn: { marginTop: Spacing.sm, padding: 6 },
+  legalRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   legalBtn: {
     marginTop: Spacing.md,
     alignSelf: 'center',
@@ -564,16 +570,28 @@ export default function ProfileScreen() {
         atteignable depuis l'application, et quelqu'un doit pouvoir la lire
         AVANT de creer un compte, pas seulement apres.
       */}
-      <Pressable
-        style={styles.legalBtn}
-        onPress={() => {
-          void WebBrowser.openBrowserAsync(privacyPolicyUrl(locale));
-        }}
-        accessibilityRole="link"
-        accessibilityLabel={t('profile.privacyPolicy')}
-      >
-        <Text style={styles.legalText}>{t('profile.privacyPolicy')}</Text>
-      </Pressable>
+      <View style={styles.legalRow}>
+        <Pressable
+          style={styles.legalBtn}
+          onPress={() => {
+            void WebBrowser.openBrowserAsync(privacyPolicyUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.privacyPolicy')}
+        >
+          <Text style={styles.legalText}>{t('profile.privacyPolicy')}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.legalBtn}
+          onPress={() => {
+            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.terms')}
+        >
+          <Text style={styles.legalText}>{t('profile.terms')}</Text>
+        </Pressable>
+      </View>
 
       {user ? (
         <View style={styles.segment}>

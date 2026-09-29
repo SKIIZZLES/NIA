@@ -37,6 +37,7 @@ const arEG: TranslationKeys = {
     registerTitle: 'اعمل حساب',
     signIn: 'دخول',
     createAccount: 'اعمل حسابي',
+    legalAccept: 'بإنشاء حساب، أنت توافق على:',
     emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'اليوزر_بتاعك',
     loginFail: 'مقدرناش نسجّل دخول',
@@ -168,6 +169,7 @@ const arEG: TranslationKeys = {
     appearance: 'المظهر',
     deleteAccount: 'امسح حسابي',
     privacyPolicy: 'سياسة الخصوصية',
+    terms: 'شروط الاستخدام',
   },
   notifications: {
     title: 'الإشعارات',
