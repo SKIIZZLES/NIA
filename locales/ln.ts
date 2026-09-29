@@ -167,6 +167,7 @@ const ln: TranslationKeys = {
     language: 'Lokotá',
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
+    privacyPolicy: 'Politique de confidentialité',
   },
   notifications: {
     title: 'Banotifikasiyo',

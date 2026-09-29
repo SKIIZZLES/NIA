@@ -24,7 +24,9 @@ import {
   countFollowing,
   fetchVideosByUserId,
 } from '@/lib/profiles';
+import * as WebBrowser from 'expo-web-browser';
 import { deleteOwnAccount } from '@/lib/account';
+import { privacyPolicyUrl } from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
 import { updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
@@ -36,7 +38,7 @@ type ProfileTab = 'publications' | 'archives' | 'saves' | 'series';
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { videos, savedIds, toggleSave, refresh } = useFeed();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const colors = useColors();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -313,6 +315,18 @@ export default function ProfileScreen() {
     fontSize: 14,
   },
   linkBtn: { marginTop: Spacing.sm, padding: 6 },
+  legalBtn: {
+    marginTop: Spacing.md,
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  legalText: {
+    color: colors.textMuted,
+    fontFamily: Fonts.medium,
+    fontSize: 13,
+    textDecorationLine: 'underline',
+  },
   deleteAccountBtn: {
     marginTop: Spacing.lg,
     alignSelf: 'center',
@@ -544,6 +558,22 @@ export default function ProfileScreen() {
           style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
         />
       )}
+
+      {/*
+        Hors du bloc `user` a dessein : Google Play exige que la politique soit
+        atteignable depuis l'application, et quelqu'un doit pouvoir la lire
+        AVANT de creer un compte, pas seulement apres.
+      */}
+      <Pressable
+        style={styles.legalBtn}
+        onPress={() => {
+          void WebBrowser.openBrowserAsync(privacyPolicyUrl(locale));
+        }}
+        accessibilityRole="link"
+        accessibilityLabel={t('profile.privacyPolicy')}
+      >
+        <Text style={styles.legalText}>{t('profile.privacyPolicy')}</Text>
+      </Pressable>
 
       {user ? (
         <View style={styles.segment}>

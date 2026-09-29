@@ -171,6 +171,7 @@ const fr = {
     language: 'Langue',
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
+    privacyPolicy: 'Politique de confidentialité',
   },
   notifications: {
     title: 'Notifications',

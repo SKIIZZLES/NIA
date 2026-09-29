@@ -167,6 +167,7 @@ const bm: TranslationKeys = {
     language: 'Kan',
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
+    privacyPolicy: 'Politique de confidentialité',
   },
   notifications: {
     title: 'Kibaaruw',

@@ -167,6 +167,7 @@ const mnk: TranslationKeys = {
     language: 'Kaŋo',
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
+    privacyPolicy: 'Politique de confidentialité',
   },
   notifications: {
     title: 'Kibaaroolu',

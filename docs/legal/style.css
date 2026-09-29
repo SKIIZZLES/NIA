@@ -1,0 +1,44 @@
+/* NIA — pages légales. Autonome, sans dépendance externe, lisible sur mobile. */
+:root {
+  --noir: #0b0b0b;
+  --noir-eleve: #141414;
+  --sable: #f2e8dc;
+  --or: #d99a3f;
+  --muted: #9b9287;
+  --border: #2a2724;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  padding: 0 16px 64px;
+  background: var(--noir);
+  color: var(--sable);
+  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+header { padding: 40px 0 24px; border-bottom: 1px solid var(--border); }
+.marque { color: var(--or); font-weight: 700; letter-spacing: .14em; font-size: 13px; text-transform: uppercase; }
+h1 { font-size: 27px; line-height: 1.25; margin: 12px 0 6px; }
+h2 { font-size: 19px; margin: 36px 0 10px; color: var(--or); }
+h3 { font-size: 16px; margin: 24px 0 6px; }
+.maj { color: var(--muted); font-size: 14px; margin: 0; }
+p, li { color: var(--sable); }
+ul { padding-left: 20px; }
+li { margin: 6px 0; }
+a { color: var(--or); }
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 15px; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--or); font-weight: 600; white-space: nowrap; }
+.encadre {
+  background: var(--noir-eleve);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--or);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 20px 0;
+}
+.a-remplir { color: #ff9d6b; font-weight: 600; }
+footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+footer a { margin-right: 16px; }
+@media (max-width: 480px) { h1 { font-size: 23px; } body { font-size: 15px; } }

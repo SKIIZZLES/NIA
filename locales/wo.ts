@@ -167,6 +167,7 @@ const wo: TranslationKeys = {
     language: 'Làkk',
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
+    privacyPolicy: 'Politique de confidentialité',
   },
   notifications: {
     title: 'Xibaar',
