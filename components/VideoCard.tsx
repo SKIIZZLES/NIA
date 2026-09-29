@@ -322,6 +322,12 @@ function VideoCardInner({
               Alert.alert(t('common.error'), result.message);
               return;
             }
+            // La ligne est partie mais l'objet Storage est reste : le dire,
+            // plutot que d'annoncer une suppression complete qui n'a pas eu lieu.
+            if (result.fileError) {
+              Alert.alert(t('feed.deleteSuccess'), t('feed.deleteFileKept'));
+              return;
+            }
             Alert.alert(
               t('feed.deleteSuccess'),
               result.mock ? t('feed.deleteSuccessMock') : t('feed.deleteSuccessBody'),
