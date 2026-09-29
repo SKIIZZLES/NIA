@@ -39,6 +39,9 @@ export const PUBLISH_ERRORS = {
   get categoryRequired() {
     return t('create.errCategoryRequired');
   },
+  get optionsNeedServer() {
+    return t('create.errOptionsNeedServer');
+  },
 } as const;
 
 /** Extrait les #hashtags d’une légende (sans le #, en minuscules, uniques). */

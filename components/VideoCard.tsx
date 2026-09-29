@@ -24,7 +24,10 @@ import { VideoMenuSheet } from '@/components/VideoMenuSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { shareVideo } from '@/lib/share';
 import { VideoProgressBar } from '@/components/VideoProgressBar';
-import { useRouter } from 'expo-router';
+import { useIsFocused, useRouter } from 'expo-router';
+import { SyncedSound } from '@/components/SyncedSound';
+import { OverlayLayer } from '@/components/OverlayLayer';
+import { canRepostItem } from '@/lib/publishOptions';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
 const SEEK_SEC = 5;
@@ -88,6 +91,17 @@ function VideoCardInner({
       : item.handle === `@${user.username}`);
   const [muted, setMuted] = useState(false);
   const [pausedByUser, setPausedByUser] = useState(false);
+  // Écran sans focus (onglet quitté, page poussée par-dessus) : ni la vidéo
+  // ni le son ne doivent continuer à jouer derrière.
+  const isFocused = useIsFocused();
+  const visible = isActive && isFocused;
+  // Le fichier du son n'est chargé qu'une fois la carte devenue active :
+  // pas de téléchargement pour chaque carte montée par la liste.
+  const [soundArmed, setSoundArmed] = useState(false);
+  useEffect(() => {
+    if (isActive) setSoundArmed(true);
+  }, [isActive]);
+  const canMute = !isImagePost || !!item.soundUrl;
   const [showPauseIcon, setShowPauseIcon] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -109,15 +123,29 @@ function VideoCardInner({
     router.push(`/sound/${item.soundId}`);
   };
 
+  // 016 : réglages d'édition publiés (vitesse, volume original). Sans
+  // edit_meta : 1x, volume normal, comme avant.
+  const meta = item.editMeta;
+  const speed = !isImagePost && meta ? meta.speed : 1;
+  const originalVolume = !isImagePost && meta ? meta.originalVolume : 1;
   useEffect(() => {
-    player.muted = muted;
-  }, [muted, player]);
+    try {
+      player.muted = muted || originalVolume <= 0;
+      player.volume = Math.max(0, Math.min(1, originalVolume));
+      if (!isImagePost) {
+        player.preservesPitch = true;
+        player.playbackRate = speed;
+      }
+    } catch {
+      // lecteur libéré
+    }
+  }, [muted, player, originalVolume, speed, isImagePost]);
 
   useEffect(() => {
     try {
       if (isImagePost) {
         try { player.pause(); } catch { /* ignore */ }
-      } else if (isActive && !pausedByUser) {
+      } else if (visible && !pausedByUser) {
         player.play();
       } else {
         player.pause();
@@ -125,7 +153,7 @@ function VideoCardInner({
     } catch {
       // ignore playback race
     }
-  }, [isActive, pausedByUser, player, isImagePost]);
+  }, [visible, pausedByUser, player, isImagePost]);
 
   useEffect(() => {
     if (!isActive) {
@@ -267,6 +295,11 @@ function VideoCardInner({
           Alert.alert(t('feed.loginRequiredTitle'), t('feed.loginRequired'));
         } else if (result.message === 'already') {
           Alert.alert(t('feed.repost'), t('feed.repostAlready'));
+        } else if (
+          result.message === 'not_allowed' ||
+          result.message.includes('row-level security')
+        ) {
+          Alert.alert(t('feed.repost'), t('feed.repostNotAllowed'));
         } else {
           Alert.alert(
             t('feed.repostFail'),
@@ -379,11 +412,28 @@ function VideoCardInner({
 
   return (
     <View style={[styles.container, { height: SCREEN_H - bottomInset }]}>
+      {/* Sprint S2 : son du post joué en synchro (début 0, volumes par défaut
+          tant que la base ne stocke pas les réglages). Suit pause, seek,
+          boucle et bouton son. */}
+      {soundArmed && item.soundUrl ? (
+        <SyncedSound
+          url={item.soundUrl}
+          video={isImagePost ? null : player}
+          active={visible && !pausedByUser}
+          muted={muted}
+          offsetMs={meta?.sound?.offsetMs ?? 0}
+          volume={meta?.sound?.volume ?? 1}
+          rate={speed}
+        />
+      ) : null}
       {isImagePost ? (
         <Image
           source={{ uri: item.thumbnailUrl || item.videoUrl }}
           style={StyleSheet.absoluteFill}
           resizeMode="cover"
+          accessible={!!item.altText}
+          accessibilityRole="image"
+          accessibilityLabel={item.altText}
         />
       ) : (
         <VideoView
@@ -391,8 +441,12 @@ function VideoCardInner({
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           nativeControls={false}
+          accessible={!!item.altText}
+          accessibilityLabel={item.altText}
         />
       )}
+      {/* Calques texte / stickers (S4), publiés dans edit_meta (016). */}
+      <OverlayLayer doc={item.overlays} timeMs={isImagePost ? null : currentTime * 1000} />
       <LinearGradient
         colors={['rgba(11,11,11,0.65)', 'rgba(11,11,11,0)']}
         style={styles.gradientTop}
@@ -424,7 +478,7 @@ function VideoCardInner({
         </View>
       ) : null}
 
-      {!isImagePost && !muteBesideHandle ? (
+      {canMute && !muteBesideHandle ? (
         <Pressable
           style={[styles.muteBtn, { top: insets.top + 4 }]}
           onPress={() => setMuted((m) => !m)}
@@ -504,7 +558,7 @@ function VideoCardInner({
           <Pressable onPress={openProfile}>
             <Text style={styles.handle}>{item.handle}</Text>
           </Pressable>
-          {!isImagePost && muteBesideHandle ? (
+          {canMute && muteBesideHandle ? (
             <Pressable
               onPress={() => setMuted((m) => !m)}
               hitSlop={10}
@@ -530,6 +584,14 @@ function VideoCardInner({
         <Text style={styles.caption} numberOfLines={3}>
           {item.caption}
         </Text>
+        {item.locationText ? (
+          <View style={styles.placeRow}>
+            <Ionicons name="location" size={13} color={colors.sableMuted} />
+            <Text style={[styles.placeText, { color: colors.sableMuted }]} numberOfLines={1}>
+              {item.locationText}
+            </Text>
+          </View>
+        ) : null}
         {item.soundId ? (
           <Pressable onPress={openSound} hitSlop={6} style={styles.soundRow}>
             <Ionicons name="musical-notes" size={14} color={colors.or} />
@@ -544,10 +606,21 @@ function VideoCardInner({
             </Text>
           </Pressable>
         ) : null}
-        {item.filterId ? (
-          <View style={styles.filterBadge}>
-            <Ionicons name="color-filter-outline" size={12} color={colors.or} />
-            <Text style={styles.filterBadgeText}>{t('filter.feedBadge')}</Text>
+        {item.filterId || item.aiGenerated ? (
+          <View style={styles.badgeRow}>
+            {item.filterId ? (
+              <View style={styles.filterBadge}>
+                <Ionicons name="color-filter-outline" size={12} color={colors.or} />
+                <Text style={styles.filterBadgeText}>{t('filter.feedBadge')}</Text>
+              </View>
+            ) : null}
+            {/* Label obligatoire des contenus générés par IA (016). */}
+            {item.aiGenerated ? (
+              <View style={styles.filterBadge}>
+                <Ionicons name="sparkles-outline" size={12} color={colors.or} />
+                <Text style={styles.filterBadgeText}>{t('feed.aiLabel')}</Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -570,7 +643,7 @@ function VideoCardInner({
         onReport={() => setReportOpen(true)}
         onBlock={onBlock}
         onShare={() => void onShare()}
-        onRepost={() => void onRepost()}
+        onRepost={canRepostItem(item) ? () => void onRepost() : undefined}
         onArchive={onArchive}
         onDelete={onDelete}
         onAddToSeries={onAddToSeries}
@@ -766,12 +839,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.medium,
     fontSize: 12,
   },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  placeText: { fontFamily: Fonts.medium, fontSize: 12, flexShrink: 1 },
   filterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 5,
-    marginTop: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radii.pill,
