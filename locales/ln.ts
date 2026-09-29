@@ -170,6 +170,9 @@ const ln: TranslationKeys = {
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
     terms: 'Conditions d\'utilisation',
+    menu: 'Menu',
+    settingsTitle: 'Paramètres et confidentialité',
+    closeMenu: 'Fungola',
   },
   notifications: {
     title: 'Banotifikasiyo',

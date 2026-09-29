@@ -175,6 +175,9 @@ const sw: TranslationKeys = {
     deleteAccount: 'Futa akaunti yangu',
     privacyPolicy: 'Sera ya faragha',
     terms: 'Masharti ya matumizi',
+    menu: 'Menyu',
+    settingsTitle: 'Mipangilio na faragha',
+    closeMenu: 'Funga',
   },
   notifications: {
     title: 'Arifa',

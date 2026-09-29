@@ -170,6 +170,9 @@ const am: TranslationKeys = {
     deleteAccount: 'መለያዬን አጥፋ',
     privacyPolicy: 'የግላዊነት ፖሊሲ',
     terms: 'የአገልግሎት ውሎች',
+    menu: 'ምናሌ',
+    settingsTitle: 'ቅንብሮች እና ግላዊነት',
+    closeMenu: 'ዝጋ',
   },
   notifications: {
     title: 'ማሳወቂያዎች',

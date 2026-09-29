@@ -170,6 +170,9 @@ const yo: TranslationKeys = {
     deleteAccount: 'Paarẹ́ àkántì mi',
     privacyPolicy: 'Ìlànà àṣírí',
     terms: 'Àwọn òfin ìlò',
+    menu: 'Àkójọ',
+    settingsTitle: 'Ètò àti àṣírí',
+    closeMenu: 'Padé',
   },
   notifications: {
     title: 'Ìfitónilétí',

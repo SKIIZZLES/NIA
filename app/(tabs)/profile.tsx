@@ -3,13 +3,16 @@ import {
   Alert,
   FlatList,
   Image,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { MediaThumb } from '@/components/MediaThumb';
@@ -41,6 +44,7 @@ export default function ProfileScreen() {
   const { t, locale } = useI18n();
   const colors = useColors();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const gap = 2;
   const cols = 3;
@@ -54,6 +58,7 @@ export default function ProfileScreen() {
   const [saved, setSaved] = useState<VideoItem[]>([]);
   const [seriesList, setSeriesList] = useState<SeriesListItem[]>([]);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const myFeedVideos = useMemo(
     () =>
@@ -201,6 +206,11 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const onSignOut = async () => {
+    await signOut();
+    router.replace('/welcome');
+  };
+
   const onUnsave = (item: VideoItem) => {
     toggleSave(item.id);
     setSaved((prev) => prev.filter((v) => v.id !== item.id));
@@ -278,80 +288,78 @@ export default function ProfileScreen() {
     fontSize: 11,
     marginTop: 2,
   },
-  settingsRow: {
+  menuBtn: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipsScroll: {
     marginTop: Spacing.md,
     alignSelf: 'stretch',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: Radii.md,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.noirElevated,
+    marginHorizontal: -Spacing.lg,
+    flexGrow: 0,
   },
-  settingsRowText: {
-    color: colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-  },
-  settingsRowChevron: {
-    color: colors.textMuted,
-    fontSize: 22,
-    lineHeight: 22,
-  },
-  editBtn: {
-    marginTop: Spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  editBtnText: {
-    color: colors.sable,
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-  },
-  linkBtn: { marginTop: Spacing.sm, padding: 6 },
-  legalRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  chipsContent: {
+    flexGrow: 1,
     justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+  },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+  },
+  menuSheet: {
+    backgroundColor: colors.noirElevated,
+    borderTopLeftRadius: Radii.lg,
+    borderTopRightRadius: Radii.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  menuHandle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    marginBottom: Spacing.md,
+  },
+  menuTitle: {
+    color: colors.sable,
+    fontFamily: Fonts.bold,
+    fontSize: 18,
+  },
+  menuRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
-  legalBtn: {
-    marginTop: Spacing.md,
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  menuRowLabel: {
+    color: colors.sable,
+    fontFamily: Fonts.medium,
+    fontSize: 15,
   },
-  legalText: {
+  menuRowDanger: { color: colors.danger },
+  menuClose: {
+    marginTop: Spacing.sm,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  menuCloseText: {
     color: colors.textMuted,
     fontFamily: Fonts.medium,
-    fontSize: 13,
-    textDecorationLine: 'underline',
-  },
-  deleteAccountBtn: {
-    marginTop: Spacing.lg,
-    alignSelf: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  deleteAccountText: {
-    color: colors.textMuted,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
-    textDecorationLine: 'underline',
-  },
-  linkText: {
-    color: colors.or,
-    fontFamily: Fonts.medium,
-    fontSize: 13,
+    fontSize: 15,
   },
   segment: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     alignSelf: 'stretch',
     flexDirection: 'row',
     backgroundColor: colors.noirSoft,
@@ -495,6 +503,15 @@ export default function ProfileScreen() {
 
   const header = (
     <View style={styles.header}>
+      <Pressable
+        style={styles.menuBtn}
+        onPress={() => setMenuOpen(true)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.menu')}
+      >
+        <Ionicons name="menu" size={26} color={colors.sable} />
+      </Pressable>
       <Image
         source={{
           uri: user?.avatarUrl || 'https://i.pravatar.cc/200?u=nia',
@@ -511,87 +528,40 @@ export default function ProfileScreen() {
         <Stat label={t('profile.followers')} value={formatCount(followerCount)} />
         <Stat label={t('profile.following')} value={formatCount(followingCount)} />
       </View>
-      <LanguageToggle />
-      <Pressable
-        style={styles.settingsRow}
-        onPress={() => router.push('/appearance')}
-        accessibilityRole="button"
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={styles.chipsContent}
       >
-        <Text style={styles.settingsRowText}>{t('profile.appearance')}</Text>
-        <Text style={styles.settingsRowChevron}>›</Text>
-      </Pressable>
-      {user ? (
-        <>
-          <Pressable
-            style={styles.editBtn}
+        {user ? (
+          <Chip
+            icon="create-outline"
+            label={t('profile.editProfile')}
             onPress={() => router.push('/edit-profile')}
-          >
-            <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
-          </Pressable>
-          <Pressable
-            style={styles.linkBtn}
-            onPress={() => router.push(`/user/${user.username}`)}
-          >
-            <Text style={styles.linkText}>{t('profile.viewPublic')}</Text>
-          </Pressable>
-          <Button
-            title={t('profile.signOut')}
-            variant="outline"
-            onPress={async () => {
-              await signOut();
-              router.replace('/welcome');
-            }}
-            style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
           />
-          <Pressable
-            style={styles.deleteAccountBtn}
-            onPress={onDeleteAccount}
-            disabled={deletingAccount}
-            accessibilityRole="button"
-            accessibilityLabel={t('profile.deleteAccount')}
-            accessibilityState={{ disabled: deletingAccount }}
-          >
-            <Text style={styles.deleteAccountText}>
-              {t('profile.deleteAccount')}
-            </Text>
-          </Pressable>
-        </>
-      ) : (
+        ) : null}
+        <Chip
+          icon="color-palette-outline"
+          label={t('profile.appearance')}
+          onPress={() => router.push('/appearance')}
+        />
+        {user ? (
+          <Chip
+            icon="person-circle-outline"
+            label={t('profile.viewPublic')}
+            onPress={() => router.push(`/user/${user.username}`)}
+          />
+        ) : null}
+      </ScrollView>
+      {!user ? (
         <Button
           title={t('profile.signIn')}
           variant="gold"
           onPress={() => router.push('/(auth)/login')}
           style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
         />
-      )}
-
-      {/*
-        Hors du bloc `user` a dessein : Google Play exige que la politique soit
-        atteignable depuis l'application, et quelqu'un doit pouvoir la lire
-        AVANT de creer un compte, pas seulement apres.
-      */}
-      <View style={styles.legalRow}>
-        <Pressable
-          style={styles.legalBtn}
-          onPress={() => {
-            void WebBrowser.openBrowserAsync(privacyPolicyUrl(locale));
-          }}
-          accessibilityRole="link"
-          accessibilityLabel={t('profile.privacyPolicy')}
-        >
-          <Text style={styles.legalText}>{t('profile.privacyPolicy')}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.legalBtn}
-          onPress={() => {
-            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
-          }}
-          accessibilityRole="link"
-          accessibilityLabel={t('profile.terms')}
-        >
-          <Text style={styles.legalText}>{t('profile.terms')}</Text>
-        </Pressable>
-      </View>
+      ) : null}
 
       {user ? (
         <View style={styles.segment}>
@@ -617,6 +587,100 @@ export default function ProfileScreen() {
         </View>
       ) : null}
     </View>
+  );
+
+  const menuSheet = (
+    <Modal
+      visible={menuOpen}
+      animationType="slide"
+      transparent
+      onRequestClose={() => setMenuOpen(false)}
+    >
+      <Pressable
+        style={styles.menuBackdrop}
+        onPress={() => setMenuOpen(false)}
+        accessibilityRole="button"
+        accessibilityLabel={t('profile.closeMenu')}
+      />
+      <View
+        style={[
+          styles.menuSheet,
+          { paddingBottom: Math.max(insets.bottom, Spacing.md) + Spacing.sm },
+        ]}
+      >
+        <View style={styles.menuHandle} />
+        <Text style={styles.menuTitle}>{t('profile.settingsTitle')}</Text>
+        <LanguageToggle />
+        <View style={{ height: Spacing.md }} />
+        {user ? (
+          <Pressable
+            style={styles.menuRow}
+            onPress={() => {
+              setMenuOpen(false);
+              void onSignOut();
+            }}
+            accessibilityRole="button"
+          >
+            <Ionicons name="log-out-outline" size={22} color={colors.or} />
+            <Text style={styles.menuRowLabel}>{t('profile.signOut')}</Text>
+          </Pressable>
+        ) : null}
+        {/*
+          Accessible sans compte a dessein : Google Play exige que la politique
+          soit atteignable depuis l'application, et quelqu'un doit pouvoir la
+          lire AVANT de creer un compte, pas seulement apres.
+        */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(privacyPolicyUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.privacyPolicy')}
+        >
+          <Ionicons name="shield-checkmark-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('profile.privacyPolicy')}</Text>
+        </Pressable>
+        {/* Meme raison : les CGU doivent etre lisibles avant de creer un compte. */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.terms')}
+        >
+          <Ionicons name="document-text-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('profile.terms')}</Text>
+        </Pressable>
+        {user ? (
+          <Pressable
+            style={styles.menuRow}
+            // Feuille laissee ouverte : l'Alert de confirmation s'affiche
+            // par-dessus (iOS ne l'affiche pas pendant la fermeture d'une Modal).
+            onPress={onDeleteAccount}
+            disabled={deletingAccount}
+            accessibilityRole="button"
+            accessibilityLabel={t('profile.deleteAccount')}
+            accessibilityState={{ disabled: deletingAccount }}
+          >
+            <Ionicons name="trash-outline" size={22} color={colors.danger} />
+            <Text style={[styles.menuRowLabel, styles.menuRowDanger]}>
+              {t('profile.deleteAccount')}
+            </Text>
+          </Pressable>
+        ) : null}
+        <Pressable
+          style={styles.menuClose}
+          onPress={() => setMenuOpen(false)}
+          accessibilityRole="button"
+        >
+          <Text style={styles.menuCloseText}>{t('profile.closeMenu')}</Text>
+        </Pressable>
+      </View>
+    </Modal>
   );
 
   if (isSeries) {
@@ -665,6 +729,7 @@ export default function ProfileScreen() {
             </Pressable>
           )}
         />
+        {menuSheet}
       </SafeAreaView>
     );
   }
@@ -754,7 +819,46 @@ export default function ProfileScreen() {
           );
         }}
       />
+      {menuSheet}
     </SafeAreaView>
+  );
+}
+
+function Chip({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+}) {
+  const colors = useColors();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: Radii.pill,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.border,
+        backgroundColor: colors.noirElevated,
+      }}
+    >
+      <Ionicons name={icon} size={15} color={colors.or} />
+      <Text
+        style={{ color: colors.sable, fontFamily: Fonts.medium, fontSize: 13 }}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 

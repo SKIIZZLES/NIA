@@ -170,6 +170,9 @@ const ig: TranslationKeys = {
     deleteAccount: 'Hichapụ akaụntụ m',
     privacyPolicy: 'Iwu nzuzo',
     terms: 'Usoro ojiji',
+    menu: 'Menu',
+    settingsTitle: 'Ntọala na nzuzo',
+    closeMenu: 'Mechie',
   },
   notifications: {
     title: 'Ọkwa',

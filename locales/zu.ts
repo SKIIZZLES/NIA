@@ -170,6 +170,9 @@ const zu: TranslationKeys = {
     deleteAccount: 'Cima i-akhawunti yami',
     privacyPolicy: 'Inqubomgomo yobumfihlo',
     terms: 'Imigomo yokusebenzisa',
+    menu: 'Imenyu',
+    settingsTitle: 'Izilungiselelo nobumfihlo',
+    closeMenu: 'Vala',
   },
   notifications: {
     title: 'Izaziso',

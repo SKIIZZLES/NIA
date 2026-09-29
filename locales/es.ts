@@ -175,6 +175,9 @@ const es: TranslationKeys = {
     deleteAccount: 'Eliminar mi cuenta',
     privacyPolicy: 'Política de privacidad',
     terms: 'Condiciones de uso',
+    menu: 'Menú',
+    settingsTitle: 'Ajustes y privacidad',
+    closeMenu: 'Cerrar',
   },
   notifications: {
     title: 'Notificaciones',

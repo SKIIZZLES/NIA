@@ -37,6 +37,11 @@ type Props = {
   isActive: boolean;
   bottomInset?: number;
   onOpenComments?: (videoId: string) => void;
+  /**
+   * Écran plein écran (`/video/[id]`) : le coin haut-gauche est pris par le
+   * bouton retour. Le bouton son passe alors en bas, juste à droite du @handle.
+   */
+  muteBesideHandle?: boolean;
 };
 
 function VideoCardInner({
@@ -44,6 +49,7 @@ function VideoCardInner({
   isActive,
   bottomInset = 80,
   onOpenComments,
+  muteBesideHandle = false,
 }: Props) {
   const isImagePost = item.mediaType === 'image';
   // Pas de lecteur vidéo pour les posts photo : l'ancien code chargeait une
@@ -412,7 +418,7 @@ function VideoCardInner({
         </View>
       ) : null}
 
-      {!isImagePost ? (
+      {!isImagePost && !muteBesideHandle ? (
         <Pressable
           style={[styles.muteBtn, { top: insets.top + 4 }]}
           onPress={() => setMuted((m) => !m)}
@@ -492,6 +498,20 @@ function VideoCardInner({
           <Pressable onPress={openProfile}>
             <Text style={styles.handle}>{item.handle}</Text>
           </Pressable>
+          {!isImagePost && muteBesideHandle ? (
+            <Pressable
+              onPress={() => setMuted((m) => !m)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={muted ? t('feed.unmute') : t('feed.mute')}
+            >
+              <Ionicons
+                name={muted ? 'volume-mute' : 'volume-high'}
+                size={16}
+                color={chrome}
+              />
+            </Pressable>
+          ) : null}
           {item.country ? (
             <View style={styles.countryChip}>
               <Ionicons name="location-outline" size={12} color={colors.sableMuted} />

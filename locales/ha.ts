@@ -175,6 +175,9 @@ const ha: TranslationKeys = {
     deleteAccount: 'Share asusuna',
     privacyPolicy: 'Manufar sirri',
     terms: 'Sharuɗɗan amfani',
+    menu: 'Menu',
+    settingsTitle: 'Saituna da sirri',
+    closeMenu: 'Rufe',
   },
   notifications: {
     title: 'Sanarwa',

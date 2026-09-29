@@ -170,6 +170,9 @@ const arEG: TranslationKeys = {
     deleteAccount: 'امسح حسابي',
     privacyPolicy: 'سياسة الخصوصية',
     terms: 'شروط الاستخدام',
+    menu: 'القائمة',
+    settingsTitle: 'الإعدادات والخصوصية',
+    closeMenu: 'قفل',
   },
   notifications: {
     title: 'الإشعارات',
