@@ -738,12 +738,165 @@ export async function archiveOwnVideo(
   return setVideoStatus(userId, videoId, 'archived');
 }
 
-export async function softDeleteOwnVideo(
-  userId: string,
-  videoId: string,
-): Promise<OwnerVideoActionResult> {
-  return setVideoStatus(userId, videoId, 'deleted');
-}
-
 /** Alias for profile Archives (désarchiver / supprimer). */
 export const updateVideoStatus = setVideoStatus;
+
+/**
+ * Suppression définitive d'une vidéo, fichiers compris.
+ *
+ * Ce que faisait l'ancien `softDeleteOwnVideo` : poser `status = 'deleted'`.
+ * La ligne restait, l'objet du bucket `videos` restait, et la politique de
+ * confidentialité promettait pourtant que les contenus sont effacés. Cette
+ * fonction-là efface vraiment, et l'ancienne a été retirée : plus personne ne
+ * l'appelait, et son nom laissait croire à une suppression.
+ *
+ * Un repost recopie `storage_path` et `cover_path` de l'original dans sa propre
+ * ligne (`lib/reposts.ts`). Le même objet est donc désigné par plusieurs
+ * lignes, appartenant à plusieurs comptes. D'où la règle, unique et
+ * suffisante : **un objet n'est effacé que s'il est dans le dossier du compte
+ * ET que plus aucune autre ligne ne le désigne.**
+ *
+ * Elle couvre les trois cas sans en traiter aucun à part :
+ *
+ * - repost de la vidéo de quelqu'un d'autre : les chemins sont dans le dossier
+ *   de l'auteur, le préfixe les écarte, aucun fichier n'est touché ;
+ * - vidéo repostée par d'autres : leurs lignes désignent l'objet, il reste, et
+ *   leur carte continue de fonctionner ;
+ * - repost de sa propre vidéo : l'objet part avec la dernière ligne qui le
+ *   désigne, quelle qu'elle soit. Une garde « ne touche jamais aux fichiers
+ *   d'un repost » aurait laissé l'objet orphelin pour toujours dans ce cas.
+ */
+export type DeleteOwnVideoResult =
+  | {
+      ok: true;
+      mock?: boolean;
+      /** Objets du bucket réellement effacés. */
+      removedFiles: string[];
+      /** Objets laissés en place : une autre ligne les désigne encore. */
+      keptFiles: string[];
+      /** La ligne est partie, l'objet non. L'UI doit le dire, pas le taire. */
+      fileError?: string;
+    }
+  | { ok: false; message: string };
+
+type DeletableVideoRow = {
+  user_id: string;
+  storage_path?: string | null;
+  cover_path?: string | null;
+};
+
+/**
+ * Chemins du bucket que ce compte a le droit d'effacer pour cette ligne.
+ *
+ * Filtré sur le préfixe `{userId}/` : une ligne corrompue, fabriquée, ou
+ * simplement copiée depuis l'original par un repost ne peut pas faire viser le
+ * dossier de quelqu'un d'autre. C'est aussi ce que refuse la politique
+ * `videos_storage_delete_own`, mais une politique se modifie dans le tableau
+ * de bord Supabase sans que personne ne relise ce fichier.
+ */
+export function ownedVideoFilePaths(userId: string, row: DeletableVideoRow): string[] {
+  if (!userId) return [];
+  const prefixe = `${userId}/`;
+  const vus = new Set<string>();
+  for (const brut of [row.storage_path, row.cover_path]) {
+    const chemin = typeof brut === 'string' ? brut.trim() : '';
+    if (!chemin || !chemin.startsWith(prefixe)) continue;
+    vus.add(chemin);
+  }
+  return [...vus];
+}
+
+/** Une autre ligne que `videoId` désigne-t-elle encore ce chemin ? */
+async function cheminEncoreReference(
+  sb: NonNullable<ReturnType<typeof getSupabase>>,
+  videoId: string,
+  chemin: string,
+): Promise<{ referenced: boolean; error?: string }> {
+  for (const colonne of ['storage_path', 'cover_path'] as const) {
+    const { data, error } = await sb
+      .from('videos')
+      .select('id')
+      .eq(colonne, chemin)
+      .neq('id', videoId)
+      .limit(1);
+    if (error) return { referenced: true, error: error.message || 'refs_fail' };
+    if (data && data.length > 0) return { referenced: true };
+  }
+  return { referenced: false };
+}
+
+export async function deleteOwnVideoForGood(
+  userId: string,
+  videoId: string,
+): Promise<DeleteOwnVideoResult> {
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
+    return { ok: true, mock: true, removedFiles: [], keptFiles: [] };
+  }
+  if (!userId || !videoId) {
+    return { ok: false, message: 'missing_ids' };
+  }
+
+  // L'objet que l'écran a en main n'est pas une source de vérité. Ce sont ces
+  // chemins-là, lus côté serveur, et eux seuls, qui pourront être effacés.
+  const { data: ligne, error: lectureErr } = await sb
+    .from('videos')
+    .select('user_id, storage_path, cover_path')
+    .eq('id', videoId)
+    .maybeSingle();
+
+  if (lectureErr) {
+    return { ok: false, message: lectureErr.message || 'read_fail' };
+  }
+  if (!ligne) {
+    return { ok: false, message: 'not_found' };
+  }
+  const row = ligne as unknown as DeletableVideoRow;
+  if (row.user_id !== userId) {
+    return { ok: false, message: 'not_owner' };
+  }
+
+  const aEffacer: string[] = [];
+  const aGarder: string[] = [];
+  for (const chemin of ownedVideoFilePaths(userId, row)) {
+    const { referenced, error } = await cheminEncoreReference(sb, videoId, chemin);
+    if (error) return { ok: false, message: error };
+    (referenced ? aGarder : aEffacer).push(chemin);
+  }
+
+  // La ligne part AVANT les fichiers. Dans l'autre ordre, un échec de
+  // suppression de ligne laisserait une carte dans le fil avec un fichier
+  // manquant. Une ligne partie et un objet resté est une fuite invisible ;
+  // l'inverse est un 404 sous les yeux des gens.
+  const { data: supprimee, error: suppErr } = await sb
+    .from('videos')
+    .delete()
+    .eq('id', videoId)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
+
+  if (suppErr) {
+    return { ok: false, message: suppErr.message || 'delete_fail' };
+  }
+  if (!supprimee) {
+    return { ok: false, message: 'not_owner_or_missing' };
+  }
+
+  if (aEffacer.length === 0) {
+    return { ok: true, removedFiles: [], keptFiles: aGarder };
+  }
+
+  const { error: storageErr } = await sb.storage.from('videos').remove(aEffacer);
+  if (storageErr) {
+    // La ligne est partie : la vidéo a bien disparu de l'application. Mais le
+    // fichier est resté. On le dit au lieu de prétendre le contraire.
+    return {
+      ok: true,
+      removedFiles: [],
+      keptFiles: aGarder,
+      fileError: storageErr.message || 'storage_remove_fail',
+    };
+  }
+  return { ok: true, removedFiles: aEffacer, keptFiles: aGarder };
+}
