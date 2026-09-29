@@ -169,6 +169,9 @@ const arEG: TranslationKeys = {
     appearance: 'المظهر',
     deleteAccount: 'امسح حسابي',
     privacyPolicy: 'سياسة الخصوصية',
+    menu: 'القائمة',
+    settingsTitle: 'الإعدادات والخصوصية',
+    closeMenu: 'قفل',
   },
   notifications: {
     title: 'الإشعارات',

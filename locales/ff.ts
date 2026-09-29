@@ -169,6 +169,9 @@ const ff: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    menu: 'Menu',
+    settingsTitle: 'Paramètres et confidentialité',
+    closeMenu: 'Uddu',
   },
   notifications: {
     title: 'Tintine',

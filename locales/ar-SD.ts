@@ -176,6 +176,9 @@ const arSD: TranslationKeys = {
     appearance: 'المظهر',
     deleteAccount: 'امسح حسابي',
     privacyPolicy: 'سياسة الخصوصية',
+    menu: 'القائمة',
+    settingsTitle: 'الإعدادات والخصوصية',
+    closeMenu: 'سكر',
   },
   notifications: {
     title: 'الإشعارات',

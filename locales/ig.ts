@@ -169,6 +169,9 @@ const ig: TranslationKeys = {
     appearance: 'Ọdịdị',
     deleteAccount: 'Hichapụ akaụntụ m',
     privacyPolicy: 'Iwu nzuzo',
+    menu: 'Menu',
+    settingsTitle: 'Ntọala na nzuzo',
+    closeMenu: 'Mechie',
   },
   notifications: {
     title: 'Ọkwa',

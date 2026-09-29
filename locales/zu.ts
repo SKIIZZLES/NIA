@@ -169,6 +169,9 @@ const zu: TranslationKeys = {
     appearance: 'Ukubukeka',
     deleteAccount: 'Cima i-akhawunti yami',
     privacyPolicy: 'Inqubomgomo yobumfihlo',
+    menu: 'Imenyu',
+    settingsTitle: 'Izilungiselelo nobumfihlo',
+    closeMenu: 'Vala',
   },
   notifications: {
     title: 'Izaziso',

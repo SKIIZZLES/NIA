@@ -174,6 +174,9 @@ const pt: TranslationKeys = {
     appearance: 'Aparência',
     deleteAccount: 'Excluir a minha conta',
     privacyPolicy: 'Política de privacidade',
+    menu: 'Menu',
+    settingsTitle: 'Configurações e privacidade',
+    closeMenu: 'Fechar',
   },
   notifications: {
     title: 'Notificações',
