@@ -1,5 +1,5 @@
 /**
- * Page son — titre, @créateur, use count, [Utiliser ce son].
+ * Page son — titre, @créateur, use count, écoute (S2), [Utiliser ce son].
  * Sons uploadés / originaux uniquement (pas de catalogue commercial).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { useI18n } from '@/context/I18nContext';
@@ -20,6 +20,7 @@ import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { fetchSoundById, type SoundItem } from '@/lib/sounds';
 import { formatCount } from '@/data/mockVideos';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { SyncedSound } from '@/components/SyncedSound';
 
 export default function SoundScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,6 +31,12 @@ export default function SoundScreen() {
   const [sound, setSound] = useState<SoundItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (!isFocused) setListening(false);
+  }, [isFocused]);
 
   const load = useCallback(async () => {
     if (!soundId) {
@@ -181,9 +188,23 @@ export default function SoundScreen() {
         </View>
       ) : (
         <View style={styles.body}>
-          <View style={styles.iconWrap}>
-            <Ionicons name="musical-notes" size={36} color={colors.or} />
-          </View>
+          {/* Écoute du son : s'arrête en quittant l'écran ou l'application. */}
+          {sound.publicUrl ? (
+            <SyncedSound url={sound.publicUrl} active={listening && isFocused} />
+          ) : null}
+          <Pressable
+            style={styles.iconWrap}
+            onPress={() => setListening((v) => !v)}
+            disabled={!sound.publicUrl}
+            accessibilityRole="button"
+            accessibilityLabel={listening ? t('sound.stopListening') : t('sound.listen')}
+          >
+            <Ionicons
+              name={listening ? 'pause' : sound.publicUrl ? 'play' : 'musical-notes'}
+              size={36}
+              color={colors.or}
+            />
+          </Pressable>
           <Text style={styles.title}>{sound.title}</Text>
           <Pressable onPress={openCreator}>
             <Text style={styles.handle}>{sound.handle}</Text>

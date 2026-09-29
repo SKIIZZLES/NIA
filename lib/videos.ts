@@ -21,7 +21,7 @@ import { isLikelyVideoUrl } from '@/lib/mediaThumb';
  * path and returns PGRST201 unless the FK is named explicitly.
  */
 export const VIDEO_PROFILE_SELECT =
-  '*, profiles!videos_user_id_fkey(username, avatar_url, display_name), sounds(id, title, user_id, profiles!sounds_user_id_fkey(username))';
+  '*, profiles!videos_user_id_fkey(username, avatar_url, display_name), sounds(id, title, user_id, storage_path, profiles!sounds_user_id_fkey(username))';
 
 export const VIDEO_PROFILE_SELECT_LEGACY =
   '*, profiles!videos_user_id_fkey(username, avatar_url)';
@@ -33,8 +33,18 @@ type SoundEmbed = {
   id: string;
   title: string;
   user_id: string;
+  /** Fichier audio du son (bucket `videos`) : lu en synchro avec la vidéo. */
+  storage_path?: string | null;
   profiles: { username: string | null } | null;
 } | null;
+
+/** URL publique du fichier audio d'un son embarqué, ou undefined. */
+function soundPublicUrl(storagePath: string | null | undefined): string | undefined {
+  if (!storagePath) return undefined;
+  const sb = getSupabase();
+  if (!sb) return undefined;
+  return sb.storage.from('videos').getPublicUrl(storagePath).data.publicUrl || undefined;
+}
 
 type VideoWithProfile = VideoRow & {
   profiles: Pick<ProfileRow, 'username' | 'avatar_url' | 'display_name'> | null;
@@ -115,6 +125,7 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     repostOf: row.repost_of || undefined,
     soundId: row.sounds?.id || row.sound_id || undefined,
     soundTitle: row.sounds?.title || undefined,
+    soundUrl: soundPublicUrl(row.sounds?.storage_path),
     soundCreatorHandle: row.sounds?.profiles?.username
       ? `@${row.sounds.profiles.username}`
       : undefined,

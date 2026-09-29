@@ -14,6 +14,7 @@ import React, {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { Alert } from 'react-native';
@@ -27,6 +28,7 @@ import {
 import type { CategoryId } from '@/constants/categories';
 import type { FilterDefinition } from '@/constants/filters';
 import type { SoundItem } from '@/lib/sounds';
+import { clampSoundOffsetMs } from '@/lib/soundSync';
 import { resolveUploadContentType } from '@/lib/videos';
 import { localFileSize } from '@/lib/upload';
 
@@ -101,6 +103,19 @@ type CreateContextValue = {
   setCategory: (next: CategoryId | null) => void;
   sound: SoundItem | null;
   setSound: (next: SoundItem | null) => void;
+  /**
+   * Réglages du son (sprint S2). Locaux au brouillon pour l'instant : la
+   * publication n'envoie que sound_id (début 0, volumes par défaut) tant que
+   * la base n'a pas les colonnes correspondantes (S5).
+   */
+  soundOffsetMs: number;
+  setSoundOffsetMs: (next: number) => void;
+  /** Volume du son ajouté, 0 → 1. */
+  soundVolume: number;
+  setSoundVolume: (next: number) => void;
+  /** Volume du son original de la vidéo, 0 → 1 (1 normal, 0,3 bas, 0 coupé). */
+  originalVolume: number;
+  setOriginalVolume: (next: number) => void;
   filter: FilterDefinition | null;
   setFilter: (next: FilterDefinition | null) => void;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
@@ -138,9 +153,36 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [cover, setCover] = useState<PickedMedia | null>(null);
   const [caption, setCaption] = useState('');
   const [category, setCategory] = useState<CategoryId | null>(null);
-  const [sound, setSound] = useState<SoundItem | null>(null);
+  const [sound, setSoundState] = useState<SoundItem | null>(null);
+  const [soundOffsetMs, setSoundOffsetMsState] = useState(0);
+  const [soundVolume, setSoundVolumeState] = useState(1);
+  const [originalVolume, setOriginalVolumeState] = useState(1);
+  const soundIdRef = useRef<string | null>(null);
   const [filter, setFilter] = useState<FilterDefinition | null>(null);
   const [uploadId, setUploadId] = useState<string>(makeUploadId);
+
+  /** Un autre son repart de son début ; le même son garde son réglage. */
+  const setSound = useCallback((next: SoundItem | null) => {
+    const nextId = next?.id ?? null;
+    if (nextId !== soundIdRef.current) {
+      soundIdRef.current = nextId;
+      setSoundOffsetMsState(0);
+    }
+    setSoundState(next);
+  }, []);
+
+  const setSoundOffsetMs = useCallback(
+    (next: number) => setSoundOffsetMsState(clampSoundOffsetMs(next, sound?.durationMs)),
+    [sound?.durationMs],
+  );
+  const setSoundVolume = useCallback(
+    (next: number) => setSoundVolumeState(Math.max(0, Math.min(1, next))),
+    [],
+  );
+  const setOriginalVolume = useCallback(
+    (next: number) => setOriginalVolumeState(Math.max(0, Math.min(1, next))),
+    [],
+  );
 
   const maxMinutes = Math.round(MAX_VIDEO_DURATION_SEC / 60);
   const maxMb = Math.round(MAX_UPLOAD_BYTES / (1024 * 1024));
@@ -371,6 +413,12 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       setCategory,
       sound,
       setSound,
+      soundOffsetMs,
+      setSoundOffsetMs,
+      soundVolume,
+      setSoundVolume,
+      originalVolume,
+      setOriginalVolume,
       filter,
       setFilter,
       hashtags,
@@ -392,6 +440,13 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       caption,
       category,
       sound,
+      setSound,
+      soundOffsetMs,
+      setSoundOffsetMs,
+      soundVolume,
+      setSoundVolume,
+      originalVolume,
+      setOriginalVolume,
       filter,
       hashtags,
       uploadId,

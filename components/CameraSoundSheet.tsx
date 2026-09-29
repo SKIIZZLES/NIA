@@ -4,7 +4,7 @@
  * Reprend la liste « Mes sons » de l'étape Publier. L'import d'un fichier
  * audio reste à l'étape Publier (il demande un titre). Le son retenu remonte
  * dans le CreateContext : l'étape Publier l'affiche déjà et l'associe à la
- * vidéo. La lecture du son pendant le tournage arrive au sprint S2.
+ * vidéo. Sprint S2 : écoute du son et choix de son début (SoundTrimControl).
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -24,15 +24,26 @@ import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
+import { SoundTrimControl } from '@/components/SoundTrimControl';
 
 type Props = {
   visible: boolean;
   selected: SoundItem | null;
   onSelect: (sound: SoundItem | null) => void;
+  /** Début du son (ms) — brouillon local. */
+  offsetMs: number;
+  onChangeOffset: (next: number) => void;
   onClose: () => void;
 };
 
-export function CameraSoundSheet({ visible, selected, onSelect, onClose }: Props) {
+export function CameraSoundSheet({
+  visible,
+  selected,
+  onSelect,
+  offsetMs,
+  onChangeOffset,
+  onClose,
+}: Props) {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { t } = useI18n();
@@ -88,6 +99,15 @@ export function CameraSoundSheet({ visible, selected, onSelect, onClose }: Props
         <Text style={[styles.hint, { color: colors.textMuted }]}>{t('camera.soundNote')}</Text>
 
         {selected ? (
+          <SoundTrimControl
+            sound={selected}
+            offsetMs={offsetMs}
+            onChangeOffset={onChangeOffset}
+            paused={!visible}
+          />
+        ) : null}
+
+        {selected ? (
           <Pressable
             style={[styles.row, { borderBottomColor: colors.border }]}
             onPress={() => {
@@ -118,10 +138,8 @@ export function CameraSoundSheet({ visible, selected, onSelect, onClose }: Props
                 <Pressable
                   key={s.id}
                   style={[styles.row, { borderBottomColor: colors.border }]}
-                  onPress={() => {
-                    onSelect(s);
-                    onClose();
-                  }}
+                  // La feuille reste ouverte : le réglage du début apparaît en haut.
+                  onPress={() => onSelect(s)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
                 >
@@ -146,7 +164,7 @@ export function CameraSoundSheet({ visible, selected, onSelect, onClose }: Props
 
         <Pressable style={styles.cancel} onPress={onClose} accessibilityRole="button">
           <Text style={[styles.cancelText, { color: colors.textMuted }]}>
-            {t('common.cancel')}
+            {selected ? t('sound.done') : t('common.cancel')}
           </Text>
         </Pressable>
       </View>

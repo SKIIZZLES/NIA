@@ -22,6 +22,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
+import { SoundTrimControl } from '@/components/SoundTrimControl';
 import { useAuth } from '@/context/AuthContext';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useFeed } from '@/context/FeedContext';
@@ -52,6 +53,8 @@ export default function CreatePublishStep() {
     setCategory,
     sound,
     setSound,
+    soundOffsetMs,
+    setSoundOffsetMs,
     filter,
     hashtags,
     uploadId,
@@ -190,6 +193,8 @@ export default function CreatePublishStep() {
         fileSize: media?.fileSize ?? undefined,
         durationMs: media?.durationMs ?? undefined,
         soundId: sound?.id ?? null,
+        soundUrl: sound?.publicUrl ?? null,
+        soundTitle: sound?.title ?? null,
         filterId: filter?.id ?? null,
         uploadId,
         // Dès la deuxième tentative on écrase l'objet éventuellement partiel
@@ -421,6 +426,7 @@ export default function CreatePublishStep() {
         <Text style={styles.label}>{t('create.addSound')}</Text>
         <Text style={styles.hint}>{t('create.addSoundHint')}</Text>
         {sound ? (
+          <>
           <View style={styles.soundSelected}>
             <Ionicons name="musical-notes" size={22} color={colors.or} />
             <View style={{ flex: 1 }}>
@@ -437,6 +443,15 @@ export default function CreatePublishStep() {
               <Ionicons name="close-circle" size={22} color={colors.textMuted} />
             </Pressable>
           </View>
+          {/* Sprint S2 : écoute + début du son (réglage local au brouillon). */}
+          <SoundTrimControl
+            sound={sound}
+            offsetMs={soundOffsetMs}
+            onChangeOffset={setSoundOffsetMs}
+            paused={busy}
+            showLocalNote
+          />
+          </>
         ) : (
           <Button
             title={t('create.pickSound')}
