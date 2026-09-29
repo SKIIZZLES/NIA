@@ -168,6 +168,9 @@ const ak: TranslationKeys = {
     appearance: 'Apparence',
     deleteAccount: 'Supprimer mon compte',
     privacyPolicy: 'Politique de confidentialité',
+    menu: 'Menu',
+    settingsTitle: 'Paramètres et confidentialité',
+    closeMenu: 'To mu',
   },
   notifications: {
     title: 'Amanneɛbɔ',
