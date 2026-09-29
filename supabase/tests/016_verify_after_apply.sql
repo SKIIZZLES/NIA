@@ -40,9 +40,7 @@ with checks(name, ok) as (
   ('vidéos existantes : toutes publiques, commentables, republiables',
     (select count(*) = 0 from public.videos
       where visibility <> 'public' or not allow_comments or not allow_reuse
-        or ai_generated or edit_meta is not null)),
-  ('commentaires existants toujours lisibles (compte identique en service)',
-    (select count(*) >= 0 from public.comments))
+        or ai_generated or edit_meta is not null))
 )
 select name, coalesce(ok, false) as ok from checks;
 -- Note : la ligne « vidéos existantes » n'est vraie que juste après
