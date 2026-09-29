@@ -105,8 +105,8 @@ export function OverlayEditor({
             selectionColor={colors.or}
             trashBottom={trashBottom}
             label={itemLabel(o)}
-            onTap={() => {
-              if (o.id === selectedId && o.type === 'text') onEditText(o.id);
+            onTap={(wasSelected) => {
+              if (wasSelected && o.type === 'text') onEditText(o.id);
               else onSelect(o.id);
             }}
             onGestureStart={() => onSelect(o.id)}
@@ -153,7 +153,8 @@ type ItemProps = {
   selectionColor: string;
   trashBottom: number;
   label: string;
-  onTap: () => void;
+  /** wasSelected : état au début du toucher (le toucher sélectionne). */
+  onTap: (wasSelected: boolean) => void;
   onGestureStart: () => void;
   onDrag: (overTrash: boolean) => void;
   onDragEnd: () => void;
@@ -188,6 +189,7 @@ function EditableOverlay(props: ItemProps) {
     let overTrash = false;
     let longTimer: ReturnType<typeof setTimeout> | null = null;
     let longFired = false;
+    let wasSelected = false;
 
     const clearLong = () => {
       if (longTimer) clearTimeout(longTimer);
@@ -211,7 +213,9 @@ function EditableOverlay(props: ItemProps) {
       if (commit && t && moved) p.onCommit(t);
       setLive(null);
       liveRef.current = null;
-      if (commit && !moved && !longFired && Date.now() - grantAt < LONG_PRESS_MS) p.onTap();
+      if (commit && !moved && !longFired && Date.now() - grantAt < LONG_PRESS_MS) {
+        p.onTap(wasSelected);
+      }
     };
 
     return PanResponder.create({
@@ -227,6 +231,7 @@ function EditableOverlay(props: ItemProps) {
         overTrash = false;
         longFired = false;
         grantAt = Date.now();
+        wasSelected = cbs.current.selected;
         liveRef.current = startT;
         cbs.current.onGestureStart();
         clearLong();

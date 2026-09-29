@@ -529,7 +529,7 @@ export default function CreateEditStep() {
         <SyncedSound
           url={sound.publicUrl}
           video={isVideo ? player : null}
-          active={isFocused && !busy && !dragging}
+          active={isFocused && !busy && !dragging && !composer}
           offsetMs={soundOffsetMs}
           volume={soundVolume}
           rate={isVideo ? playbackSpeed : 1}
