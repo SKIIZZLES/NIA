@@ -84,11 +84,11 @@ export default function TabsLayout() {
         }}
         // Le « + » ouvre le parcours de publication plein écran plutôt que de
         // sélectionner un onglet : la barre d'onglets n'a pas à rester visible
-        // pendant qu'on publie.
+        // pendant qu'on publie. Premier écran : la caméra NIA, comme sur TikTok.
         listeners={{
           tabPress: (e) => {
             e.preventDefault();
-            router.push('/create');
+            router.push('/create/camera');
           },
         }}
       />
