@@ -37,6 +37,8 @@ import {
   type BlockResult,
 } from '@/lib/blocks';
 import { createRepost, type RepostResult } from '@/lib/reposts';
+import type { EditMeta } from '@/lib/editMeta';
+import type { PublishOptions } from '@/lib/publishOptions';
 
 type PublishInput = {
   caption: string;
@@ -69,6 +71,10 @@ type PublishInput = {
   /** Progression réelle, en octets remontés par la couche réseau native. */
   onProgress?: (stage: 'media' | 'cover', progress: UploadProgress) => void;
   signal?: AbortSignal;
+  /** Options de publication (016). */
+  publishOptions?: PublishOptions;
+  /** Réglages d'édition (016), null si tout est par défaut. */
+  editMeta?: EditMeta | null;
 };
 
 type FeedContextValue = {
@@ -241,6 +247,14 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           soundUrl: input.soundUrl || undefined,
           soundTitle: input.soundTitle || undefined,
           filterId: input.filterId || undefined,
+          editMeta: input.editMeta ?? undefined,
+          overlays: input.editMeta?.overlays ?? undefined,
+          visibility: input.publishOptions?.visibility,
+          allowComments: input.publishOptions?.allowComments,
+          allowReuse: input.publishOptions?.allowReuse,
+          aiGenerated: input.publishOptions?.aiGenerated || undefined,
+          altText: input.publishOptions?.altText.trim() || undefined,
+          locationText: input.publishOptions?.locationText.trim() || undefined,
         };
         setRawVideos((prev) => [item, ...prev]);
         return;
@@ -272,6 +286,8 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           overwrite: input.overwrite,
           onProgress: input.onProgress,
           signal: input.signal,
+          publishOptions: input.publishOptions,
+          editMeta: input.editMeta ?? null,
         });
         if (input.soundId && input.soundUrl && !item.soundUrl) {
           item.soundUrl = input.soundUrl;

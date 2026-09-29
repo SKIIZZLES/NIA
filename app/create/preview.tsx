@@ -144,10 +144,6 @@ export default function CreateStyleStep() {
           </View>
         </View>
 
-        {overlays.items.length > 0 ? (
-          <Text style={styles.hint}>{t('create.layerLocalNote')}</Text>
-        ) : null}
-
         <FilterCarousel
           selectedId={filter?.id ?? null}
           onSelect={setFilter}

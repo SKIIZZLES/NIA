@@ -14,7 +14,15 @@ import {
 } from '@/lib/upload';
 import type { ProfileRow, VideoRow } from '@/types/database';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
-import { overlaysFromEditMeta } from '@/lib/overlays';
+import { parseEditMeta, type EditMeta } from '@/lib/editMeta';
+import {
+  PUBLISH_OPTION_COLUMNS,
+  hasRestrictiveOptions,
+  isMissingPublishOptionsColumn,
+  publishOptionsPayload,
+  type PublishOptions,
+} from '@/lib/publishOptions';
+import type { VideoVisibility } from '@/types/database';
 
 /**
  * Disambiguate videos→profiles embed.
@@ -88,6 +96,34 @@ function resolveCategory(
   return undefined;
 }
 
+const VISIBILITIES: readonly VideoVisibility[] = ['public', 'followers', 'private'];
+
+/** Options de publication et réglages d'édition d'une ligne (016). */
+export function publishOptionsFromRow(row: Partial<VideoRow>): Pick<
+  VideoItem,
+  | 'visibility'
+  | 'allowComments'
+  | 'allowReuse'
+  | 'aiGenerated'
+  | 'altText'
+  | 'locationText'
+  | 'editMeta'
+  | 'overlays'
+> {
+  const editMeta = parseEditMeta(row.edit_meta);
+  const vis = row.visibility;
+  return {
+    visibility: vis && VISIBILITIES.includes(vis) ? vis : undefined,
+    allowComments: typeof row.allow_comments === 'boolean' ? row.allow_comments : undefined,
+    allowReuse: typeof row.allow_reuse === 'boolean' ? row.allow_reuse : undefined,
+    aiGenerated: row.ai_generated === true ? true : undefined,
+    altText: row.alt_text?.trim() || undefined,
+    locationText: row.location_text?.trim() || undefined,
+    editMeta,
+    overlays: editMeta?.overlays ?? undefined,
+  };
+}
+
 export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): VideoItem {
   const username = row.profiles?.username || 'createur';
   const mediaType: 'video' | 'image' =
@@ -127,8 +163,9 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
     soundId: row.sounds?.id || row.sound_id || undefined,
     soundTitle: row.sounds?.title || undefined,
     soundUrl: soundPublicUrl(row.sounds?.storage_path),
-    // S5 : edit_meta n'est pas encore sélectionné (colonne absente avant 016).
-    overlays: overlaysFromEditMeta((row as { edit_meta?: unknown }).edit_meta),
+    // 016 : colonnes lues via `*` ; absentes (undefined) si la migration
+    // n'est pas appliquée, et l'app garde alors le comportement d'avant.
+    ...publishOptionsFromRow(row),
     soundCreatorHandle: row.sounds?.profiles?.username
       ? `@${row.sounds.profiles.username}`
       : undefined,
@@ -374,6 +411,10 @@ export type UploadVideoInput = {
   /** Progression réelle, en octets remontés par la couche réseau native. */
   onProgress?: (stage: 'media' | 'cover', progress: UploadProgress) => void;
   signal?: AbortSignal;
+  /** Options de publication (016). Absentes = comportement d'avant 016. */
+  publishOptions?: PublishOptions;
+  /** Réglages d'édition (016), null si tout est par défaut. */
+  editMeta?: EditMeta | null;
 };
 
 /**
@@ -525,12 +566,35 @@ export async function uploadVideoToSupabase(
     sound_id: input.soundId || null,
     filter_id: input.filterId || null,
   };
+  const hasS5 = !!input.publishOptions || !!input.editMeta;
+  if (input.publishOptions) {
+    Object.assign(insertPayload, publishOptionsPayload(input.publishOptions, input.editMeta ?? null));
+  } else if (input.editMeta) {
+    insertPayload.edit_meta = input.editMeta;
+  }
 
   let { data: inserted, error: insErr } = await sb
     .from('videos')
     .insert(insertPayload as never)
     .select(VIDEO_PROFILE_SELECT_NO_SOUND)
     .single();
+
+  // 016 pas encore appliquée : on retire ses colonnes et on réessaie — sauf
+  // si l'utilisateur a restreint la diffusion (publier en public trahirait
+  // son choix). Les fichiers déjà envoyés restent en place pour le réessai.
+  if (insErr && hasS5 && isMissingPublishOptionsColumn(insErr)) {
+    if (input.publishOptions && hasRestrictiveOptions(input.publishOptions)) {
+      throw new Error(PUBLISH_ERRORS.optionsNeedServer);
+    }
+    for (const col of PUBLISH_OPTION_COLUMNS) delete insertPayload[col];
+    const retry016 = await sb
+      .from('videos')
+      .insert(insertPayload as never)
+      .select(VIDEO_PROFILE_SELECT_NO_SOUND)
+      .single();
+    inserted = retry016.data;
+    insErr = retry016.error;
+  }
 
   // Soft fallback if migration 007 not applied yet (unknown columns).
   if (
@@ -625,6 +689,12 @@ export async function uploadVideoToSupabase(
   if (input.filterId) {
     item.filterId = input.filterId;
   }
+  // Ligne relue sans les colonnes 016 (migration absente) : l'élément local
+  // garde tout de même les réglages pour la session en cours.
+  if (!item.editMeta && input.editMeta && !('edit_meta' in row)) {
+    item.editMeta = input.editMeta;
+    item.overlays = input.editMeta.overlays ?? undefined;
+  }
   if (!row.profiles && input.username) {
     item.handle = `@${input.username}`;
     item.avatarUrl = input.avatarUrl || item.avatarUrl;
@@ -705,6 +775,73 @@ export function formatFeedLoadError(err: unknown): string {
 }
 
 export { isSupabaseConfigured, parseHashtags };
+
+let publishOptionsSupport: Promise<boolean> | null = null;
+
+/**
+ * La base a-t-elle les colonnes de 016 ? Sonde une fois par session (lecture
+ * d'une colonne sur 0 ligne). En cas d'erreur réseau, réessaie la fois suivante.
+ */
+export function probePublishOptionsSupport(): Promise<boolean> {
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured) return Promise.resolve(false);
+  if (publishOptionsSupport) return publishOptionsSupport;
+  publishOptionsSupport = (async () => {
+    const { error } = await sb.from('videos').select('visibility, edit_meta').limit(0);
+    if (!error) return true;
+    if (isMissingPublishOptionsColumn(error)) return false;
+    publishOptionsSupport = null;
+    return false;
+  })();
+  return publishOptionsSupport;
+}
+
+/** Hashtags récents les plus fréquents commençant par `prefix`. */
+export async function suggestHashtags(prefix: string, limit = 6): Promise<string[]> {
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured) return [];
+  const p = prefix.toLowerCase();
+  const { data, error } = await sb
+    .from('videos')
+    .select('hashtags')
+    .eq('status', 'published')
+    .not('hashtags', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error || !data) return [];
+  const counts = new Map<string, number>();
+  for (const row of data as { hashtags: string[] | null }[]) {
+    for (const tag of row.hashtags ?? []) {
+      const t = String(tag).toLowerCase();
+      if (t && t.startsWith(p)) counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, limit)
+    .map(([t]) => t);
+}
+
+/** Profils dont le pseudo commence par `prefix`. */
+export async function suggestProfiles(
+  prefix: string,
+  limit = 6,
+): Promise<{ username: string; avatarUrl: string | null }[]> {
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured || !prefix) return [];
+  // Échappe les jokers LIKE : le préfixe vient de la frappe.
+  const safe = prefix.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data, error } = await sb
+    .from('profiles')
+    .select('username, avatar_url')
+    .ilike('username', `${safe}%`)
+    .order('username')
+    .limit(limit);
+  if (error || !data) return [];
+  return (data as { username: string | null; avatar_url: string | null }[])
+    .filter((p) => !!p.username)
+    .map((p) => ({ username: p.username as string, avatarUrl: p.avatar_url }));
+}
 
 
 export type OwnerVideoActionResult =

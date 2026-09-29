@@ -649,7 +649,6 @@ export default function CreateEditStep() {
                 <Text style={styles.panelTitle}>{t('create.layersTitle')}</Text>
               )}
               <Text style={styles.note}>{t('create.layersHint')}</Text>
-              <Text style={styles.note}>{t('create.layerLocalNote')}</Text>
             </View>
           ) : null}
 
@@ -718,7 +717,6 @@ export default function CreateEditStep() {
                   );
                 })}
               </View>
-              <Text style={styles.note}>{t('create.editSpeedNote')}</Text>
             </View>
           ) : null}
 
@@ -732,7 +730,6 @@ export default function CreateEditStep() {
                   previewable={false}
                   originalVolume={isVideo ? originalVolume : undefined}
                   onChangeOriginalVolume={isVideo ? setOriginalVolume : undefined}
-                  showLocalNote
                 />
               ) : null}
               <Pressable

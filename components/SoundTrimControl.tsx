@@ -2,10 +2,9 @@
  * Réglages du son choisi (sprint S2) : écoute, début du son, volume du son
  * original de la vidéo.
  *
- * Les réglages vivent dans le CreateContext (brouillon local). Tant que la
- * base n'a pas les colonnes correspondantes (S5), la vidéo publiée joue le son
- * depuis le début avec les volumes par défaut : la note `localSettingsNote`
- * le dit à l'utilisateur.
+ * Les réglages vivent dans le CreateContext (brouillon local) et sont
+ * enregistrés avec la vidéo dans `edit_meta` (S5, migration 016) ; les
+ * lecteurs appliquent début du son et volumes.
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -31,7 +30,6 @@ type Props = {
   originalVolume?: number;
   onChangeOriginalVolume?: (next: number) => void;
   /** Affiche la note « réglages locaux ». */
-  showLocalNote?: boolean;
 };
 
 const STEPS = [
@@ -55,7 +53,6 @@ export function SoundTrimControl({
   paused = false,
   originalVolume,
   onChangeOriginalVolume,
-  showLocalNote = false,
 }: Props) {
   const colors = useColors();
   const { t } = useI18n();
@@ -164,11 +161,6 @@ export function SoundTrimControl({
         </>
       ) : null}
 
-      {showLocalNote ? (
-        <Text style={[styles.note, { color: colors.textMuted }]}>
-          {t('sound.localSettingsNote')}
-        </Text>
-      ) : null}
     </View>
   );
 }
