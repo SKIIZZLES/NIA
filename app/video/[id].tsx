@@ -117,6 +117,7 @@ export default function VideoPlayerScreen() {
           isActive
           bottomInset={0}
           onOpenComments={() => setCommentsOpen(true)}
+          muteBesideHandle
         />
       ) : (
         <View style={styles.center}>
