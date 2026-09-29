@@ -80,7 +80,8 @@
           "recordAudioAndroid": true,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "./plugins/withMedia3Align"
     ],
     "experiments": {
       "typedRoutes": true
