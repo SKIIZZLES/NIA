@@ -42,3 +42,4 @@ yarn-error.*
 
 .env
 .env.local
+supabase/.temp/
