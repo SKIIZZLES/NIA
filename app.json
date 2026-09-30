@@ -29,6 +29,9 @@
         "RECORD_AUDIO",
         "READ_MEDIA_IMAGES",
         "READ_MEDIA_VIDEO"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {
@@ -81,7 +84,16 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "./plugins/withMedia3Align"
+      "./plugins/withMedia3Align",
+      [
+        "@livekit/react-native-expo-plugin",
+        {
+          "android": {
+            "audioType": "communication"
+          }
+        }
+      ],
+      "@config-plugins/react-native-webrtc"
     ],
     "experiments": {
       "typedRoutes": true
