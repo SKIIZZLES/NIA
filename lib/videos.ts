@@ -16,6 +16,8 @@ import type { ProfileRow, VideoRow } from '@/types/database';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
 import { parseEditMeta, type EditMeta } from '@/lib/editMeta';
 import { isRpcMissing } from '@/lib/textFilter';
+import { matureError, matureErrorKey } from '@/lib/age';
+import { t } from '@/lib/i18n';
 import {
   PUBLISH_OPTION_COLUMNS,
   hasRestrictiveOptions,
@@ -106,6 +108,7 @@ export function publishOptionsFromRow(row: Partial<VideoRow>): Pick<
   | 'allowComments'
   | 'allowReuse'
   | 'aiGenerated'
+  | 'isMature'
   | 'altText'
   | 'locationText'
   | 'editMeta'
@@ -118,6 +121,7 @@ export function publishOptionsFromRow(row: Partial<VideoRow>): Pick<
     allowComments: typeof row.allow_comments === 'boolean' ? row.allow_comments : undefined,
     allowReuse: typeof row.allow_reuse === 'boolean' ? row.allow_reuse : undefined,
     aiGenerated: row.ai_generated === true ? true : undefined,
+    isMature: row.is_mature === true ? true : undefined,
     altText: row.alt_text?.trim() || undefined,
     locationText: row.location_text?.trim() || undefined,
     editMeta,
@@ -593,6 +597,11 @@ export async function uploadVideoToSupabase(
     .insert(insertPayload as never)
     .select(VIDEO_PROFILE_SELECT_NO_SOUND)
     .single();
+
+  // 020 : marquage 18+ refusé (compte mineur ou sans date) ou colonne absente
+  // (020 pas appliquée) : jamais de republication sans le marquage.
+  const matureKey = insErr && input.publishOptions?.isMature ? matureErrorKey(insErr) : null;
+  if (matureKey) throw matureError(t(matureKey));
 
   // 016 pas encore appliquée : on retire ses colonnes et on réessaie — sauf
   // si l'utilisateur a restreint la diffusion (publier en public trahirait

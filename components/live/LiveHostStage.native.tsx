@@ -27,6 +27,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -54,6 +55,7 @@ import {
   ViewerPill,
 } from '@/components/live/LiveStageParts';
 import type { LiveHostStageProps } from '@/components/live/types';
+import { useAge } from '@/context/AgeContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
@@ -73,6 +75,7 @@ import {
   liveTitleOutcome,
   type GoLiveAudience,
 } from '@/lib/liveGo';
+import { canMarkMature, isMatureError } from '@/lib/age';
 import { LiveTokenError, fetchLiveToken, liveTokenErrorKey } from '@/lib/liveToken';
 import { checkTexts } from '@/lib/textFilter';
 import {
@@ -95,6 +98,7 @@ export function LiveHostStage({ live, userId, hostHandle, onClose, onEnded, onSc
   const { t } = useI18n();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { status: ageStatus } = useAge();
   const instant = live === null;
 
   const [phase, setPhase] = useState<Phase>('preparing');
@@ -113,6 +117,8 @@ export function LiveHostStage({ live, userId, hostHandle, onClose, onEnded, onSc
     live?.visibility === 'followers' ? 'followers' : 'public',
   );
   const [category, setCategory] = useState<LiveCategoryId>(live?.category ?? 'other');
+  // 020 : live 18+ (adultes déclarés uniquement ; le serveur revérifie).
+  const [mature, setMature] = useState(live?.isMature === true);
   const [notice, setNotice] = useState<string | null>(null);
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -273,11 +279,16 @@ export function LiveHostStage({ live, userId, hostHandle, onClose, onEnded, onSc
     }
     let row: LiveStreamItem;
     try {
-      row = await createInstantStream({ title: finalTitle, visibility: audience, category });
-    } catch {
+      row = await createInstantStream({
+        title: finalTitle,
+        visibility: audience,
+        category,
+        isMature: mature && canMarkMature(ageStatus),
+      });
+    } catch (e) {
       if (mountedRef.current) {
         setPhase('preview');
-        Alert.alert(t('live.rtc.errTitle'), t('live.go.createFail'));
+        Alert.alert(t('live.rtc.errTitle'), isMatureError(e) ? e.message : t('live.go.createFail'));
       }
       return null;
     }
@@ -296,7 +307,7 @@ export function LiveHostStage({ live, userId, hostHandle, onClose, onEnded, onSc
     setTitle(row.title);
     if (outcome === 'masked') setNotice(t('live.go.masked'));
     return row;
-  }, [audience, category, current, explainHeld, hostHandle, t, title]);
+  }, [ageStatus, audience, category, current, explainHeld, hostHandle, mature, t, title]);
 
   const goLive = useCallback(async () => {
     const video = videoRef.current;
@@ -869,6 +880,23 @@ export function LiveHostStage({ live, userId, hostHandle, onClose, onEnded, onSc
             );
           })}
         </ScrollView>
+        {canMarkMature(ageStatus) ? (
+          <View style={styles.link}>
+            <Ionicons name="eye-off-outline" size={20} color={colors.or} />
+            <View style={styles.optionBody}>
+              <Text style={styles.linkText}>{t('age.matureLabel')}</Text>
+              <Text style={styles.optionHint}>{t('age.liveMatureHint')}</Text>
+            </View>
+            <Switch
+              value={mature}
+              onValueChange={setMature}
+              disabled={!!current}
+              trackColor={{ false: colors.noirSoft, true: colors.or }}
+              thumbColor={colors.sable}
+              accessibilityLabel={t('age.matureLabel')}
+            />
+          </View>
+        ) : null}
         {onSchedule && !current ? (
           <Pressable style={styles.link} onPress={() => void schedule()} accessibilityRole="button">
             <Ionicons name="calendar-outline" size={20} color={colors.or} />

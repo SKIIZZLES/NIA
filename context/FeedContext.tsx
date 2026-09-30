@@ -256,6 +256,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           allowComments: input.publishOptions?.allowComments,
           allowReuse: input.publishOptions?.allowReuse,
           aiGenerated: input.publishOptions?.aiGenerated || undefined,
+          isMature: input.publishOptions?.isMature || undefined,
           altText: input.publishOptions?.altText.trim() || undefined,
           locationText: input.publishOptions?.locationText.trim() || undefined,
         };

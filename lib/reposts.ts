@@ -123,7 +123,13 @@ export async function createRepost(
   }
 
   const original = orig as unknown as VideoWithProfile;
-  if (!canRepostItem({ visibility: original.visibility, allowReuse: original.allow_reuse })) {
+  if (
+    !canRepostItem({
+      visibility: original.visibility,
+      allowReuse: original.allow_reuse,
+      isMature: original.is_mature === true,
+    })
+  ) {
     await sb.from('reposts').delete().eq('user_id', userId).eq('video_id', originalId);
     return { ok: false, message: 'not_allowed' };
   }
