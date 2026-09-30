@@ -1,4 +1,4 @@
-# Tests SQL — suppression de compte (013 / 014)
+# Tests SQL — suppression de compte (013 / 014), 015 → 018
 
 **Uniquement sur un Postgres local et jetable.** `local_stubs.sql` recrée des
 doubles minimaux des schémas `auth` et `storage` de Supabase (`auth.users`,
@@ -45,3 +45,20 @@ première assertion fausse (`not ok - …`).
    domaine `@users.nia.app` réservé, rattrapage ;
 10. `017_verify_after_apply.sql` : toutes les lignes doivent être `t` ;
 11. 014 et 016 rejoués après 017 (non-régression).
+
+## Suite : 018 (filtre de mots)
+
+12. 018, appliquée **deux fois** (idempotence ; la liste de départ est dans
+    la migration, `on conflict do nothing`) ;
+13. `018_keyword_filter.test.sql` (K1 → K11) : normalisation (accents,
+    leetspeak, lettres répétées, séparateurs, homoglyphes, pluriels) et mots
+    entiers (Niger, Nigeria, conseil, computer, PDG… non touchés), liste
+    privée gérée par les seuls modérateurs, `nia_check_text`, commentaires
+    (masque / retenue / notification), vidéos (légende, hashtags, texte
+    alternatif, lieu ; P0 → fichiers à l'abri), lives, profils (pseudo refusé,
+    bio / nom en attente, inscription), `moderation_queue` (colonnes de 017 +
+    `source`) et récidive, décisions `mod_resolve_keyword_flag`, chat live
+    (table factice), rejouer 018 sans écraser les modifications ;
+14. `018_verify_after_apply.sql` (17 lignes) puis `017_verify_after_apply.sql` :
+    toutes les lignes doivent être `t` ;
+15. 014, 016 et 017 rejoués après 018 (non-régression).
