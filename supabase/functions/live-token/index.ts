@@ -17,7 +17,7 @@
  *
  * Secrets (Dashboard → Edge Functions → Secrets, jamais dans le dépôt) :
  *   LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL (wss://…livekit.cloud)
- *   SUPABASE_URL, SUPABASE_ANON_KEY (injectés automatiquement)
+ *   SUPABASE_URL, SUPABASE_PUBLISHABLE_KEYS / SUPABASE_ANON_KEY (injectés automatiquement)
  *
  * Déploiement (vérification JWT de la passerelle ACTIVÉE, voir README.md) :
  *   supabase functions deploy live-token --project-ref odlmbiaocdonlovjepxn
@@ -30,6 +30,7 @@ import {
   isDenied,
   isLivekitConfigured,
   parseTokenRequest,
+  pickPublicApiKey,
   type LiveRowLite,
 } from './core.ts';
 
@@ -63,8 +64,12 @@ Deno.serve(async (req) => {
   const lkSecret = (Deno.env.get('LIVEKIT_API_SECRET') ?? '').trim();
   const lkUrl = (Deno.env.get('LIVEKIT_URL') ?? '').trim();
   const supabaseUrl = (Deno.env.get('SUPABASE_URL') ?? '').trim();
-  // Clé publique du projet : injectée, sinon celle envoyée par le client (apikey).
-  const anonKey = (Deno.env.get('SUPABASE_ANON_KEY') ?? req.headers.get('apikey') ?? '').trim();
+  // Clé publique du projet (voir pickPublicApiKey) : aucun droit par elle-même.
+  const anonKey = pickPublicApiKey({
+    publishableKeysJson: Deno.env.get('SUPABASE_PUBLISHABLE_KEYS'),
+    requestApiKey: req.headers.get('apikey'),
+    anonKey: Deno.env.get('SUPABASE_ANON_KEY'),
+  }) ?? '';
 
   if (!isLivekitConfigured({ key: lkKey, secret: lkSecret, url: lkUrl }) || !supabaseUrl || !anonKey) {
     log('rejected', { code: 'not_configured' });

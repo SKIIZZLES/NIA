@@ -14,6 +14,7 @@ import {
   isLivekitConfigured,
   livekitHttpUrl,
   parseTokenRequest,
+  pickPublicApiKey,
   roomNameForLive,
   type LiveRowLite,
 } from '../../supabase/functions/live-token/core';
@@ -228,5 +229,23 @@ describe('configuration LiveKit', () => {
     expect(isLivekitConfigured({ key: 'APIxxx', secret: 'short', url: 'wss://nia.livekit.cloud' })).toBe(false);
     expect(isLivekitConfigured({ key: 'APIxxx', secret, url: 'https://nia.livekit.cloud' })).toBe(false);
     expect(isLivekitConfigured({ key: 'APIxxx', secret, url: null })).toBe(false);
+  });
+});
+
+describe('pickPublicApiKey', () => {
+  it('préfère SUPABASE_PUBLISHABLE_KEYS.default', () => {
+    expect(
+      pickPublicApiKey({
+        publishableKeysJson: '{"default":"sb_publishable_srv","other":"sb_publishable_o"}',
+        requestApiKey: 'sb_publishable_client',
+        anonKey: 'legacy',
+      }),
+    ).toBe('sb_publishable_srv');
+    expect(pickPublicApiKey({ publishableKeysJson: '{"mobile":"sb_publishable_m"}' })).toBe('sb_publishable_m');
+  });
+  it('sinon l’en-tête apikey, sinon la clé legacy', () => {
+    expect(pickPublicApiKey({ publishableKeysJson: 'pas du json', requestApiKey: 'sb_publishable_c', anonKey: 'legacy' })).toBe('sb_publishable_c');
+    expect(pickPublicApiKey({ requestApiKey: 'a b', anonKey: 'legacy' })).toBe('legacy');
+    expect(pickPublicApiKey({ requestApiKey: '', anonKey: '' })).toBeNull();
   });
 });

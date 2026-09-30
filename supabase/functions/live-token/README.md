@@ -67,7 +67,7 @@ supabase secrets set LIVEKIT_API_KEY=… LIVEKIT_API_SECRET=… LIVEKIT_URL=wss:
   --project-ref odlmbiaocdonlovjepxn
 ```
 
-`SUPABASE_URL` et `SUPABASE_ANON_KEY` sont injectés automatiquement.
+`SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEYS` (ou, à défaut, `SUPABASE_ANON_KEY`) sont injectés automatiquement.
 
 ## Déploiement
 

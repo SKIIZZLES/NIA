@@ -210,3 +210,39 @@ export function isLivekitConfigured(env: {
   const url = (env.url ?? '').trim();
   return key.length > 0 && secret.length >= 32 && /^wss?:\/\/[^\s/]+/i.test(url);
 }
+
+/**
+ * Clé publique à utiliser pour les appels « en tant qu'utilisateur ».
+ * Ordre : SUPABASE_PUBLISHABLE_KEYS (JSON `{ "default": "sb_publishable_…" }`,
+ * injecté par Supabase, fonctionne même si les clés legacy sont désactivées),
+ * puis l'en-tête `apikey` envoyé par l'app (supabase-js), puis
+ * SUPABASE_ANON_KEY (legacy). La clé ne donne aucun droit : c'est le JWT de
+ * l'utilisateur, transmis à côté, qui porte l'identité et la RLS.
+ */
+export function pickPublicApiKey(input: {
+  publishableKeysJson?: string | null;
+  requestApiKey?: string | null;
+  anonKey?: string | null;
+}): string | null {
+  const raw = (input.publishableKeysJson ?? '').trim();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const map = parsed as Record<string, unknown>;
+        const preferred = typeof map.default === 'string' ? map.default : null;
+        const first = Object.values(map).find((v) => typeof v === 'string' && v.trim()) as
+          | string
+          | undefined;
+        const key = (preferred ?? first ?? '').trim();
+        if (key) return key;
+      }
+    } catch {
+      // JSON invalide : on passe aux solutions suivantes
+    }
+  }
+  const header = (input.requestApiKey ?? '').trim();
+  if (header && header.length <= 512 && !/\s/.test(header)) return header;
+  const anon = (input.anonKey ?? '').trim();
+  return anon || null;
+}
