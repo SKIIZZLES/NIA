@@ -152,3 +152,64 @@ describe('isDefaultEditMeta', () => {
     expect(isDefaultEditMeta(parseEditMeta({ speed: 2 })!)).toBe(false);
   });
 });
+
+describe('edit_meta cuit (éditeur P0, baked)', () => {
+  const doc = (items: Overlay[]) => ({ v: 1 as const, aspect: 9 / 16, items });
+
+  it('neutralise vitesse, son et volume pour les anciens APK', () => {
+    const meta = buildEditMeta({
+      ...base,
+      speed: 2,
+      hasSound: true,
+      soundOffsetMs: 12_000,
+      soundVolume: 0.6,
+      originalVolume: 0.3,
+      baked: true,
+    });
+    expect(meta).toMatchObject({
+      speed: 1,
+      sound: { offsetMs: 0, volume: 0 },
+      originalVolume: 1,
+      baked: true,
+    });
+  });
+
+  it('garde un edit_meta même sans réglage (le drapeau suffit)', () => {
+    const meta = buildEditMeta({ ...base, baked: true });
+    expect(meta).not.toBeNull();
+    expect(meta?.baked).toBe(true);
+    expect(meta?.sound).toBeNull();
+  });
+
+  it('recale l’horaire des calques sur la vitesse cuite', () => {
+    const meta = buildEditMeta({
+      ...base,
+      speed: 2,
+      overlays: doc([text('a', { startMs: 4000, endMs: 8000 })]),
+      baked: true,
+    });
+    expect(meta?.overlays?.items[0]).toMatchObject({ startMs: 2000, endMs: 4000 });
+  });
+
+  it('ignore baked pour une photo', () => {
+    expect(buildEditMeta({ ...base, isVideo: false, baked: true })).toBeNull();
+  });
+
+  it('relit baked, et seulement la valeur true', () => {
+    expect(parseEditMeta({ speed: 1, baked: true })?.baked).toBe(true);
+    expect(parseEditMeta({ speed: 1, baked: 'yes' })?.baked).toBeUndefined();
+    expect(parseEditMeta({ speed: 1 })?.baked).toBeUndefined();
+  });
+
+  it('un document cuit n’est jamais « par défaut »', () => {
+    const meta = parseEditMeta({ speed: 1, baked: true });
+    expect(meta && isDefaultEditMeta(meta)).toBe(false);
+  });
+
+  it('reste relisible par l’ancien lecteur (champs connus seulement)', () => {
+    const meta = buildEditMeta({ ...base, speed: 1.5, hasSound: true, baked: true });
+    const { baked: _ignored, ...legacy } = meta as NonNullable<typeof meta>;
+    const reread = parseEditMeta(legacy);
+    expect(reread).toMatchObject({ speed: 1, sound: { volume: 0 }, originalVolume: 1 });
+  });
+});

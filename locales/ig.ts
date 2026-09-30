@@ -967,6 +967,21 @@ const ig: TranslationKeys = {
     badgeA11y: 'Ihe maka ndị okenye naanị',
     liveMatureHint: 'Naanị ndị okenye họọrọ ịhụ ihe 18+ na-ahụ live a. A ka machibidoro ọtọ gba.',
   },
+  composer: {
+    title: 'Anyị na-akwado vidiyo gị…',
+    progress: '%{percent} %',
+    keepOpen: 'Mee ka NIA meghee ma ihuenyo gbanye n’oge mbupụ. Ọ bụrụ na ị hapụ ngwa ahụ, mbupụ ga-akwụsị.',
+    cancel: 'Kagbuo mbupụ',
+    canceled: 'Akagbuola mbupụ. Ọrụ gị dị mma: ị nwere ike ibipụta ọzọ.',
+    leftTitle: 'Mbupụ kwụsịrị',
+    leftBody: 'Ị hapụrụ NIA n’oge mbupụ, ya mere ọ kwụsịrị. Ọrụ gị dị mma: bipụta ọzọ ma hapụ ngwa ahụ ka ọ meghee.',
+    failedTitle: 'Mbupụ agaghị',
+    failedBody: 'Enweghị ike ịkwado vidiyo ahụ na ekwentị a. Nwaa ọzọ; ọ bụrụ na nsogbu ahụ aga n’ihu, degara anyị na niaapp@outlook.com.',
+    soundFailed: 'Enweghị ike ibudata ụda ị họrọ. Lelee njikọ gị ma nwaa ọzọ.',
+    tooLargeBody: 'Ọbụlagodi mgbe a pịachara ya, vidiyo ahụ karịrị MB %{mb}. Bee ya ntakịrị ma nwaa ọzọ.',
+    tooLongTitle: 'Vidiyo ahụ ogologo nke ukwuu',
+    tooLongBody: 'Vidiyo NIA anaghị agafe nkeji %{minutes} (gụnyere ọsọ). Bee ya ma ọ bụ gbanwee ọsọ.',
+  },
 };
 
 export default ig;

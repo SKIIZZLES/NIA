@@ -26,6 +26,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
+import { ComposerProgress } from '@/components/ComposerProgress';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { SoundTrimControl } from '@/components/SoundTrimControl';
 import { MentionSuggestions } from '@/components/MentionSuggestions';
@@ -46,6 +47,10 @@ import { checkTexts } from '@/lib/textFilter';
 import { probePublishOptionsSupport } from '@/lib/videos';
 import { deleteDraft, isDraftStorageAvailable } from '@/lib/drafts';
 import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
+import { useComposerJob } from '@/hooks/useComposerJob';
+import { composeForPublish, isComposerAvailable, type ComposeResult } from '@/lib/composer';
+import { composedDurationMs, exceedsComposedMax, MAX_COMPOSED_DURATION_MS } from '@/lib/composition';
+import { deleteCachedFile, localFileSize } from '@/lib/upload';
 
 export default function CreatePublishStep() {
   const router = useRouter();
@@ -57,6 +62,11 @@ export default function CreatePublishStep() {
   const {
     mode,
     media,
+    sourceMedia,
+    trimRange,
+    playbackSpeed,
+    soundVolume,
+    originalVolume,
     cover,
     caption,
     setCaption,
@@ -134,7 +144,19 @@ export default function CreatePublishStep() {
   const insets = useSafeAreaInsets();
   // S7 : le retour Android ne quitte plus l'écran pendant l'envoi (annuler
   // d'abord) ni pendant l'enregistrement du brouillon.
-  useBlockBackWhile(busy || savingDraft);
+  // Éditeur P0 : export au premier plan (NiaComposer), avant l'envoi.
+  const composer = useComposerJob();
+  useBlockBackWhile(busy || savingDraft || composer.running);
+  const composerOn = media?.type === 'video' && isComposerAvailable();
+  /** Dernier MP4 composé : réutilisé tel quel si l'envoi est relancé sans changement. */
+  const composedRef = useRef<{ key: string; result: ComposeResult } | null>(null);
+  useEffect(
+    () => () => {
+      const last = composedRef.current;
+      if (last && !isMockFeed) deleteCachedFile(last.result.uri);
+    },
+    [isMockFeed],
+  );
   /** Ratio réel d'envoi (0 → 1), null tant qu'aucun octet n'est parti. */
   const [progress, setProgress] = useState<number | null>(null);
   const [progressStage, setProgressStage] = useState<'media' | 'cover'>('media');
@@ -203,20 +225,96 @@ export default function CreatePublishStep() {
       );
     });
 
+  /**
+   * MP4 publié (éditeur P0) : découpe, vitesse, son ajouté et volumes sont
+   * cuits dans le fichier. null = rien à envoyer (annulé, app quittée ou
+   * échec : le message est déjà affiché, le brouillon est intact).
+   */
+  const composeOnce = async (): Promise<ComposeResult | null> => {
+    const src = sourceMedia ?? media;
+    if (!src?.uri) return null;
+    const key = JSON.stringify([
+      src.uri,
+      trimRange,
+      playbackSpeed,
+      sound?.publicUrl ?? null,
+      soundOffsetMs,
+      soundVolume,
+      originalVolume,
+    ]);
+    const last = composedRef.current;
+    if (last && last.key === key && localFileSize(last.result.uri) != null) return last.result;
+    if (last) {
+      if (!isMockFeed) deleteCachedFile(last.result.uri);
+      composedRef.current = null;
+    }
+    const outcome = await composer.run((onProgress) =>
+      composeForPublish(
+        {
+          sourceUri: src.uri,
+          sourceDurationMs: src.durationMs,
+          trim: trimRange,
+          speed: playbackSpeed,
+          soundUrl: sound?.publicUrl ?? null,
+          soundOffsetMs,
+          soundVolume,
+          originalVolume,
+        },
+        onProgress,
+      ),
+    );
+    if (outcome.status === 'done') {
+      composedRef.current = { key, result: outcome.value };
+      return outcome.value;
+    }
+    if (outcome.status === 'cancelled') {
+      setUploadError(t('composer.canceled'));
+      return null;
+    }
+    if (outcome.status === 'left') {
+      setUploadError(t('composer.leftBody'));
+      Alert.alert(t('composer.leftTitle'), t('composer.leftBody'));
+      return null;
+    }
+    const msg =
+      outcome.code === 'ERR_TOO_LARGE'
+        ? t('composer.tooLargeBody', { mb: String(maxMb) })
+        : outcome.code === 'ERR_SOUND'
+          ? t('composer.soundFailed')
+          : t('composer.failedBody');
+    setUploadError(msg);
+    Alert.alert(t('composer.failedTitle'), msg);
+    return null;
+  };
+
   const publish = async () => {
-    if (savingDraft || busy) return;
+    if (savingDraft || busy || composer.running) return;
     if (!media?.uri && !isMockFeed) {
       Alert.alert(t('create.alertMediaRequired'), t('create.errNoMedia'));
       return;
     }
-    if (media?.fileSize != null && media.fileSize > MAX_UPLOAD_BYTES) {
+    // Avec l'export natif, c'est le MP4 composé qui doit tenir sous 50 Mo.
+    if (!composerOn && media?.fileSize != null && media.fileSize > MAX_UPLOAD_BYTES) {
       Alert.alert(
         t('create.alertTooLarge'),
         t('create.errTooLarge', { mb: maxMb }),
       );
       return;
     }
-    if (
+    if (composerOn) {
+      const finalMs = composedDurationMs({
+        sourceDurationMs: (sourceMedia ?? media)?.durationMs ?? null,
+        trim: trimRange,
+        speed: playbackSpeed,
+      });
+      if (exceedsComposedMax(finalMs)) {
+        Alert.alert(
+          t('composer.tooLongTitle'),
+          t('composer.tooLongBody', { minutes: String(MAX_COMPOSED_DURATION_MS / 60_000) }),
+        );
+        return;
+      }
+    } else if (
       media?.type === 'video' &&
       media.durationMs != null &&
       media.durationMs > MAX_VIDEO_DURATION_SEC * 1000
@@ -240,6 +338,30 @@ export default function CreatePublishStep() {
       if (verdict === 'held' && !(await confirmSendAnyway())) return;
     }
 
+    // Éditeur P0 : le fichier envoyé est le MP4 composé ; sans module natif
+    // (iOS en P0, web), c'est le média comme avant.
+    let upload = {
+      uri: media?.uri || undefined,
+      mimeType: media?.mimeType ?? null,
+      fileName: media?.fileName ?? null,
+      fileSize: media?.fileSize ?? undefined,
+      durationMs: media?.durationMs ?? undefined,
+    };
+    let baked = false;
+    if (composerOn) {
+      setUploadError(null);
+      const composed = await composeOnce();
+      if (!composed) return;
+      upload = {
+        uri: composed.uri,
+        mimeType: 'video/mp4',
+        fileName: composed.uri.split('/').pop() || null,
+        fileSize: composed.size > 0 ? composed.size : undefined,
+        durationMs: composed.durationMs > 0 ? composed.durationMs : undefined,
+      };
+      baked = true;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
@@ -249,17 +371,17 @@ export default function CreatePublishStep() {
     try {
       const created = await publishPost({
         caption,
-        localUri: media?.uri || undefined,
-        mimeType: media?.mimeType ?? null,
-        fileName: media?.fileName ?? null,
+        localUri: upload.uri,
+        mimeType: upload.mimeType,
+        fileName: upload.fileName,
         mediaKind: media?.type ?? (mode === 'photo' ? 'image' : 'video'),
         coverUri: media?.type === 'video' ? cover?.uri ?? null : null,
         coverMimeType: media?.type === 'video' ? cover?.mimeType ?? null : null,
         coverFileName: media?.type === 'video' ? cover?.fileName ?? null : null,
         category: category ?? undefined,
         hashtags,
-        fileSize: media?.fileSize ?? undefined,
-        durationMs: media?.durationMs ?? undefined,
+        fileSize: upload.fileSize,
+        durationMs: upload.durationMs,
         soundId: sound?.id ?? null,
         soundUrl: sound?.publicUrl ?? null,
         soundTitle: sound?.title ?? null,
@@ -267,7 +389,7 @@ export default function CreatePublishStep() {
         // 016 absente : pas d'options (publication comme avant) ; edit_meta
         // est tenté puis retiré sans bruit par la publication.
         publishOptions: optionsSupported === false ? undefined : publishOptions,
-        editMeta: buildPublishEditMeta(),
+        editMeta: buildPublishEditMeta({ baked }),
         uploadId,
         // Dès la deuxième tentative on écrase l'objet éventuellement partiel
         // laissé par la précédente, au lieu d'échouer sur « already exists ».
@@ -292,6 +414,12 @@ export default function CreatePublishStep() {
       // garde Redirect vers l'étape 1, en course avec le replace.
       if (created?.moderationState === 'held') {
         Alert.alert(t('textFilter.heldTitle'), t('textFilter.heldVideo'));
+      }
+      // Le MP4 composé est en ligne : la copie du cache n'a plus d'usage (en
+      // mode démo, elle sert de vidéo au fil local : on la garde).
+      if (baked && !isMockFeed && composedRef.current) {
+        deleteCachedFile(composedRef.current.result.uri);
+        composedRef.current = null;
       }
       releaseLeaveGuard();
       setPublished(true);
@@ -683,6 +811,13 @@ export default function CreatePublishStep() {
             </View>
           </>
         )}
+
+        <ComposerProgress
+          visible={composer.running}
+          progress={composer.progress}
+          title={t('composer.title')}
+          onCancel={composer.cancel}
+        />
 
         <Modal
           visible={soundPickerOpen}

@@ -967,6 +967,21 @@ const yo: TranslationKeys = {
     badgeA11y: 'Àkóónú fún àgbàlagbà nìkan',
     liveMatureHint: 'Àwọn àgbàlagbà tó yàn láti rí àkóónú 18+ nìkan ló lè rí live yìí. Ìhòòhò ṣì jẹ́ èèwọ̀.',
   },
+  composer: {
+    title: 'A ń pèsè fídíò rẹ…',
+    progress: '%{percent} %',
+    keepOpen: 'Jẹ́ kí NIA wà ní ṣíṣí, kí ojú fóònù sì tàn nígbà ìgbéjáde. Tí o bá kúrò nínú áàpù, ìgbéjáde yóò dúró.',
+    cancel: 'Fagi ìgbéjáde',
+    canceled: 'A ti fagi ìgbéjáde. Iṣẹ́ rẹ wà láìléwu: o lè tún gbé e jáde.',
+    leftTitle: 'Ìgbéjáde dáwọ́ dúró',
+    leftBody: 'O kúrò nínú NIA nígbà ìgbéjáde, nítorí náà ó dúró. Iṣẹ́ rẹ wà láìléwu: tún gbé e jáde, kí o sì fi áàpù sílẹ̀ ní ṣíṣí.',
+    failedTitle: 'Ìgbéjáde kò ṣeé ṣe',
+    failedBody: 'A kò lè pèsè fídíò náà lórí fóònù yìí. Tún gbìyànjú; tí ìṣòro náà bá ń bá a lọ, kọ̀wé sí wa ní niaapp@outlook.com.',
+    soundFailed: 'A kò lè gba ohùn tí o yàn sílẹ̀. Ṣàyẹ̀wò ìsopọ̀ rẹ kí o tún gbìyànjú.',
+    tooLargeBody: 'Kódà lẹ́yìn ìfúnpọ̀, fídíò náà ju MB %{mb} lọ. Gé e díẹ̀ kí o tún gbìyànjú.',
+    tooLongTitle: 'Fídíò ti gùn jù',
+    tooLongBody: 'Fídíò NIA kò gbọ́dọ̀ ju ìṣẹ́jú %{minutes} lọ (pẹ̀lú ìyára). Gé e tàbí yí ìyára padà.',
+  },
 };
 
 export default yo;

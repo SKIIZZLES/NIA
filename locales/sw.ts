@@ -972,6 +972,21 @@ const sw: TranslationKeys = {
     badgeA11y: 'Maudhui ya watu wazima pekee',
     liveMatureHint: 'Mubashara unaonekana tu kwa watu wazima waliochagua kuona maudhui ya 18+. Uchi bado umekatazwa.',
   },
+  composer: {
+    title: 'Tunaandaa video yako…',
+    progress: '%{percent} %',
+    keepOpen: 'Acha NIA wazi na skrini ikiwaka wakati wa kuhamisha. Ukitoka kwenye programu, uhamishaji unasimama.',
+    cancel: 'Ghairi uhamishaji',
+    canceled: 'Uhamishaji umeghairiwa. Kazi yako iko salama: unaweza kuchapisha tena.',
+    leftTitle: 'Uhamishaji umekatizwa',
+    leftBody: 'Ulitoka NIA wakati wa kuhamisha, kwa hivyo ulisimamishwa. Kazi yako iko salama: chapisha tena ukiacha programu wazi.',
+    failedTitle: 'Imeshindwa kuhamisha',
+    failedBody: 'Video haikuweza kuandaliwa kwenye simu hii. Jaribu tena; tatizo likiendelea, tuandikie niaapp@outlook.com.',
+    soundFailed: 'Sauti uliyochagua haikuweza kupakuliwa. Angalia muunganisho wako kisha ujaribu tena.',
+    tooLargeBody: 'Hata ikibanwa, video inazidi MB %{mb}. Ikate kidogo kisha ujaribu tena.',
+    tooLongTitle: 'Video ni ndefu mno',
+    tooLongBody: 'Video ya NIA ni dakika %{minutes} zaidi (pamoja na kasi). Ikate au ubadilishe kasi.',
+  },
 };
 
 export default sw;

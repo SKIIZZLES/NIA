@@ -972,6 +972,21 @@ const pt: TranslationKeys = {
     badgeA11y: 'Conteúdo só para adultos',
     liveMatureHint: 'Direto visível apenas para adultos que escolheram ver conteúdos 18+. A nudez continua proibida.',
   },
+  composer: {
+    title: 'A preparar o teu vídeo…',
+    progress: '%{percent} %',
+    keepOpen: 'Mantém a NIA aberta e o ecrã ligado durante a exportação. Se saíres da app, a exportação para.',
+    cancel: 'Cancelar exportação',
+    canceled: 'Exportação cancelada. A tua criação está intacta: podes publicar de novo.',
+    leftTitle: 'Exportação interrompida',
+    leftBody: 'Saíste da NIA durante a exportação e ela parou. A tua criação está intacta: publica de novo com a app aberta.',
+    failedTitle: 'Não foi possível exportar',
+    failedBody: 'Não foi possível preparar o vídeo neste telemóvel. Tenta de novo; se o problema continuar, escreve-nos para niaapp@outlook.com.',
+    soundFailed: 'Não foi possível descarregar o som escolhido. Verifica a ligação e tenta de novo.',
+    tooLargeBody: 'Mesmo comprimido, o vídeo passa de %{mb} MB. Corta-o um pouco e tenta de novo.',
+    tooLongTitle: 'Vídeo demasiado longo',
+    tooLongBody: 'Um vídeo NIA dura no máximo %{minutes} min (velocidade incluída). Corta-o ou muda a velocidade.',
+  },
 };
 
 export default pt;

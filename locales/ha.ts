@@ -972,6 +972,21 @@ const ha: TranslationKeys = {
     badgeA11y: 'Abun manya kawai',
     liveMatureHint: 'Kai tsaye da manya da suka zaɓi ganin abubuwan 18+ ne kawai ke gani. Tsiraici har yanzu an hana shi.',
   },
+  composer: {
+    title: 'Ana shirya bidiyonka…',
+    progress: '%{percent} %',
+    keepOpen: 'Bar NIA a buɗe da allon a kunne yayin fitarwa. Idan ka fita daga manhajar, fitarwar za ta tsaya.',
+    cancel: 'Soke fitarwa',
+    canceled: 'An soke fitarwa. Aikinka yana nan lafiya: za ka iya sake wallafawa.',
+    leftTitle: 'An katse fitarwa',
+    leftBody: 'Ka fita daga NIA yayin fitarwa, don haka ta tsaya. Aikinka yana nan lafiya: sake wallafawa ka bar manhajar a buɗe.',
+    failedTitle: 'Ba a iya fitarwa ba',
+    failedBody: 'Ba a iya shirya bidiyon a wannan wayar ba. Sake gwadawa; idan matsalar ta ci gaba, rubuto mana a niaapp@outlook.com.',
+    soundFailed: 'Ba a iya sauke sautin da ka zaɓa ba. Duba haɗinka ka sake gwadawa.',
+    tooLargeBody: 'Ko bayan matsawa, bidiyon ya wuce MB %{mb}. Rage shi kaɗan ka sake gwadawa.',
+    tooLongTitle: 'Bidiyon ya yi tsawo',
+    tooLongBody: 'Bidiyon NIA bai wuce minti %{minutes} ba (har da gudu). Rage shi ko canza gudun.',
+  },
 };
 
 export default ha;

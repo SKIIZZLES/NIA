@@ -11,6 +11,7 @@
  * app, 16 Ko en base (le texte jsonb de Postgres ajoute des espaces).
  */
 import { sanitizeOverlayDoc, type OverlayDoc } from '@/lib/overlays';
+import { overlaysForBakedSpeed } from '@/lib/composition';
 
 export const EDIT_META_VERSION = 1 as const;
 export const MAX_EDIT_META_BYTES = 12 * 1024;
@@ -28,6 +29,15 @@ export type EditMeta = {
   /** Volume du son original de la vidéo. */
   originalVolume: number;
   overlays: OverlayDoc | null;
+  /**
+   * Éditeur P0 : vitesse, son ajouté et volumes sont déjà dans le fichier
+   * (export NiaComposer). Les lecteurs récents ne rejouent pas le son à côté.
+   * Les anciens APK ignorent ce champ, mais lisent `speed: 1`,
+   * `sound.volume: 0` et `originalVolume: 1` : rien n'est appliqué deux fois.
+   * La contrainte SQL de 016 ne contrôle que les clés connues : pas de
+   * migration.
+   */
+  baked?: true;
 };
 
 const num = (v: unknown): number | null =>
@@ -98,11 +108,13 @@ export function parseEditMeta(raw: unknown): EditMeta | undefined {
     sound,
     originalVolume: clamp(num(r.originalVolume) ?? 1, 0, 1),
     overlays,
+    ...(r.baked === true ? { baked: true as const } : {}),
   };
 }
 
 /** Rien à appliquer : lecture normale. */
 export function isDefaultEditMeta(meta: EditMeta): boolean {
+  if (meta.baked) return false;
   return (
     meta.trim == null &&
     meta.speed === 1 &&
@@ -127,9 +139,16 @@ export function buildEditMeta(input: {
   originalVolume: number;
   overlays: OverlayDoc | null;
   isVideo: boolean;
+  /** Le fichier publié sort de l'export NiaComposer (vitesse et son déjà dedans). */
+  baked?: boolean;
 }): EditMeta | null {
-  const overlays =
+  const baked = input.baked === true && input.isVideo;
+  const rawOverlays =
     input.overlays && input.overlays.items.length > 0 ? sanitizeOverlayDoc(input.overlays) : null;
+  // Fichier cuit : l'horaire des calques suit la vitesse appliquée.
+  const overlays = baked
+    ? overlaysForBakedSpeed(rawOverlays, input.speed > 0 ? nearestSpeed(input.speed) : 1)
+    : rawOverlays;
   const meta: EditMeta = {
     v: EDIT_META_VERSION,
     trim:
@@ -154,6 +173,15 @@ export function buildEditMeta(input: {
     originalVolume: input.isVideo && input.hasSound ? clamp(input.originalVolume, 0, 1) : 1,
     overlays: overlays && overlays.items.length > 0 ? overlays : null,
   };
+  if (baked) {
+    // Compatibilité (décision du fondateur) : un ancien APK qui ignore
+    // `baked` ne rejoue ni la vitesse ni le son (volume 0), et laisse le son
+    // du fichier à 100 %.
+    meta.speed = 1;
+    meta.sound = input.hasSound ? { offsetMs: 0, volume: 0 } : null;
+    meta.originalVolume = 1;
+    meta.baked = true;
+  }
   while (meta.overlays && editMetaBytes(meta) > MAX_EDIT_META_BYTES) {
     const items = meta.overlays.items.slice(0, -1);
     meta.overlays = items.length ? { ...meta.overlays, items } : null;

@@ -1,0 +1,25 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'app.nia.composer'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.niacomposer"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}
+
+// Même version que expo-video / expo-audio (SDK 57). plugins/withMedia3Align
+// force de toute façon toutes les dépendances androidx.media3 sur 1.9.0.
+def media3Version = "1.9.0"
+
+dependencies {
+  implementation "androidx.media3:media3-common:${media3Version}"
+  implementation "androidx.media3:media3-effect:${media3Version}"
+  implementation "androidx.media3:media3-transformer:${media3Version}"
+}
