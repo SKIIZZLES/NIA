@@ -919,6 +919,21 @@ const am: TranslationKeys = {
     edit: 'አርትዕ',
     usernameRefused: 'ይህ የተጠቃሚ ስም አይፈቀድም። ሌላ ይምረጡ።',
   },
+  composer: {
+    title: 'ቪዲዮዎን በማዘጋጀት ላይ…',
+    progress: '%{percent} %',
+    keepOpen: 'በመላክ ወቅት NIAን ክፍት እና ማያውን በርቶ ያቆዩ። ከመተግበሪያው ከወጡ መላኩ ይቆማል።',
+    cancel: 'መላኩን ሰርዝ',
+    canceled: 'መላኩ ተሰርዟል። ስራዎ ደህና ነው፤ እንደገና ማተም ይችላሉ።',
+    leftTitle: 'መላኩ ተቋርጧል',
+    leftBody: 'በመላክ ወቅት ከNIA ስለወጡ ቆሟል። ስራዎ ደህና ነው፤ መተግበሪያውን ክፍት አድርገው እንደገና ያትሙ።',
+    failedTitle: 'መላክ አልተቻለም',
+    failedBody: 'ቪዲዮው በዚህ ስልክ ላይ ሊዘጋጅ አልቻለም። እንደገና ይሞክሩ፤ ችግሩ ከቀጠለ በniaapp@outlook.com ይጻፉልን።',
+    soundFailed: 'የመረጡት ድምፅ ሊወርድ አልቻለም። ግንኙነትዎን ያረጋግጡና እንደገና ይሞክሩ።',
+    tooLargeBody: 'ከተጨመቀም በኋላ ቪዲዮው ከ%{mb} ሜባ ይበልጣል። ትንሽ ቆርጠው እንደገና ይሞክሩ።',
+    tooLongTitle: 'ቪዲዮው በጣም ረጅም ነው',
+    tooLongBody: 'የNIA ቪዲዮ ቢበዛ %{minutes} ደቂቃ ነው (ፍጥነትን ጨምሮ)። ይቁረጡት ወይም ፍጥነቱን ይቀይሩ።',
+  },
 };
 
 export default am;

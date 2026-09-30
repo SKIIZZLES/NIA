@@ -57,6 +57,8 @@ import { MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { formatSoundTime } from '@/lib/soundSync';
 import { isDraftStorageAvailable } from '@/lib/drafts';
 import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
+import { isComposerAvailable } from '@/lib/composer';
+import { exceedsComposedMax, MAX_COMPOSED_DURATION_MS } from '@/lib/composition';
 import { deleteCachedFile } from '@/lib/upload';
 import {
   DEFAULT_STICKER_SIZE,
@@ -274,6 +276,14 @@ export default function CreateEditStep() {
       return;
     }
     const { startMs, endMs } = selRef.current;
+    // Éditeur P0 : la vidéo composée dure 3 min au plus (vitesse comprise).
+    if (isComposerAvailable() && exceedsComposedMax((endMs - startMs) / (playbackSpeed || 1))) {
+      Alert.alert(
+        t('composer.tooLongTitle'),
+        t('composer.tooLongBody', { minutes: String(MAX_COMPOSED_DURATION_MS / 60_000) }),
+      );
+      return;
+    }
     const full = isFullRange(startMs, endMs, durationMs);
     const same =
       trimRange != null &&
@@ -303,7 +313,7 @@ export default function CreateEditStep() {
     } finally {
       setBusy(false);
     }
-  }, [busy, isVideo, source, durationMs, trimRange, clearTrim, applyTrimmedVideo, router, t]);
+  }, [busy, isVideo, source, durationMs, trimRange, clearTrim, applyTrimmedVideo, router, t, playbackSpeed]);
 
   // --- Brouillons (S6) -------------------------------------------------
 

@@ -1,0 +1,8 @@
+{
+  "name": "nia-composer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NIA — export vidéo sur l'appareil (Media3 Transformer sur Android). Module Expo local.",
+  "main": "index.ts",
+  "license": "MIT"
+}

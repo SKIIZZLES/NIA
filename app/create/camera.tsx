@@ -62,7 +62,11 @@ import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { getFilterOverlayStyle } from '@/constants/filters';
-import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
+import { MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
+import { ComposerProgress } from '@/components/ComposerProgress';
+import { useComposerJob } from '@/hooks/useComposerJob';
+import { composerCachePath, isComposerAvailable, runComposition } from '@/lib/composer';
+import { buildSegmentsComposition, maxVideoSourceBytes } from '@/lib/composition';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
 import { concatVideoFiles, isConcatAvailable, videoFileDurationMs } from '@/lib/videoTrim';
 import {
@@ -188,6 +192,12 @@ export default function CreateCameraScreen() {
   const holdRef = useRef(false);
   /** Fermer après l'arrêt du segment en cours (confirmation ensuite). */
   const askLeaveAfterStopRef = useRef(false);
+  /** Caméra du segment en cours (éditeur P0 : retournement entre segments). */
+  const facingRef = useRef(facing);
+  facingRef.current = facing;
+  /** Éditeur P0 : assemblage ré-encodé quand les segments viennent des deux caméras. */
+  const composer = useComposerJob();
+  const composerRun = composer.run;
   const mediaUriRef = useRef<string | null>(null);
   mediaUriRef.current = (sourceMedia ?? media)?.uri ?? null;
 
@@ -468,6 +478,34 @@ export default function CreateCameraScreen() {
       if (single) {
         uri = list[0].uri;
         durationMs = list[0].durationMs;
+      } else if (
+        isComposerAvailable() &&
+        new Set(list.map((sg) => sg.facing ?? 'back')).size > 1
+      ) {
+        // Les deux caméras : formats différents, collage sans ré-encodage
+        // impossible. Un export (qualité haute) en fait une seule vidéo.
+        setAssembling(true);
+        const out = composerCachePath('nia-segments');
+        const outcome = await composerRun((onProgress) =>
+          runComposition(
+            buildSegmentsComposition(
+              list.map((sg) => ({ uri: sg.uri })),
+              out,
+            ),
+            onProgress,
+          ),
+        );
+        if (outcome.status !== 'done') {
+          setAssembling(false);
+          if (outcome.status === 'left') {
+            Alert.alert(t('composer.leftTitle'), t('composer.leftBody'));
+          } else if (outcome.status === 'failed') {
+            Alert.alert(t('camera.concatFailedTitle'), t('camera.concatFailed'));
+          }
+          return;
+        }
+        uri = outcome.value.uri;
+        durationMs = outcome.value.durationMs > 0 ? outcome.value.durationMs : totalDurationMs(list);
       } else {
         if (!isConcatAvailable()) {
           Alert.alert(t('common.error'), t('camera.concatUnavailable'));
@@ -504,7 +542,7 @@ export default function CreateCameraScreen() {
       }
       setAssembling(false);
     },
-    [assembling, router, applyCapturedVideo, t],
+    [assembling, router, applyCapturedVideo, t, composerRun],
   );
 
   const record = useCallback(async () => {
@@ -517,7 +555,9 @@ export default function CreateCameraScreen() {
       setPhase('idle');
       return;
     }
-    const limits = nextSegmentLimits(before, maxMs, MAX_UPLOAD_BYTES);
+    // Éditeur P0 : la vidéo publiée est ré-encodée sous 50 Mo, la prise peut
+    // donc dépasser ce plafond quand l'export natif existe.
+    const limits = nextSegmentLimits(before, maxMs, maxVideoSourceBytes(isComposerAvailable()));
     abandonRef.current = false;
     leaveAfterAbandonRef.current = false;
     startedAtRef.current = Date.now();
@@ -579,7 +619,7 @@ export default function CreateCameraScreen() {
     );
     const next = addSegment(
       segmentsRef.current,
-      { id: makeSegmentId(), uri, durationMs, size: localFileSize(uri) },
+      { id: makeSegmentId(), uri, durationMs, size: localFileSize(uri), facing: facingRef.current },
       maxMs,
     );
     if (next.length === segmentsRef.current.length) {
@@ -721,9 +761,10 @@ export default function CreateCameraScreen() {
 
   const flipCamera = useCallback(() => {
     if (busy) return;
-    // Les segments sont assemblés sans ré-encodage : ils doivent venir de la
-    // même caméra (orientation et format identiques).
-    if (segmentsRef.current.length > 0) {
+    // Sans export natif (iOS en P0), les segments sont assemblés sans
+    // ré-encodage : ils doivent venir de la même caméra. Avec NiaComposer,
+    // un mélange des deux caméras est ré-encodé à l'assemblage.
+    if (segmentsRef.current.length > 0 && !isComposerAvailable()) {
       Alert.alert(t('camera.flipLockedTitle'), t('camera.flipLockedBody'));
       return;
     }
@@ -1545,7 +1586,14 @@ export default function CreateCameraScreen() {
         />
       ) : null}
 
-      {assembling ? (
+      <ComposerProgress
+        visible={composer.running}
+        progress={composer.progress}
+        title={t('camera.assembling', { count: String(segments.length) })}
+        onCancel={composer.cancel}
+      />
+
+      {assembling && !composer.running ? (
         <View style={styles.assemblingWrap} accessibilityLiveRegion="polite">
           <ActivityIndicator color={colors.or} size="large" />
           <Text style={styles.assemblingText}>

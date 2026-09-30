@@ -919,6 +919,21 @@ const zu: TranslationKeys = {
     edit: 'Hlela',
     usernameRefused: 'Leli gama lomsebenzisi alivunyelwe. Khetha elinye.',
   },
+  composer: {
+    title: 'Silungiselela ividiyo yakho…',
+    progress: '%{percent} %',
+    keepOpen: 'Gcina i-NIA ivuliwe nesikrini sikhanya ngesikhathi sokuthekelisa. Uma uphuma ku-app, ukuthekelisa kuyama.',
+    cancel: 'Khansela ukuthekelisa',
+    canceled: 'Ukuthekelisa kukhanseliwe. Umsebenzi wakho uphephile: ungashicilela futhi.',
+    leftTitle: 'Ukuthekelisa kuphazamisekile',
+    leftBody: 'Uphume ku-NIA ngesikhathi sokuthekelisa, ngakho kwamiswa. Umsebenzi wakho uphephile: shicilela futhi ushiye i-app ivuliwe.',
+    failedTitle: 'Ukuthekelisa kwehlulekile',
+    failedBody: 'Ividiyo ayikwazanga ukulungiswa kule foni. Zama futhi; uma inkinga iqhubeka, sibhalele ku-niaapp@outlook.com.',
+    soundFailed: 'Umsindo owukhethile awukwazanga ukulandwa. Hlola uxhumano lwakho bese uzama futhi.',
+    tooLargeBody: 'Ngisho icindezelwe, ividiyo idlula ama-MB angu-%{mb}. Yinqume kancane bese uzama futhi.',
+    tooLongTitle: 'Ividiyo yinde kakhulu',
+    tooLongBody: 'Ividiyo ye-NIA ingamaminithi angu-%{minutes} kuphela (kuhlanganise nesivinini). Yinqume noma ushintshe isivinini.',
+  },
 };
 
 export default zu;

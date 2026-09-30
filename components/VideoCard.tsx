@@ -404,7 +404,8 @@ function VideoCardInner({
       {/* Sprint S2 : son du post joué en synchro (début 0, volumes par défaut
           tant que la base ne stocke pas les réglages). Suit pause, seek,
           boucle et bouton son. */}
-      {soundArmed && item.soundUrl ? (
+      {/* Éditeur P0 : edit_meta.baked = son déjà mixé dans le fichier. */}
+      {soundArmed && item.soundUrl && !meta?.baked ? (
         <SyncedSound
           url={item.soundUrl}
           video={isImagePost ? null : player}

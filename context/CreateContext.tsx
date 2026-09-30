@@ -42,6 +42,8 @@ import {
   type LoadedDraft,
 } from '@/lib/drafts';
 import { EDIT_SPEEDS, buildEditMeta, type EditMeta } from '@/lib/editMeta';
+import { maxVideoSourceBytes } from '@/lib/composition';
+import { isComposerAvailable } from '@/lib/composer';
 import { DEFAULT_PUBLISH_OPTIONS, type PublishOptions } from '@/lib/publishOptions';
 import {
   canAddOverlay,
@@ -181,7 +183,8 @@ type CreateContextValue = {
   publishOptions: PublishOptions;
   setPublishOptions: (patch: Partial<PublishOptions>) => void;
   /** Réglages d'édition à publier (edit_meta, 016) ; null si tout est par défaut. */
-  buildPublishEditMeta: () => EditMeta | null;
+  /** `baked` : le fichier publié sort de l'export NiaComposer (éditeur P0). */
+  buildPublishEditMeta: (options?: { baked?: boolean }) => EditMeta | null;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
   hashtags: string[];
   /**
@@ -337,10 +340,14 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         Alert.alert(t('common.error'), t('create.errWrongMediaPhoto'));
         return;
       }
-      if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
+      // Éditeur P0 : une vidéo est ré-encodée sous 50 Mo à la publication, la
+      // source peut donc être plus lourde quand l'export natif existe.
+      const sourceMax =
+        type === 'image' ? MAX_UPLOAD_BYTES : maxVideoSourceBytes(isComposerAvailable());
+      if (fileSize != null && fileSize > sourceMax) {
         Alert.alert(
           t('create.alertTooLarge'),
-          t('create.errTooLarge', { mb: maxMb }),
+          t('create.errTooLarge', { mb: Math.round(sourceMax / (1024 * 1024)) }),
         );
         return;
       }
@@ -418,10 +425,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       if (!uri) return false;
 
       const fileSize = localFileSize(uri);
-      if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
+      const sourceMax = maxVideoSourceBytes(isComposerAvailable());
+      if (fileSize != null && fileSize > sourceMax) {
         Alert.alert(
           t('create.alertTooLarge'),
-          t('create.errTooLarge', { mb: maxMb }),
+          t('create.errTooLarge', { mb: Math.round(sourceMax / (1024 * 1024)) }),
         );
         return false;
       }
@@ -661,7 +669,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const buildPublishEditMeta = useCallback(
-    () =>
+    (options?: { baked?: boolean }) =>
       buildEditMeta({
         trim: trimRange,
         sourceDurationMs: sourceMedia?.durationMs ?? null,
@@ -672,6 +680,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         originalVolume,
         overlays,
         isVideo: media?.type === 'video',
+        baked: options?.baked === true,
       }),
     [
       trimRange,

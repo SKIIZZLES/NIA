@@ -19,6 +19,8 @@ export type Segment = {
   durationMs: number;
   /** Taille en octets, si connue. */
   size: number | null;
+  /** Caméra utilisée (éditeur P0 : deux caméras = assemblage ré-encodé). */
+  facing?: 'back' | 'front';
 };
 
 /** En dessous, un segment est trop court pour être finalisé par la caméra. */

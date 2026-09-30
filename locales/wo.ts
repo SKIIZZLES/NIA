@@ -919,6 +919,21 @@ const wo: TranslationKeys = {
     edit: 'Modifier',
     usernameRefused: 'Ce nom d’utilisateur n’est pas autorisé. Choisis-en un autre.',
   },
+  composer: {
+    title: 'Préparation de ta vidéo…',
+    progress: '%{percent} %',
+    keepOpen: 'Garde NIA ouverte et l’écran allumé pendant l’export. Si tu quittes l’app, l’export s’arrête.',
+    cancel: 'Annuler l’export',
+    canceled: 'Export annulé. Ta création est intacte : tu peux relancer la publication.',
+    leftTitle: 'Export interrompu',
+    leftBody: 'Tu as quitté NIA pendant l’export : il a été arrêté. Ta création est intacte, relance la publication en gardant l’app ouverte.',
+    failedTitle: 'Export impossible',
+    failedBody: 'La vidéo n’a pas pu être préparée sur ce téléphone. Réessaie ; si le problème continue, écris-nous à niaapp@outlook.com.',
+    soundFailed: 'Le son choisi n’a pas pu être téléchargé. Vérifie ta connexion et réessaie.',
+    tooLargeBody: 'Même compressée, la vidéo dépasse %{mb} Mo. Coupe-la un peu et réessaie.',
+    tooLongTitle: 'Vidéo trop longue',
+    tooLongBody: 'Une vidéo NIA dure %{minutes} min au plus (vitesse comprise). Coupe-la ou change la vitesse.',
+  },
 };
 
 export default wo;
