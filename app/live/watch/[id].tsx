@@ -1,13 +1,15 @@
 /**
  * `/live/watch/[id]` — regarder un live en plein écran (L1).
  * La lecture elle-même est dans components/live/LiveViewerStage(.native).tsx.
+ * L2 : entrée « Signaler » (ReportSheet S2, cible « live »), sauf pour l'hôte.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { LiveViewerStage } from '@/components/live/LiveViewerStage';
 import { LiveCenterMessage } from '@/components/live/LiveStageParts';
+import { ReportSheet } from '@/components/ReportSheet';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -23,6 +25,8 @@ export default function LiveWatchScreen() {
   const [live, setLive] = useState<LiveStreamItem | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [msgKey, setMsgKey] = useState('live.notFound');
+  const [reportOpen, setReportOpen] = useState(false);
+  const canReport = !!live && !!user?.id && live.userId !== user.id;
 
   useEffect(() => {
     if (authLoading) return undefined;
@@ -76,7 +80,23 @@ export default function LiveWatchScreen() {
           onSecondary={close}
         />
       ) : null}
-      {state === 'ready' && live ? <LiveViewerStage live={live} onClose={close} /> : null}
+      {state === 'ready' && live ? (
+        <LiveViewerStage
+          live={live}
+          onClose={close}
+          onReport={canReport ? () => setReportOpen(true) : undefined}
+        />
+      ) : null}
+      {live && canReport ? (
+        <ReportSheet
+          visible={reportOpen}
+          onClose={() => setReportOpen(false)}
+          reporterId={user?.id}
+          targetType="live"
+          targetId={live.id}
+          onDone={(message) => Alert.alert(t('feed.report'), message)}
+        />
+      ) : null}
     </View>
   );
 }

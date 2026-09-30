@@ -8,21 +8,38 @@
  *   - publisher : uniquement le créateur de la ligne live_streams
  *     (live.user_id === uid), live « scheduled » ou « live ».
  *   - viewer    : n'importe quel utilisateur connecté qui VOIT la ligne sous
- *     la RLS existante (la ligne est lue avec le JWT de l'appelant, jamais en
- *     service_role), live « scheduled » ou « live ». Abonnement seul : pas de
+ *     la RLS (la ligne est lue avec le JWT de l'appelant, jamais en
+ *     service_role), live « live » uniquement. Abonnement seul : pas de
  *     publication de pistes ni de données.
  *
- * L1 : la migration 017 n'est pas appliquée, donc personne ne peut passer un
- * live en `status='live'` côté serveur de façon sûre. On accepte donc un
- * jeton spectateur dès que le live existe, est visible et n'est ni terminé ni
- * annulé. L2 (017) resserrera : spectateur seulement si `status='live'`, pas
- * exclu (live_bans), pas bloqué par l'hôte.
+ * L2 (migration 019 + Edge Function livekit-webhook) : le statut 'live' est
+ * posé par le webhook quand l'hôte se connecte. Spectateur seulement si
+ * `status='live'` (sinon 409 live_not_started) ; la visibilité (public,
+ * abonnés, blocage, modération) reste décidée par la RLS (017/019), la ligne
+ * étant lue avec le JWT de l'appelant. Publisher refusé si le live est retenu
+ * par la modération (403 live_held). Exclusions (live_bans) : L4.
  *
  * Journalisation : codes courts uniquement. Jamais de jeton, de JWT, d'e-mail.
  */
 
 /** Durée de vie des jetons LiveKit : 10 minutes (connexion initiale). */
 export const TOKEN_TTL_SECONDS = 600;
+
+/**
+ * Réglages de la room créée avant la connexion de l'hôte (RoomService.createRoom) :
+ *   - emptyTimeout : fermée si personne ne la rejoint en 2 min ;
+ *   - departureTimeout : fermée 2 min après le départ du dernier participant
+ *     (room_finished → live « ended » via livekit-webhook) ;
+ *   - maxParticipants : 60, pour garder de la marge sur les 100 connexions
+ *     simultanées du plan gratuit LiveKit.
+ * Si l'hôte part mais que des spectateurs restent, la fin automatique vient
+ * de livekit-webhook (host_left_at + live_sweep_stale, même délai de 2 min).
+ */
+export const HOST_ROOM_SETTINGS = {
+  emptyTimeout: 120,
+  departureTimeout: 120,
+  maxParticipants: 60,
+} as const;
 
 /** Préfixe des rooms LiveKit ; le nom complet est dérivé de l'id du live. */
 export const ROOM_PREFIX = 'nia-live-';
@@ -37,6 +54,8 @@ export type LiveRowLite = {
   user_id: string;
   status: string;
   visibility?: string | null;
+  /** 017 : visible | held | removed (absent = visible). */
+  moderation_state?: string | null;
 };
 
 /** Sources publiables (chaînes du claim JWT LiveKit). */
@@ -61,6 +80,8 @@ export type ErrorCode =
   | 'not_found'
   | 'not_owner'
   | 'live_not_active'
+  | 'live_not_started'
+  | 'live_held'
   | 'not_configured'
   | 'db_error'
   | 'method_not_allowed';
@@ -182,6 +203,14 @@ export function decideGrant(input: {
 
   if (role === 'publisher' && !isOwner) return deny(403, 'not_owner');
   if (!ACTIVE_STATUSES.includes(live.status)) return deny(409, 'live_not_active');
+  // L2 : un live retenu par la modération (filtre de mots 018, signalements
+  // 017) n'est pas diffusé ; les autres ne le voient pas de toute façon.
+  if (role === 'publisher' && (live.moderation_state ?? 'visible') !== 'visible') {
+    return deny(403, 'live_held');
+  }
+  // L2 : spectateur seulement quand l'hôte est réellement en direct
+  // (status 'live', posé par livekit-webhook).
+  if (role === 'viewer' && live.status !== 'live') return deny(409, 'live_not_started');
 
   const room = roomNameForLive(liveId);
   return {

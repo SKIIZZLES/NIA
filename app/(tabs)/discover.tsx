@@ -1,4 +1,5 @@
 import { MediaThumb } from '@/components/MediaThumb';
+import { LiveNowStrip } from '@/components/live/LiveNowStrip';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -261,6 +262,8 @@ export default function DiscoverScreen() {
             <Text style={styles.shortcutLabel}>{t('events.discoverCta')}</Text>
           </Pressable>
         </View>
+
+        {isSupabaseConfigured ? <LiveNowStrip /> : null}
       </View>
 
       <ScrollView

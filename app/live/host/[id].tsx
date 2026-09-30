@@ -1,6 +1,7 @@
 /**
- * `/live/host/[id]` — « Passer en direct » pour le créateur du live (L1).
- * La diffusion elle-même est dans components/live/LiveHostStage(.native).tsx.
+ * `/live/host/[id]` — « Passer en direct » un live programmé (L1, écran L2
+ * façon Instagram). La diffusion est dans components/live/LiveHostStage(.native).tsx ;
+ * le direct instantané passe par `/live/go`.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -65,9 +66,12 @@ export default function LiveHostScreen() {
     else router.replace(`/live/${streamId}` as Href);
   }, [router, streamId]);
 
-  const ended = useCallback(() => {
-    router.replace(`/live/${streamId}` as Href);
-  }, [router, streamId]);
+  const ended = useCallback(
+    (liveId: string) => {
+      router.replace(`/live/${liveId || streamId}` as Href);
+    },
+    [router, streamId],
+  );
 
   return (
     <View style={[styles.root, { backgroundColor: colors.noir }]}>
@@ -82,7 +86,13 @@ export default function LiveHostScreen() {
         />
       ) : null}
       {state === 'ready' && live && user?.id ? (
-        <LiveHostStage live={live} userId={user.id} onClose={close} onEnded={ended} />
+        <LiveHostStage
+          live={live}
+          userId={user.id}
+          hostHandle={live.hostHandle}
+          onClose={close}
+          onEnded={ended}
+        />
       ) : null}
     </View>
   );

@@ -69,30 +69,36 @@
 | 015 | suppression douce de vidéo (RPC) |
 | 016 | options de publication — appliquée et vérifiée |
 | **017** | **signalements / modération** — appliquée et vérifiée |
+| **018** | **filtre de mots-clés** (S3) — appliquée et vérifiée |
 
-**Réservées, prévues, non écrites dans `main`** : 018 filtre de mots-clés,
-019 live L2, 020 âge / 18+, 021 enregistrements de lives.
+**En PR, non appliquée** : 019 live L2 (`019_live_l2.sql`, PR « Live L2 »).
+**Réservées, non écrites** : 020 âge / 18+, 021 enregistrements de lives.
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
 `live-token`, `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min).
+**Proposée en PR, non déployée** : `livekit-webhook` (L2, `--no-verify-jwt`,
+auth par signature LiveKit) ; `live-token` à redéployer avec L2.
 
 ```bash
 npx supabase functions deploy <fn> --project-ref odlmbiaocdonlovjepxn --use-api
-# + --no-verify-jwt pour snapchat-auth, moderation-hold et purge-user-storage
-#   (auth par secret dédié) ; live-token garde la vérification JWT.
+# + --no-verify-jwt pour snapchat-auth, moderation-hold, purge-user-storage
+#   et livekit-webhook (auth par secret / signature dédiés) ;
+#   live-token garde la vérification JWT.
 ```
 
 Secrets : uniquement dans les secrets de fonction / Vault Supabase, jamais ici.
 Détails : `supabase/functions/<fn>/README.md`.
 
-**PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
-#36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**.
-Aucune autre PR ouverte à cette date.
+**PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements),
+#36 (live L1 LiveKit), #39 (ce fichier) et #40 (S3 filtre de mots, 018) sont
+**mergées** (30/09/2026). **En cours** : PR « Live L2 » (branche
+`haby/live-l2`) — ordre de mise en prod dans sa description et dans
+`supabase/functions/livekit-webhook/README.md`.
 
 **Feuille de route** :
-1. S3 — filtre de mots-clés (018)
-2. L2 — live, écran « go live » façon Instagram (019) : statut `live`,
-   exclusions, blocages, fin auto (limites L1 listées dans #36)
+1. ~~S3 — filtre de mots-clés (018)~~ — fait
+2. L2 — direct instantané, écran façon Instagram, statut réel (019 +
+   `livekit-webhook`) — **en PR**
 3. Âge / 18+ (020)
 4. L3 — chat et réactions en live ; L4 — modération des lives
 5. Durcissement
@@ -139,7 +145,7 @@ Mode mock si `.env` vide ; Google, Snapchat et LiveKit exigent un build EAS
 Pour le détail, voir plutôt que dupliquer :
 - `README.md` — installation, mock vs Supabase, i18n, architecture, EAS
 - `SUPABASE.md` — backend, migrations 001–012, bucket
-- `supabase/tests/README.md` — tests SQL locaux (013 → 017)
+- `supabase/tests/README.md` — tests SQL locaux (013 → 019)
 - `supabase/functions/*/README.md` — déploiement, secrets, cron
 - `docs/account-deletion.md`, `GOOGLE_AUTH.md`, `SNAPCHAT_AUTH.md`,
   `PRODUCT.md`, `PERF.md`, `docs/legal/README.md`
@@ -149,3 +155,4 @@ Pour le détail, voir plutôt que dupliquer :
 | Date | Auteur | Changement |
 |---|---|---|
 | 30/09/2026 | Haby | Haby : création du fichier |
+| 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |

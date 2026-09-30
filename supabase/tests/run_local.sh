@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exécute les tests SQL (suppression de compte, 016, 017, 018) sur un Postgres LOCAL jetable.
+# Exécute les tests SQL (suppression de compte, 016, 017, 018, 019) sur un Postgres LOCAL jetable.
 #
 #   PGHOST=/tmp PGPORT=55432 PGUSER=postgres supabase/tests/run_local.sh
 #
@@ -73,5 +73,26 @@ run "$ROOT/supabase/tests/014_account_deletion.test.sql"
 run "$ROOT/supabase/tests/016_publish_options.test.sql"
 run "$ROOT/supabase/tests/017_safety_reports.test.sql"
 echo "--- 014, 016, 017 rejoués après 018 ; 017_verify toujours ok"
+run "$ROOT/supabase/migrations/019_live_l2.sql"
+run "$ROOT/supabase/migrations/019_live_l2.sql"   # idempotence : 2e passage
+echo "--- 019 appliquée deux fois"
+run "$ROOT/supabase/tests/019_live_l2.test.sql"
+echo "--- 019_verify_after_apply.sql"
+VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/019_verify_after_apply.sql")"
+echo "$VERIFY"
+echo "($(wc -l <<<"$VERIFY") lignes)"
+if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : une ligne de vérification n'est pas ok" >&2; exit 1; fi
+# 017 et 018 (tests + vérifications) doivent toujours passer une fois 019 en place.
+for V in 017 018; do
+  VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/${V}_verify_after_apply.sql")"
+  if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : ${V}_verify_after_apply après 019" >&2; echo "$VERIFY"; exit 1; fi
+  echo "--- ${V}_verify_after_apply.sql après 019 : $(wc -l <<<"$VERIFY") lignes ok"
+done
+run "$ROOT/supabase/tests/_helpers.sql"
+run "$ROOT/supabase/tests/014_account_deletion.test.sql"
+run "$ROOT/supabase/tests/016_publish_options.test.sql"
+run "$ROOT/supabase/tests/017_safety_reports.test.sql"
+run "$ROOT/supabase/tests/018_keyword_filter.test.sql"
+echo "--- 014, 016, 017, 018 rejoués après 019 ; 017_verify et 018_verify toujours ok"
 "${PSQL[@]}" -d postgres -c "drop database $DB" >/dev/null
 echo "=== TOUS LES TESTS SQL PASSENT ==="
