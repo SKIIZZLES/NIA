@@ -102,6 +102,7 @@ function RootNavigator() {
         <Stack.Screen name="search" options={{ headerShown: false }} />
         <Stack.Screen name="live" options={{ headerShown: false }} />
         <Stack.Screen name="video/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="snapchat-auth" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
       <AgeGate />
     </>

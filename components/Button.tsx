@@ -14,6 +14,8 @@ type Variant = 'filled' | 'outline' | 'gold' | 'ghost';
 type Props = {
   title: string;
   onPress: () => void;
+  /** Appui long (optionnel) — ex. réglage caché de test du bouton Snapchat. */
+  onLongPress?: () => void;
   variant?: Variant;
   disabled?: boolean;
   loading?: boolean;
@@ -31,6 +33,7 @@ type Props = {
 export function Button({
   title,
   onPress,
+  onLongPress,
   variant = 'filled',
   disabled,
   loading,
@@ -85,6 +88,8 @@ export function Button({
       accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
       disabled={disabled || loading}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={onLongPress ? 1500 : undefined}
       style={({ pressed }) => [
         styles.base,
         isFilled && styles.filled,

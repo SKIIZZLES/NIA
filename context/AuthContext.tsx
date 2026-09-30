@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow } from '@/types/database';
 import { updateProfile as persistProfile } from '@/lib/profiles';
@@ -16,11 +17,21 @@ import {
   signInWithGoogleIdToken,
 } from '@/lib/googleAuth';
 import {
+  SNAP_SCOPES,
   exchangeSnapchatCodeForSession,
+  getSnapClientId,
+  getSnapchatRedirectUri,
   isSnapchatAuthConfigured,
   promptSnapchatOAuth,
   setSupabaseSessionFromSnapchat,
+  type SnapchatOAuthResult,
 } from '@/lib/snapchatAuth';
+import { SNAP_ERR } from '@/lib/snapchatAppSwitch';
+import {
+  getSnapVariant,
+  isSnapchatInstalled,
+  startSnapchatAppSwitch,
+} from '@/lib/snapchatAppSwitchRuntime';
 
 /** Local auth shapes — no runtime/value import from @supabase/supabase-js. */
 type AuthUser = {
@@ -53,7 +64,13 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInWithSnapchat: () => Promise<void>;
+  /**
+   * 'signed_in' : session ouverte, à l'appelant de naviguer.
+   * 'handled'   : l'écran de retour `app/snapchat-auth.tsx` a déjà navigué.
+   */
+  signInWithSnapchat: () => Promise<SnapchatSignInResult>;
+  /** Échange code + verifier (flux web ou écran de retour app-switch). */
+  completeSnapchatSignIn: (oauth: SnapchatOAuthResult) => Promise<void>;
   signOut: () => Promise<void>;
   /**
    * Met à jour bio / display_name (mock local ou profiles). 018 : le serveur
@@ -64,6 +81,8 @@ type AuthContextValue = {
   /** true = AsyncStorage mock ; false = Supabase Auth */
   isMockAuth: boolean;
 };
+
+export type SnapchatSignInResult = 'signed_in' | 'handled';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -334,29 +353,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [persistMock]);
 
-  const signInWithSnapchat = useCallback(async () => {
+  const completeSnapchatSignIn = useCallback(async (oauth: SnapchatOAuthResult) => {
     const sb = getSupabase();
     if (!sb || !isSupabaseConfigured) {
-      // Mock / Expo Go : session locale « Snapchat »
-      if (!isSnapchatAuthConfigured()) {
-        // Toujours permettre la démo UI en mock
-      }
-      const next = mockUserFromEmail(
-        `snapchat_${Date.now()}@users.nia.app`,
-        `snap${Date.now().toString(36).slice(-6)}`,
-      );
-      next.displayName = 'Snapchat User';
-      await persistMock(next);
-      return;
+      throw new Error('Supabase non configuré.');
     }
-
-    if (!isSnapchatAuthConfigured()) {
-      throw new Error(
-        'Configure Snap Kit + deploy function — EXPO_PUBLIC_SNAP_CLIENT_ID manquant (voir SNAPCHAT_AUTH.md).',
-      );
-    }
-
-    const oauth = await promptSnapchatOAuth();
     const tokens = await exchangeSnapchatCodeForSession(oauth);
     await setSupabaseSessionFromSnapchat(tokens);
 
@@ -369,7 +370,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       setUser(profileToUser(sessionUser, profile));
     }
-  }, [persistMock]);
+  }, []);
+
+  const signInWithSnapchat = useCallback(async (): Promise<SnapchatSignInResult> => {
+    const sb = getSupabase();
+    if (!sb || !isSupabaseConfigured) {
+      // Mock / Expo Go : session locale « Snapchat »
+      const next = mockUserFromEmail(
+        `snapchat_${Date.now()}@users.nia.app`,
+        `snap${Date.now().toString(36).slice(-6)}`,
+      );
+      next.displayName = 'Snapchat User';
+      await persistMock(next);
+      return 'signed_in';
+    }
+
+    if (!isSnapchatAuthConfigured()) {
+      throw new Error(
+        'Configure Snap Kit + deploy function — EXPO_PUBLIC_SNAP_CLIENT_ID manquant (voir SNAPCHAT_AUTH.md).',
+      );
+    }
+
+    // Spike app-switch : Android + Snapchat installé → ouvrir l'app Snapchat.
+    if (Platform.OS === 'android') {
+      const variant = await getSnapVariant();
+      if (variant !== 'web' && (await isSnapchatInstalled())) {
+        try {
+          await startSnapchatAppSwitch({
+            clientId: getSnapClientId(),
+            redirectUri: getSnapchatRedirectUri(),
+            scopes: SNAP_SCOPES,
+            variant,
+          });
+          return 'handled';
+        } catch (e) {
+          const code = (e as { code?: string })?.code;
+          // Rien ne s'est ouvert : on garde le flux web (Custom Tab).
+          if (code !== SNAP_ERR.unavailable) throw e;
+        }
+      }
+    }
+
+    const oauth = await promptSnapchatOAuth();
+    await completeSnapchatSignIn(oauth);
+    return 'signed_in';
+  }, [persistMock, completeSnapchatSignIn]);
 
   const updateProfile = useCallback(
     async (patch: { displayName?: string; bio?: string }) => {
@@ -440,11 +485,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp,
       signInWithGoogle,
       signInWithSnapchat,
+      completeSnapchatSignIn,
       signOut,
       updateProfile,
       isMockAuth: mockMode,
     }),
-    [user, loading, signIn, signUp, signInWithGoogle, signInWithSnapchat, signOut, updateProfile, mockMode],
+    [
+      user,
+      loading,
+      signIn,
+      signUp,
+      signInWithGoogle,
+      signInWithSnapchat,
+      completeSnapchatSignIn,
+      signOut,
+      updateProfile,
+      mockMode,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

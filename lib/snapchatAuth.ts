@@ -3,6 +3,13 @@
  * Supabase n'a pas de provider Snapchat → Edge Function `snapchat-auth`
  * crée / trouve l'utilisateur et renvoie une session.
  *
+ * Client OAuth PUBLIC (Staging `7ea8f803-…`, confirmé le 30/09/2026) :
+ * l'échange se fait en PKCE seul (`client_type: 'public'`, snapchat-auth v7).
+ *
+ * Sur Android avec Snapchat installé, le bouton tente d'abord l'app-switch
+ * (`lib/snapchatAppSwitch*.ts`, écran de retour `app/snapchat-auth.tsx`) ;
+ * ce module reste le flux web (Custom Tab) et le secours.
+ *
  * Voir SNAPCHAT_AUTH.md.
  */
 import * as AuthSession from 'expo-auth-session';
@@ -28,6 +35,23 @@ export const SNAP_DISCOVERY: AuthSession.DiscoveryDocument = {
   authorizationEndpoint: SNAP_AUTH,
   tokenEndpoint: SNAP_TOKEN,
 };
+
+/** Client ID OAuth public (EXPO_PUBLIC_SNAP_CLIENT_ID). */
+export function getSnapClientId(): string {
+  return snapClientId;
+}
+
+/**
+ * `state` de la dernière demande web (Custom Tab). Sur Android, le lien de
+ * retour du Custom Tab ouvre AUSSI l'écran `app/snapchat-auth.tsx` via
+ * expo-router : cet écran s'efface quand le state est celui du flux web,
+ * qu'expo-auth-session traite déjà.
+ */
+let lastWebFlowState: string | null = null;
+
+export function isSnapchatWebFlowState(state: string | undefined): boolean {
+  return !!state && !!lastWebFlowState && state === lastWebFlowState;
+}
 
 export function isSnapchatAuthConfigured(): boolean {
   return snapClientId.length > 0 && !snapClientId.includes('PLACEHOLDER');
@@ -72,6 +96,7 @@ export async function promptSnapchatOAuth(): Promise<SnapchatOAuthResult> {
   });
 
   await request.makeAuthUrlAsync(SNAP_DISCOVERY);
+  lastWebFlowState = request.state;
 
   const result = await request.promptAsync(SNAP_DISCOVERY, {
     showInRecents: true,
@@ -145,6 +170,9 @@ export async function exchangeSnapchatCodeForSession(
         code: oauth.code,
         code_verifier: oauth.codeVerifier,
         redirect_uri: oauth.redirectUri,
+        // v7 : client public → échange PKCE sans secret côté fonction.
+        client_type: 'public',
+        client_id: snapClientId,
       }),
     });
   } catch (e) {

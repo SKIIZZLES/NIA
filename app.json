@@ -95,7 +95,8 @@
         }
       ],
       "@config-plugins/react-native-webrtc",
-      "./plugins/withoutWebrtcScreenShare"
+      "./plugins/withoutWebrtcScreenShare",
+      "./plugins/withSnapchatQueries"
     ],
     "experiments": {
       "typedRoutes": true

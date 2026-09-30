@@ -11,8 +11,15 @@
  * Déploiement :
  *   supabase functions deploy snapchat-auth --no-verify-jwt
  *
+ * Secret optionnel :
+ *   SNAP_PUBLIC_CLIENT_IDS  (liste séparée par des virgules d'autres Client IDs
+ *                            publics acceptés, ex. l'ID Production)
+ *
  * Corps POST JSON :
- *   { code, code_verifier, redirect_uri }
+ *   { code, code_verifier, redirect_uri }                         (historique)
+ *   { code, code_verifier, redirect_uri, client_type: 'public', client_id }  (v7)
+ *
+ * v7 : mode public (PKCE seul, sans en-tête Basic) — voir core.ts.
  *
  * Réponse :
  *   { access_token, refresh_token, expires_in, displayName, avatarUrl, externalId }
@@ -20,8 +27,16 @@
  * Voir SNAPCHAT_AUTH.md.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import {
+  allowedPublicClientIds,
+  parseExchangeRequest,
+  planTokenRequest,
+  shouldRetryAsPublic,
+  type SnapClientType,
+  type SnapConfig,
+  type SnapExchangeRequest,
+} from './core.ts';
 
-const SNAP_TOKEN = 'https://accounts.snapchat.com/accounts/oauth2/token';
 const SNAP_ME = 'https://kit.snapchat.com/v1/me';
 
 const corsHeaders: Record<string, string> = {
@@ -42,6 +57,34 @@ function sanitizeHandle(raw: string): string {
   return h.slice(0, 24) || 'snap';
 }
 
+type TokenJson = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type TokenAttempt =
+  | { kind: 'plan_error'; status: number; error: string }
+  | { kind: 'snap'; ok: boolean; status: number; body: TokenJson };
+
+async function requestSnapToken(
+  exchange: SnapExchangeRequest,
+  cfg: SnapConfig,
+  mode: SnapClientType,
+): Promise<TokenAttempt> {
+  const plan = planTokenRequest(exchange, cfg, mode);
+  if (!plan.ok) {
+    return { kind: 'plan_error', status: plan.status, error: plan.error };
+  }
+  const res = await fetch(plan.url, {
+    method: 'POST',
+    headers: plan.headers,
+    body: plan.body,
+  });
+  const body = (await res.json().catch(() => ({}))) as TokenJson;
+  return { kind: 'snap', ok: res.ok, status: res.status, body };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -56,7 +99,7 @@ Deno.serve(async (req) => {
   const serviceKey = (Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '').trim();
   const anonKey = (Deno.env.get('SUPABASE_ANON_KEY') || serviceKey).trim();
 
-  if (!snapClientId || !snapClientSecret) {
+  if (!snapClientId) {
     return json(503, {
       error:
         'Configure Snap Kit + deploy function — SNAP_CLIENT_ID / SNAP_CLIENT_SECRET manquants côté Edge Function.',
@@ -68,50 +111,54 @@ Deno.serve(async (req) => {
     });
   }
 
-  let payload: {
-    code?: string;
-    code_verifier?: string;
-    redirect_uri?: string;
-  };
+  let rawBody: unknown;
   try {
-    payload = await req.json();
+    rawBody = await req.json();
   } catch {
     return json(400, { error: 'JSON invalide' });
   }
 
-  const { code, code_verifier, redirect_uri } = payload;
-  if (!code || !code_verifier || !redirect_uri) {
-    return json(400, {
-      error: 'code, code_verifier et redirect_uri sont requis',
-    });
+  const parsed = parseExchangeRequest(rawBody);
+  if (!parsed.ok) {
+    return json(parsed.status, { error: parsed.error });
   }
+  const exchange = parsed.value;
 
-  // 1) Échange code → access_token Snapchat (confidential + PKCE)
-  const basic = btoa(`${snapClientId}:${snapClientSecret}`);
-  const tokenBody = new URLSearchParams({
-    grant_type: 'authorization_code',
-    code,
-    redirect_uri,
-    client_id: snapClientId,
-    code_verifier,
-  });
-
-  const tokenRes = await fetch(SNAP_TOKEN, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${basic}`,
-    },
-    body: tokenBody.toString(),
-  });
-
-  const tokenJson = (await tokenRes.json().catch(() => ({}))) as {
-    access_token?: string;
-    error?: string;
-    error_description?: string;
+  const cfg: SnapConfig = {
+    clientId: snapClientId,
+    clientSecret: snapClientSecret,
+    publicClientIds: allowedPublicClientIds(
+      snapClientId,
+      Deno.env.get('SNAP_PUBLIC_CLIENT_IDS') || '',
+    ),
   };
 
-  if (!tokenRes.ok || !tokenJson.access_token) {
+  // 1) Échange code → access_token Snapchat (public PKCE, ou historique Basic + PKCE)
+  let mode: SnapClientType = exchange.clientType;
+  let attempt = await requestSnapToken(exchange, cfg, mode);
+  if (
+    attempt.kind === 'snap' &&
+    !attempt.ok &&
+    shouldRetryAsPublic(
+      mode,
+      attempt.status,
+      attempt.body.error,
+      cfg.publicClientIds.includes(cfg.clientId),
+    )
+  ) {
+    console.log('snapchat-auth: retry_public');
+    mode = 'public';
+    attempt = await requestSnapToken(exchange, cfg, mode);
+  }
+  if (attempt.kind === 'plan_error') {
+    return json(attempt.status, { error: attempt.error });
+  }
+
+  const tokenJson = attempt.body;
+  if (!attempt.ok || !tokenJson.access_token) {
+    console.log(
+      `snapchat-auth: token_failed mode=${mode} status=${attempt.status} err=${tokenJson.error ?? '-'}`,
+    );
     return json(401, {
       error:
         tokenJson.error_description ||
