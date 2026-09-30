@@ -1,6 +1,8 @@
 /**
- * Lives NIA V2.3 — métadonnées uniquement (schedule / list / end).
- * Pas d’URL de lecture, pas de WebRTC / Mux / LiveKit branché.
+ * Lives NIA — métadonnées (programmer, direct instantané, listes, fin).
+ * La diffusion passe par LiveKit (lib/liveToken.ts, components/live/*) ; le
+ * statut « live », le compteur et la fin automatique sont écrits par le
+ * serveur (Edge Function livekit-webhook, migration 019).
  */
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { LiveCategoryId, LiveVisibility } from '@/constants/liveCategories';
@@ -9,6 +11,7 @@ import {
   isLiveVisibility,
 } from '@/constants/liveCategories';
 import type { LiveStreamRow, ProfileRow } from '@/types/database';
+import { filterLiveStrip } from '@/lib/liveGo';
 
 export type LiveStreamStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 
@@ -32,6 +35,10 @@ export type LiveStreamItem = {
   startedAt: string | null;
   endedAt: string | null;
   viewerCount: number;
+  /** 019 : pic de spectateurs (0 avant 019). */
+  peakViewerCount: number;
+  /** 019 : hôte déconnecté depuis (null s'il est là, ou avant 019). */
+  hostLeftAt: string | null;
   provider: string | null;
   providerStreamId: string | null;
   createdAt: string;
@@ -91,6 +98,11 @@ function mapLiveRow(row: LiveStreamWithHost): LiveStreamItem {
     startedAt: row.started_at,
     endedAt: row.ended_at,
     viewerCount: viewer,
+    peakViewerCount:
+      typeof row.peak_viewer_count === 'number' && Number.isFinite(row.peak_viewer_count)
+        ? Math.max(0, row.peak_viewer_count)
+        : 0,
+    hostLeftAt: row.host_left_at ?? null,
     provider: row.provider,
     providerStreamId: row.provider_stream_id,
     createdAt: row.created_at,
@@ -114,7 +126,12 @@ function isMissingTableError(error: { message?: string; code?: string }): boolea
   );
 }
 
-/** Streams currently marked live (metadata only — no play URL). */
+/**
+ * Lives en direct (status « live », posé par livekit-webhook).
+ * Publics et « Abonnés » : la RLS (017 + 019) ne renvoie que ceux que
+ * l'utilisateur a le droit de voir (modération, blocages, abonnement).
+ * Les lives dont l'hôte est parti depuis plus de 2 min sont écartés.
+ */
 export async function listLiveNow(options?: {
   limit?: number;
 }): Promise<LiveStreamItem[]> {
@@ -126,7 +143,7 @@ export async function listLiveNow(options?: {
     .from('live_streams')
     .select(LIVE_PROFILE_SELECT)
     .eq('status', 'live')
-    .eq('visibility', 'public')
+    .in('visibility', ['public', 'followers'])
     .order('started_at', { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -134,7 +151,8 @@ export async function listLiveNow(options?: {
     if (isMissingTableError(error)) return [];
     throw error;
   }
-  return ((data || []) as unknown as LiveStreamWithHost[]).map(mapLiveRow);
+  const items = ((data || []) as unknown as LiveStreamWithHost[]).map(mapLiveRow);
+  return filterLiveStrip(items, Date.now());
 }
 
 /** Upcoming scheduled public streams. */
@@ -349,6 +367,65 @@ export async function endStream(
   if (error) throw error;
   if (!data) return null;
   return mapLiveRow(data as unknown as LiveStreamWithHost);
+}
+
+export type CreateInstantLiveInput = {
+  title: string;
+  visibility: 'public' | 'followers';
+  category?: LiveCategoryId;
+};
+
+/**
+ * Direct instantané (L2) : crée la ligne `live_streams` au moment où l'hôte
+ * appuie sur le bouton, en « scheduled » maintenant (seul statut accepté de
+ * l'app, trigger 019). Le passage à « live » vient du webhook LiveKit quand
+ * l'hôte est connecté. Le titre peut revenir masqué (***) ou le live retenu
+ * (moderation_state « held ») par le filtre de mots 018 : voir
+ * liveTitleOutcome (lib/liveGo.ts).
+ */
+export async function createInstantStream(input: CreateInstantLiveInput): Promise<LiveStreamItem> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase non configuré');
+  const { data: sessionData } = await sb.auth.getSession();
+  const creatorId = sessionData.session?.user?.id;
+  if (!creatorId) throw new Error('Session expirée.');
+  const title = (input.title || '').trim();
+  if (!title) throw new Error('Titre requis');
+  const category: LiveCategoryId = isLiveCategoryId(input.category) ? input.category : 'other';
+  const visibility = input.visibility === 'followers' ? 'followers' : 'public';
+
+  const { data, error } = await sb
+    .from('live_streams')
+    .insert({
+      user_id: creatorId,
+      title,
+      category,
+      visibility,
+      status: 'scheduled',
+      scheduled_at: new Date().toISOString(),
+    } as never)
+    .select(LIVE_PROFILE_SELECT)
+    .single();
+  if (error) throw error;
+  return mapLiveRow(data as unknown as LiveStreamWithHost);
+}
+
+/**
+ * Annule un live jamais passé à l'antenne (direct instantané abandonné).
+ * Sans effet sur un live déjà « live » ou terminé.
+ */
+export async function cancelStream(streamId: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb || !streamId) return;
+  const { data: sessionData } = await sb.auth.getSession();
+  const uid = sessionData.session?.user?.id;
+  if (!uid) return;
+  await sb
+    .from('live_streams')
+    .update({ status: 'cancelled' } as never)
+    .eq('id', streamId)
+    .eq('user_id', uid)
+    .eq('status', 'scheduled');
 }
 
 export { isSupabaseConfigured };

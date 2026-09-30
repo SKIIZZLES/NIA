@@ -71,18 +71,22 @@
 | **017** | **signalements / modération** — appliquée et vérifiée |
 | **018** | **filtre de mots-clés** (S3) — appliquée et vérifiée |
 
-**En PR, non appliquées** : 019 live L2 (PR #42) ; **022** suppression
-définitive de vidéo, reposts conservés (`022_video_delete_refs.sql`, PR #43,
-branche `haby/fix-022-reposts`).
+**Dans `main`, non appliquées en prod** : **019** live L2
+(`019_live_l2.sql`, #42) et **022** suppression définitive de vidéo, reposts
+conservés (`022_video_delete_refs.sql`, #43). Ordre de mise en prod dans la
+description de chaque PR ; 022 ne dépend pas de 019.
 **Réservées, non écrites** : 020 âge / 18+, 021 enregistrements de lives.
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
 `live-token`, `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min).
+**Proposée en PR, non déployée** : `livekit-webhook` (L2, `--no-verify-jwt`,
+auth par signature LiveKit) ; `live-token` à redéployer avec L2.
 
 ```bash
 npx supabase functions deploy <fn> --project-ref odlmbiaocdonlovjepxn --use-api
-# + --no-verify-jwt pour snapchat-auth, moderation-hold et purge-user-storage
-#   (auth par secret dédié) ; live-token garde la vérification JWT.
+# + --no-verify-jwt pour snapchat-auth, moderation-hold, purge-user-storage
+#   et livekit-webhook (auth par secret / signature dédiés) ;
+#   live-token garde la vérification JWT.
 ```
 
 Secrets : uniquement dans les secrets de fonction / Vault Supabase, jamais ici.
@@ -90,12 +94,13 @@ Détails : `supabase/functions/<fn>/README.md`.
 
 **PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
 #36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
-#39 (ce fichier) et #40 (S3 filtre de mots, 018). **En cours** : #41 (docs,
-défauts connus de la suppression de vidéo — son bloc « Défauts connus »
-devient obsolète avec #43), #42 (Live L2), #43 (022, ci-dessous).
+#39 (ce fichier), #40 (S3 filtre de mots, 018), #41 (docs, défauts connus de la
+suppression de vidéo), #42 (Live L2, 019) et #43 (022). Aucune PR ouverte à
+cette date.
 
 **Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
-(#43, non appliquée ; ordre de mise en prod dans la description de la PR) :
+(#43, migration **non appliquée en prod** ; ordre de mise en prod dans la
+description de la PR) :
 - défaut 1 (fil et profil annonçaient « Vidéo et fichier effacés » même quand
   le fichier était gardé pour un repost) : trois issues distinguées
   (`components/videoDeleteFeedback.ts`, clé `feed.deleteKeptForRepost`) ;
@@ -106,12 +111,13 @@ devient obsolète avec #43), #42 (Live L2), #43 (022, ci-dessous).
   visibles. La suppression de **compte** (014) continue, elle, d'effacer les
   reposts des autres (différence voulue, `docs/account-deletion.md`).
 - Tant que 022 n'est pas appliquée, l'app reprend l'ancien chemin : le
-  défaut 2 reste actif en prod jusque-là.
+  défaut 2 reste actif en prod jusque-là. Les anciens APK le gardent actif même
+  après application, faute de passer par la RPC.
 
 **Feuille de route** :
 1. ~~S3 — filtre de mots-clés (018)~~ — fait
-2. L2 — live, écran « go live » façon Instagram (019) : statut `live`,
-   exclusions, blocages, fin auto (limites L1 listées dans #36)
+2. ~~L2 — direct instantané, écran façon Instagram, statut réel (019 +
+   `livekit-webhook`)~~ — fait, migration à appliquer
 3. Âge / 18+ (020)
 4. L3 — chat et réactions en live ; L4 — modération des lives
 5. Durcissement
@@ -158,7 +164,7 @@ Mode mock si `.env` vide ; Google, Snapchat et LiveKit exigent un build EAS
 Pour le détail, voir plutôt que dupliquer :
 - `README.md` — installation, mock vs Supabase, i18n, architecture, EAS
 - `SUPABASE.md` — backend, migrations 001–012, bucket
-- `supabase/tests/README.md` — tests SQL locaux (013 → 018, 022)
+- `supabase/tests/README.md` — tests SQL locaux (013 → 019, 022)
 - `supabase/functions/*/README.md` — déploiement, secrets, cron
 - `docs/account-deletion.md`, `GOOGLE_AUTH.md`, `SNAPCHAT_AUTH.md`,
   `PRODUCT.md`, `PERF.md`, `docs/legal/README.md`
@@ -168,4 +174,6 @@ Pour le détail, voir plutôt que dupliquer :
 | Date | Auteur | Changement |
 |---|---|---|
 | 30/09/2026 | Haby | Haby : création du fichier |
-| 30/09/2026 | Haby | Correctif 022 en PR (#43) : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
+| 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |
+| 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
+| 30/09/2026 | Haby | Correctif 022 : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |

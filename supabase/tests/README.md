@@ -1,4 +1,4 @@
-# Tests SQL — suppression de compte (013 / 014), 015 → 018, 022
+# Tests SQL — suppression de compte (013 / 014), 015 → 019, 022
 
 **Uniquement sur un Postgres local et jetable.** `local_stubs.sql` recrée des
 doubles minimaux des schémas `auth` et `storage` de Supabase (`auth.users`,
@@ -62,6 +62,23 @@ première assertion fausse (`not ok - …`).
 14. `018_verify_after_apply.sql` (17 lignes) puis `017_verify_after_apply.sql` :
     toutes les lignes doivent être `t` ;
 15. 014, 016 et 017 rejoués après 018 (non-régression).
+
+## Suite : 019 (Live L2)
+
+16. 019, appliquée **deux fois** (idempotence) ;
+17. `019_live_l2.test.sql` (L1 → L10) : garde du cycle de vie (insertion
+    forcée en `scheduled`, colonnes serveur en lecture seule, `live` réservé
+    au serveur, transitions de l'app), droits des RPC (`service_role` seul),
+    `live_webhook_apply` (passage en direct, idempotence, compteur, départ /
+    retour de l'hôte, `room_finished`, événements tardifs), un seul live par
+    créateur, live retenu jamais en direct, `live_sweep_stale` (hôte absent
+    > 2 min, durée max 4 h), visibilité public / Abonnés / privé avec
+    modération et blocage de 017 conservés, direct instantané avec titre
+    masqué ou retenu (018), rejouer 019 sans rien changer ;
+18. `019_verify_after_apply.sql` (12 lignes, lecture seule) : toutes `t` ;
+19. `017_verify_after_apply.sql` et `018_verify_after_apply.sql` relancés
+    après 019 (dont le contrôle 14 de 017 : la policy de lecture des lives
+    garde le filtre modération + blocage), puis 014, 016, 017 et 018 rejoués.
 
 ## Suite : 022 (suppression définitive de vidéo, reposts conservés)
 

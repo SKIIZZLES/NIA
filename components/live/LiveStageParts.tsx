@@ -3,7 +3,8 @@
  * Aucun import WebRTC ici : utilisable sur toutes les plateformes.
  */
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { useI18n } from '@/context/I18nContext';
@@ -115,7 +116,71 @@ export function RoundIconButton({
   );
 }
 
+/** Pastille « œil + nombre » (spectateurs en ce moment). */
+export function ViewerPill({ count, label }: { count: number; label: string }) {
+  const colors = useColors();
+  return (
+    <View style={styles.viewerPill} accessibilityLabel={label} accessibilityRole="text">
+      <Ionicons name="eye-outline" size={14} color={colors.onMedia} />
+      <Text style={[styles.viewerText, { color: colors.onMedia }]}>{count}</Text>
+    </View>
+  );
+}
+
+/** Feuille du bas (audience, réglages) sur fond sombre translucide. */
+export function LiveBottomSheet({
+  visible,
+  title,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { t } = useI18n();
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.sheetBackdrop} onPress={onClose} accessibilityLabel={t('common.close')} />
+      <View
+        style={[
+          styles.sheet,
+          { backgroundColor: colors.noirElevated, borderColor: colors.border, paddingBottom: insets.bottom + Spacing.md },
+        ]}
+      >
+        <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+        <Text style={[styles.sheetTitle, { color: colors.sable }]}>{title}</Text>
+        {children}
+      </View>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
+  viewerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radii.pill,
+    backgroundColor: 'rgba(11, 11, 11, 0.55)',
+  },
+  viewerText: { fontFamily: Fonts.bold, fontSize: 12 },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(11, 11, 11, 0.45)' },
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  sheetHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, marginBottom: Spacing.sm },
+  sheetTitle: { fontFamily: Fonts.bold, fontSize: 16, marginBottom: 4 },
   center: {
     flex: 1,
     alignItems: 'center',

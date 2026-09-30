@@ -1,4 +1,4 @@
-# Edge Function `live-token` (lives LiveKit, sprint L1)
+# Edge Function `live-token` (lives LiveKit, sprints L1 → L2)
 
 Délivre un **jeton LiveKit court** à un utilisateur NIA connecté, pour
 diffuser (créateur) ou regarder (spectateur) un live de `public.live_streams`.
@@ -26,8 +26,10 @@ Réponse 200 :
 | 400 | `bad_request` | corps illisible, `live_id` non UUID, rôle inconnu |
 | 401 | `unauthorized` | pas de JWT, JWT invalide ou expiré |
 | 403 | `not_owner` | jeton publisher demandé par quelqu'un d'autre que le créateur |
+| 403 | `live_held` | (L2) jeton publisher pour un live retenu par la modération |
 | 404 | `not_found` | live inexistant **ou invisible sous la RLS** (indiscernables exprès) |
 | 409 | `live_not_active` | live `ended` ou `cancelled` |
+| 409 | `live_not_started` | (L2) jeton viewer alors que le live n'est pas encore `live` |
 | 500 | `db_error` | erreur PostgREST |
 | 503 | `not_configured` | secrets LiveKit absents |
 
@@ -47,16 +49,22 @@ Réponse 200 :
   vie **10 min** (connexion initiale, LiveKit rafraîchit ensuite la session).
 - Journaux : codes courts seulement (jamais de jeton, JWT ou identifiant).
 
-### Limite volontaire du L1 (resserrée au L2)
+### Règles L2 (migration 019 + `livekit-webhook`)
 
-La migration 017 n'est pas appliquée : on ne peut pas encore passer un live
-en `status='live'` côté serveur de façon sûre (colonnes serveur non
-protégées). **L1 n'écrit donc rien en base** : un jeton spectateur est
-accordé dès que le live existe, est visible et n'est pas terminé/annulé
-(donc aussi pour un live encore `scheduled`). Au **L2**, avec 017 :
-spectateur seulement si `status='live'`, pas exclu (`live_bans`), pas bloqué
-par l'hôte (`blocks`), visibilité « abonnés » corrigée ; passage en `live`
-et création de room par `service_role`.
+- **viewer** : uniquement si `status = 'live'` (sinon `409 live_not_started` ;
+  l'app affiche « pas encore commencé » et revérifie toutes les 10 s). La RLS
+  de 017/019 filtre déjà les lives masqués, bloqués, ou réservés aux abonnés.
+- **publisher** : refusé si `moderation_state` n'est pas `visible`
+  (`403 live_held`).
+- Le passage en `live` n'est **jamais** écrit par cette fonction : c'est
+  `livekit-webhook` (service_role) quand l'hôte rejoint la room.
+- Côté publisher, la room est créée best effort avec
+  `emptyTimeout = 120 s`, `departureTimeout = 120 s`, `maxParticipants = 60`
+  (`HOST_ROOM_SETTINGS` dans `core.ts`) : LiveKit ferme la room 2 min après
+  le départ de tout le monde → `room_finished` → live `ended`.
+
+(Au L1, sans 017, un jeton viewer était accordé dès que le live existait et
+n'était pas terminé ; c'est désormais resserré.)
 
 ## Secrets
 
