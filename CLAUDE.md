@@ -69,9 +69,13 @@
 | 015 | suppression douce de vidéo (RPC) |
 | 016 | options de publication — appliquée et vérifiée |
 | **017** | **signalements / modération** — appliquée et vérifiée |
+| **018** | **filtre de mots-clés** (S3) — appliquée et vérifiée |
 
-**Réservées, prévues, non écrites dans `main`** : 018 filtre de mots-clés,
-019 live L2, 020 âge / 18+, 021 enregistrements de lives.
+**En PR, non appliquées** : 019 live L2 (PR #42) ; **022** suppression
+définitive de vidéo, reposts conservés (`022_video_delete_refs.sql`, PR
+« Correctif — suppression de vidéo : reposts conservés (022) », branche
+`haby/fix-022-reposts`).
+**Réservées, non écrites** : 020 âge / 18+, 021 enregistrements de lives.
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
 `live-token`, `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min).
@@ -86,11 +90,27 @@ Secrets : uniquement dans les secrets de fonction / Vault Supabase, jamais ici.
 Détails : `supabase/functions/<fn>/README.md`.
 
 **PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
-#36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**.
-Aucune autre PR ouverte à cette date.
+#36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
+#39 (ce fichier) et #40 (S3 filtre de mots, 018). **En cours** : #41 (docs,
+défauts connus de la suppression de vidéo — son bloc « Défauts connus »
+devient obsolète avec la PR 022), #42 (Live L2), PR 022 (ci-dessous).
+
+**Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
+(en PR, non appliquée ; ordre de mise en prod dans la description de la PR) :
+- défaut 1 (fil et profil annonçaient « Vidéo et fichier effacés » même quand
+  le fichier était gardé pour un repost) : trois issues distinguées
+  (`components/videoDeleteFeedback.ts`, clé `feed.deleteKeptForRepost`) ;
+- défaut 2 (comptage des références filtré par la RLS : un repost archivé,
+  followers / private, masqué ou d'un compte bloqué perdait son fichier) :
+  RPC `delete_own_video_for_good` (022, security definer) qui compte **toutes**
+  les lignes. Décision du fondateur : les reposts des autres comptes restent
+  visibles. La suppression de **compte** (014) continue, elle, d'effacer les
+  reposts des autres (différence voulue, `docs/account-deletion.md`).
+- Tant que 022 n'est pas appliquée, l'app reprend l'ancien chemin : le
+  défaut 2 reste actif en prod jusque-là.
 
 **Feuille de route** :
-1. S3 — filtre de mots-clés (018)
+1. ~~S3 — filtre de mots-clés (018)~~ — fait
 2. L2 — live, écran « go live » façon Instagram (019) : statut `live`,
    exclusions, blocages, fin auto (limites L1 listées dans #36)
 3. Âge / 18+ (020)
@@ -139,7 +159,7 @@ Mode mock si `.env` vide ; Google, Snapchat et LiveKit exigent un build EAS
 Pour le détail, voir plutôt que dupliquer :
 - `README.md` — installation, mock vs Supabase, i18n, architecture, EAS
 - `SUPABASE.md` — backend, migrations 001–012, bucket
-- `supabase/tests/README.md` — tests SQL locaux (013 → 017)
+- `supabase/tests/README.md` — tests SQL locaux (013 → 018, 022)
 - `supabase/functions/*/README.md` — déploiement, secrets, cron
 - `docs/account-deletion.md`, `GOOGLE_AUTH.md`, `SNAPCHAT_AUTH.md`,
   `PRODUCT.md`, `PERF.md`, `docs/legal/README.md`
@@ -149,3 +169,4 @@ Pour le détail, voir plutôt que dupliquer :
 | Date | Auteur | Changement |
 |---|---|---|
 | 30/09/2026 | Haby | Haby : création du fichier |
+| 30/09/2026 | Haby | Correctif 022 en PR : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
