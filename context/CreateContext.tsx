@@ -2,8 +2,9 @@
  * Brouillon de publication, partagé par les étapes de app/create/*.
  *
  * Le provider vit dans app/create/_layout.tsx : quitter le parcours démonte
- * le provider, donc jette le brouillon. C'est voulu — pas de reset manuel à
- * maintenir dans chaque écran.
+ * le provider, donc jette l'état en mémoire. C'est voulu — pas de reset manuel
+ * à maintenir dans chaque écran. Pour garder une création, l'utilisateur
+ * l'enregistre en brouillon local (S6, lib/drafts) : saveDraft / restoreDraft.
  *
  * Toute la logique média (sélection, capture, validation taille/durée,
  * déduction du mimeType) est ici et non dans les écrans : les trois étapes la
@@ -20,18 +21,26 @@ import React, {
 } from 'react';
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import {
   MAX_UPLOAD_BYTES,
   MAX_VIDEO_DURATION_SEC,
   parseHashtags,
 } from '@/constants/publish';
-import type { CategoryId } from '@/constants/categories';
-import type { FilterDefinition } from '@/constants/filters';
+import { isCategoryId, type CategoryId } from '@/constants/categories';
+import { getFilterById, type FilterDefinition } from '@/constants/filters';
 import type { SoundItem } from '@/lib/sounds';
 import { clampSoundOffsetMs } from '@/lib/soundSync';
 import { resolveUploadContentType } from '@/lib/videos';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
+import { videoFrameAt } from '@/lib/videoTrim';
+import {
+  draftSignature,
+  saveDraft as saveDraftRecord,
+  type DraftInput,
+  type LoadedDraft,
+} from '@/lib/drafts';
 import { EDIT_SPEEDS, buildEditMeta, type EditMeta } from '@/lib/editMeta';
 import { DEFAULT_PUBLISH_OPTIONS, type PublishOptions } from '@/lib/publishOptions';
 import {
@@ -197,12 +206,39 @@ type CreateContextValue = {
   clearCover: () => void;
   maxMb: number;
   maxMinutes: number;
+  /**
+   * Sélection de découpe en cours à l'édition (S6 : partagée pour être
+   * enregistrée dans un brouillon). null : sélection par défaut.
+   */
+  trimSelection: TrimRange | null;
+  setTrimSelection: (next: TrimRange | null) => void;
+  /** Brouillon local d'origine (S6), null pour une création jamais enregistrée. */
+  draftId: string | null;
+  /** Vrai s'il y a un média et des réglages pas encore enregistrés en brouillon. */
+  hasUnsavedChanges: boolean;
+  /** Enregistre toute la création en brouillon local ; renvoie son id. */
+  saveDraft: () => Promise<string>;
+  /** Remet l'éditeur exactement dans l'état d'un brouillon relu. */
+  restoreDraft: (draft: LoadedDraft) => void;
+  /**
+   * Abandonne les modifications non enregistrées (« Supprimer » en quittant
+   * l'éditeur). Un brouillon rouvert garde sa version enregistrée.
+   */
+  discardChanges: () => void;
+  /**
+   * Autorise la sortie du parcours sans confirmation (publication réussie).
+   * Lu de façon synchrone par la garde de sortie de l'éditeur.
+   */
+  releaseLeaveGuard: () => void;
+  isLeaveGuardReleased: () => boolean;
 };
 
 const CreateDraftContext = createContext<CreateContextValue | null>(null);
 
 export function CreateProvider({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const ownerId = user?.id ?? null;
   const [mode, setModeState] = useState<CreateMode>('video');
   const [media, setMedia] = useState<PickedMedia | null>(null);
   const [cover, setCover] = useState<PickedMedia | null>(null);
@@ -226,6 +262,17 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     DEFAULT_PUBLISH_OPTIONS,
   );
   const [uploadId, setUploadId] = useState<string>(makeUploadId);
+  const [trimSelection, setTrimSelectionState] = useState<TrimRange | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  /** Empreinte de la dernière version enregistrée (ou rouverte). */
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+  /** Média remis en place par restoreDraft : pas un nouvel import. */
+  const restoredDraftUriRef = useRef<string | null>(null);
+  /** Après restoreDraft : l'empreinte du prochain rendu devient la référence. */
+  const pendingCleanRef = useRef(false);
+  const [cleanTick, setCleanTick] = useState(0);
+  const leaveGuardReleasedRef = useRef(false);
+  const [leaveReleased, setLeaveReleased] = useState(false);
 
   /** Un autre son repart de son début ; le même son garde son réglage. */
   const setSound = useCallback((next: SoundItem | null) => {
@@ -473,7 +520,14 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     if (!media) {
       setSourceMedia(null);
       setTrimRange(null);
+      setTrimSelectionState(null);
       setOverlays((cur) => (cur.items.length ? emptyOverlayDoc() : cur));
+      setDraftId(null);
+      setSavedSignature(null);
+      return;
+    }
+    if (media.uri === restoredDraftUriRef.current) {
+      restoredDraftUriRef.current = null;
       return;
     }
     if (media.uri === trimOutputRef.current) return;
@@ -487,8 +541,12 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     }
     setSourceMedia(media);
     setTrimRange(null);
+    setTrimSelectionState(null);
     setPlaybackSpeedState(1);
     setOverlays(emptyOverlayDoc());
+    // Nouveau média : ce n'est plus le brouillon rouvert (S6).
+    setDraftId(null);
+    setSavedSignature(null);
   }, [media]);
 
   const applyTrimmedVideo = useCallback(
@@ -628,6 +686,174 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     ],
   );
 
+  // --- Brouillons locaux (S6) ------------------------------------------
+
+  const setTrimSelection = useCallback((next: TrimRange | null) => {
+    setTrimSelectionState((cur) => {
+      if (!next) return null;
+      const clean = { startMs: Math.round(next.startMs), endMs: Math.round(next.endMs) };
+      return cur && cur.startMs === clean.startMs && cur.endMs === clean.endMs ? cur : clean;
+    });
+  }, []);
+
+  /** Tout ce qu'un brouillon enregistre, sauf la miniature. */
+  const draftInput = useMemo<Omit<DraftInput, 'thumbUri'> | null>(() => {
+    const src = sourceMedia ?? media;
+    if (!src?.uri) return null;
+    const trimmed = media && sourceMedia && media.uri !== sourceMedia.uri ? media : null;
+    return {
+      mode,
+      source: src,
+      trimmed,
+      trimRange: trimmed ? trimRange : null,
+      trimSelection,
+      cover: src.type === 'video' ? cover : null,
+      speed: playbackSpeed,
+      sound,
+      soundOffsetMs,
+      soundVolume,
+      originalVolume,
+      filterId: filter?.id ?? null,
+      overlays,
+      caption,
+      category,
+      publishOptions,
+    };
+  }, [
+    mode,
+    media,
+    sourceMedia,
+    trimRange,
+    trimSelection,
+    cover,
+    playbackSpeed,
+    sound,
+    soundOffsetMs,
+    soundVolume,
+    originalVolume,
+    filter?.id,
+    overlays,
+    caption,
+    category,
+    publishOptions,
+  ]);
+
+  const signature = useMemo(
+    () => (draftInput ? draftSignature(draftInput) : null),
+    [draftInput],
+  );
+  const signatureRef = useRef(signature);
+  signatureRef.current = signature;
+  const draftInputRef = useRef(draftInput);
+  draftInputRef.current = draftInput;
+  const draftIdRef = useRef(draftId);
+  draftIdRef.current = draftId;
+
+  useEffect(() => {
+    if (!pendingCleanRef.current) return;
+    pendingCleanRef.current = false;
+    setSavedSignature(signature);
+  }, [signature, cleanTick]);
+
+  const hasUnsavedChanges =
+    !leaveReleased && signature != null && signature !== savedSignature;
+
+  const saveDraft = useCallback(async (): Promise<string> => {
+    const input = draftInputRef.current;
+    if (!input) throw new Error('draft_no_media');
+    const sig = signatureRef.current;
+    // Miniature de la liste : la couverture si elle existe, sinon une image
+    // de la vidéo au début de l'extrait retenu.
+    let thumbUri: string | null = null;
+    if (input.source.type === 'video' && !input.cover) {
+      const at = input.trimmed ? 0 : input.trimSelection?.startMs ?? 0;
+      thumbUri = await videoFrameAt((input.trimmed ?? input.source).uri, at, 360);
+    }
+    try {
+      const record = await saveDraftRecord(
+        { ...input, thumbUri },
+        { id: draftIdRef.current, ownerId },
+      );
+      draftIdRef.current = record.id;
+      setDraftId(record.id);
+      setSavedSignature(sig);
+      return record.id;
+    } finally {
+      if (thumbUri) deleteCachedFile(thumbUri);
+    }
+  }, [ownerId]);
+
+  const restoreDraft = useCallback((draft: LoadedDraft) => {
+    const r = draft.record;
+    const src = draft.source;
+    const trimmed = draft.trimmed;
+    const shown = trimmed ?? src;
+    // L'effet sur `media` ne doit pas traiter ce média comme un nouvel import.
+    restoredDraftUriRef.current = shown.uri;
+    restoredSourceRef.current = null;
+    // Découpe temporaire de la création précédente : elle n'a plus d'usage.
+    const previousTrim = trimOutputRef.current;
+    if (previousTrim && previousTrim !== trimmed?.uri) deleteCachedFile(previousTrim);
+    trimOutputRef.current = trimmed ? trimmed.uri : null;
+    soundIdRef.current = r.sound?.id ?? null;
+    leaveGuardReleasedRef.current = false;
+    setLeaveReleased(false);
+
+    setModeState(r.mode);
+    setMedia(shown);
+    setSourceMedia(src);
+    setTrimRange(trimmed ? r.trimRange : null);
+    setTrimSelectionState(r.trimSelection);
+    setPlaybackSpeedState((PLAYBACK_SPEEDS as readonly number[]).includes(r.speed) ? r.speed : 1);
+    setCover(src.type === 'video' ? draft.cover : null);
+    setSoundState(r.sound);
+    setSoundOffsetMsState(r.sound ? clampSoundOffsetMs(r.soundOffsetMs, r.sound.durationMs) : 0);
+    setSoundVolumeState(r.soundVolume);
+    setOriginalVolumeState(r.originalVolume);
+    setFilter(getFilterById(r.filterId));
+    setOverlays(sanitizeOverlayDoc(r.overlays));
+    setCaption(r.caption);
+    setCategory(isCategoryId(r.category) ? r.category : null);
+    setPublishOptionsState({ ...DEFAULT_PUBLISH_OPTIONS, ...r.publishOptions });
+    setUploadId(makeUploadId());
+    setDraftId(r.id);
+    draftIdRef.current = r.id;
+    pendingCleanRef.current = true;
+    setCleanTick((n) => n + 1);
+  }, []);
+
+  const discardChanges = useCallback(() => {
+    if (!draftIdRef.current) {
+      // Création jamais enregistrée : rien d'autre à défaire, l'état reste
+      // celui d'avant S6 (le son choisi à la caméra est conservé).
+      setSavedSignature(signatureRef.current);
+      return;
+    }
+    // Brouillon rouvert : on oublie ses réglages pour que la prochaine
+    // capture ne les hérite pas. Le média reste en place (l'éditeur est en
+    // train de se fermer) ; il sera remplacé par la prochaine capture.
+    draftIdRef.current = null;
+    setDraftId(null);
+    setCaption('');
+    setCategory(null);
+    setSoundState(null);
+    soundIdRef.current = null;
+    setSoundOffsetMsState(0);
+    setSoundVolumeState(1);
+    setOriginalVolumeState(1);
+    setFilter(null);
+    setCover(null);
+    setPublishOptionsState(DEFAULT_PUBLISH_OPTIONS);
+    pendingCleanRef.current = true;
+    setCleanTick((n) => n + 1);
+  }, []);
+
+  const releaseLeaveGuard = useCallback(() => {
+    leaveGuardReleasedRef.current = true;
+    setLeaveReleased(true);
+  }, []);
+  const isLeaveGuardReleased = useCallback(() => leaveGuardReleasedRef.current, []);
+
   const value = useMemo<CreateContextValue>(
     () => ({
       mode,
@@ -673,6 +899,15 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       clearCover,
       maxMb,
       maxMinutes,
+      trimSelection,
+      setTrimSelection,
+      draftId,
+      hasUnsavedChanges,
+      saveDraft,
+      restoreDraft,
+      discardChanges,
+      releaseLeaveGuard,
+      isLeaveGuardReleased,
     }),
     [
       mode,
@@ -715,6 +950,15 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       clearCover,
       maxMb,
       maxMinutes,
+      trimSelection,
+      setTrimSelection,
+      draftId,
+      hasUnsavedChanges,
+      saveDraft,
+      restoreDraft,
+      discardChanges,
+      releaseLeaveGuard,
+      isLeaveGuardReleased,
     ],
   );
 

@@ -6,6 +6,10 @@
  * Le choix du son garde son état localement (modale, import en cours) : c'est
  * de l'état d'interface, pas du brouillon. Seul le son retenu remonte dans le
  * CreateContext.
+ *
+ * Sprint S6 : « Brouillon » enregistre la création sur le téléphone ; une
+ * publication réussie depuis un brouillon supprime ce brouillon et ses
+ * fichiers.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -18,7 +22,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
@@ -38,6 +42,8 @@ import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
 import { importSoundFromDevice } from '@/lib/soundImport';
 import { applyMention, DEFAULT_PUBLISH_OPTIONS } from '@/lib/publishOptions';
 import { probePublishOptionsSupport } from '@/lib/videos';
+import { deleteDraft, isDraftStorageAvailable } from '@/lib/drafts';
+import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 
 export default function CreatePublishStep() {
   const router = useRouter();
@@ -65,7 +71,38 @@ export default function CreatePublishStep() {
     publishOptions,
     setPublishOptions,
     buildPublishEditMeta,
+    draftId,
+    saveDraft,
+    releaseLeaveGuard,
   } = useCreateDraft();
+  const draftsAvailable = isDraftStorageAvailable();
+  const [savingDraft, setSavingDraft] = useState(false);
+  /** Publication terminée : on quitte le parcours après le rendu suivant. */
+  const [published, setPublished] = useState(false);
+
+  // La garde de sortie de l'éditeur est levée dans le même rendu : la sortie
+  // du parcours ne déclenche donc pas « Enregistrer le brouillon ? ».
+  useEffect(() => {
+    if (!published) return;
+    Alert.alert(
+      isMockFeed ? t('create.publishedMockTitle') : t('create.publishedTitle'),
+      isMockFeed ? t('create.publishedMockBody') : t('create.publishedBody'),
+    );
+    router.replace('/(tabs)');
+  }, [published, isMockFeed, router, t]);
+
+  const onSaveDraft = async () => {
+    if (savingDraft || busy) return;
+    setSavingDraft(true);
+    try {
+      await saveDraft();
+      Alert.alert(t('drafts.savedTitle'), t('drafts.savedBody'));
+    } catch {
+      Alert.alert(t('common.error'), t('drafts.saveFailed'));
+    } finally {
+      setSavingDraft(false);
+    }
+  };
 
   // 016 appliquée ? En mode démo, les options restent locales : toujours oui.
   const [optionsSupported, setOptionsSupported] = useState<boolean | null>(
@@ -91,6 +128,10 @@ export default function CreatePublishStep() {
   const [forcedSelection, setForcedSelection] = useState<{ start: number; end: number } | undefined>();
 
   const [busy, setBusy] = useState(false);
+  const insets = useSafeAreaInsets();
+  // S7 : le retour Android ne quitte plus l'écran pendant l'envoi (annuler
+  // d'abord) ni pendant l'enregistrement du brouillon.
+  useBlockBackWhile(busy || savingDraft);
   /** Ratio réel d'envoi (0 → 1), null tant qu'aucun octet n'est parti. */
   const [progress, setProgress] = useState<number | null>(null);
   const [progressStage, setProgressStage] = useState<'media' | 'cover'>('media');
@@ -147,6 +188,7 @@ export default function CreatePublishStep() {
   };
 
   const publish = async () => {
+    if (savingDraft) return;
     if (!media?.uri && !isMockFeed) {
       Alert.alert(t('create.alertMediaRequired'), t('create.errNoMedia'));
       return;
@@ -208,14 +250,20 @@ export default function CreatePublishStep() {
         },
         signal: controller.signal,
       });
+      // Publié depuis un brouillon local : il a rempli son rôle (S6). Un échec
+      // de suppression n'annule pas la publication ; le brouillon reste listé.
+      if (draftId) {
+        try {
+          await deleteDraft(draftId);
+        } catch {
+          // sans conséquence pour la publication
+        }
+      }
       // Pas de reset ici : quitter /create démonte le CreateProvider, donc le
       // brouillon. Le vider avant de naviguer ferait passer cet écran par son
       // garde Redirect vers l'étape 1, en course avec le replace.
-      Alert.alert(
-        isMockFeed ? t('create.publishedMockTitle') : t('create.publishedTitle'),
-        isMockFeed ? t('create.publishedMockBody') : t('create.publishedBody'),
-      );
-      router.replace('/(tabs)');
+      releaseLeaveGuard();
+      setPublished(true);
     } catch (e) {
       const aborted =
         controller.signal.aborted ||
@@ -314,6 +362,9 @@ export default function CreatePublishStep() {
         },
         catTextOn: { color: colors.sable },
         progressBlock: { marginTop: Spacing.xl },
+        actionsRow: { flexDirection: 'row', gap: Spacing.sm },
+        actionDraft: { flex: 1 },
+        actionPublish: { flex: 2 },
         progressTrack: {
           height: 6,
           borderRadius: 3,
@@ -415,11 +466,19 @@ export default function CreatePublishStep() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          // Au-dessus de la barre de navigation Android (bord à bord).
+          { paddingBottom: Spacing.xxl + insets.bottom },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <CreateStepHeader step={3} title={t('create.stepPublishTitle')} />
+        <CreateStepHeader
+          step={3}
+          title={t('create.stepPublishTitle')}
+          disabled={busy || savingDraft}
+        />
 
         <Text style={styles.hint}>
           {isMockFeed ? t('create.subtitleMock') : t('create.subtitleSupabase')}
@@ -569,12 +628,27 @@ export default function CreatePublishStep() {
             {uploadError ? (
               <Text style={styles.errorText}>{uploadError}</Text>
             ) : null}
-            <Button
-              title={uploadError ? t('create.retry') : t('create.publish')}
-              variant="gold"
-              onPress={() => void publish()}
-              style={{ marginTop: uploadError ? Spacing.md : Spacing.xl }}
-            />
+            <View
+              style={[styles.actionsRow, { marginTop: uploadError ? Spacing.md : Spacing.xl }]}
+            >
+              {draftsAvailable && media?.uri ? (
+                <Button
+                  title={t('drafts.save')}
+                  variant="outline"
+                  loading={savingDraft}
+                  disabled={savingDraft || published}
+                  onPress={() => void onSaveDraft()}
+                  style={styles.actionDraft}
+                />
+              ) : null}
+              <Button
+                title={uploadError ? t('create.retry') : t('create.publish')}
+                variant="gold"
+                disabled={savingDraft || published}
+                onPress={() => void publish()}
+                style={styles.actionPublish}
+              />
+            </View>
           </>
         )}
 

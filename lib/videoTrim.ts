@@ -24,6 +24,8 @@ type Toolkit = {
     uri: string,
     options?: { timeMs?: number; quality?: number; maxWidth?: number },
   ) => Promise<{ uri: string; duration: number; width?: number; height?: number }>;
+  concatVideos?: (clipPaths: string[], outputPath: string) => Promise<{ durationSec: number }>;
+  getMediaMetadata?: (uri: string) => Promise<{ duration: number }>;
 };
 
 let cached: Toolkit | null | undefined;
@@ -85,6 +87,46 @@ export async function trimVideoFile(
     durationMs: Math.round(res.duration || endMs - startMs),
     size: res.size || 0,
   };
+}
+
+/**
+ * Assemble des segments filmés en un seul fichier (sprint S7).
+ *
+ * Android : Media3 Transformer en passthrough ; iOS : AVAssetExportSession
+ * passthrough (sortie .mov). Pas de ré-encodage : les segments doivent venir
+ * de la même caméra avec les mêmes réglages, ce que garantit l'écran caméra
+ * (retourner la caméra est bloqué entre deux segments).
+ * `outputPath` est un chemin absolu, sans « file:// ».
+ */
+export async function concatVideoFiles(
+  paths: string[],
+  outputPath: string,
+): Promise<{ uri: string; durationMs: number }> {
+  const toolkit = loadToolkit();
+  if (!toolkit?.concatVideos) throw new Error('concat_unavailable');
+  if (paths.length === 0) throw new Error('concat_empty');
+  const res = await toolkit.concatVideos(paths, outputPath);
+  return {
+    uri: toFileUri(outputPath),
+    durationMs: Math.round((res?.durationSec ?? 0) * 1000),
+  };
+}
+
+export function isConcatAvailable(): boolean {
+  return typeof loadToolkit()?.concatVideos === 'function';
+}
+
+/** Durée réelle d'un fichier vidéo en ms, ou null si elle n'est pas lisible. */
+export async function videoFileDurationMs(uri: string): Promise<number | null> {
+  const toolkit = loadToolkit();
+  if (!toolkit?.getMediaMetadata) return null;
+  try {
+    const meta = await toolkit.getMediaMetadata(uri);
+    const d = Number(meta?.duration);
+    return d > 0 && Number.isFinite(d) ? Math.round(d) : null;
+  } catch {
+    return null;
+  }
 }
 
 function toFileUri(path: string): string {
