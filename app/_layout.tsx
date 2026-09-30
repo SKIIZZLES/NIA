@@ -92,6 +92,7 @@ function RootNavigator() {
         <Stack.Screen name="user/[username]" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="appearance" options={{ headerShown: false }} />
+        <Stack.Screen name="blocked" options={{ headerShown: false }} />
         <Stack.Screen name="sound/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="events" options={{ headerShown: false }} />
         <Stack.Screen name="series" options={{ headerShown: false }} />

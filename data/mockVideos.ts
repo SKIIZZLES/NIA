@@ -47,6 +47,8 @@ export type VideoItem = {
   allowComments?: boolean;
   allowReuse?: boolean;
   aiGenerated?: boolean;
+  /** 017 : état de modération (le créateur voit « masquée / retirée »). */
+  moderationState?: 'visible' | 'held' | 'removed';
   altText?: string;
   locationText?: string;
   /** Filtre NIA (012_filters) — registry id */

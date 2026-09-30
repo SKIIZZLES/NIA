@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   RefreshControl,
@@ -19,6 +20,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/context/ThemeContext';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
+import { CONTACT_EMAIL } from '@/constants/legal';
+import { isSystemNotification, systemNotificationText } from '@/lib/moderation';
 import {
   fetchNotifications,
   markNotificationRead,
@@ -119,6 +122,10 @@ export default function NotificationsScreen() {
 
   const label = useCallback(
     (n: NotificationWithActor): string => {
+      // 017 : notifications système (signalement, décision, modération),
+      // traduites d'après meta.code ; `body` (français) en secours.
+      const sys = systemNotificationText(n);
+      if (sys) return t(sys.key, { category: t(sys.categoryKey) });
       if (n.body) return n.body;
       switch (n.type) {
         case 'like':
@@ -138,6 +145,7 @@ export default function NotificationsScreen() {
 
   const actorName = useCallback(
     (n: NotificationWithActor): string => {
+      if (isSystemNotification(n.type)) return t('moderation.notifActor');
       const u = actorUsername(n) || n.profiles?.display_name;
       return u ? `@${u.replace(/^@/, '')}` : t('notifications.someone');
     },
@@ -194,6 +202,18 @@ export default function NotificationsScreen() {
 
   const openTarget = useCallback(
     (n: NotificationWithActor) => {
+      if (isSystemNotification(n.type)) {
+        const sys = systemNotificationText(n);
+        const category = sys ? t(sys.categoryKey) : '';
+        const body = sys ? t(sys.detailsKey, { category }) : n.body || t('notifications.system');
+        const contest = sys?.contest ? `\n\n${t('moderation.contest', { email: CONTACT_EMAIL })}` : '';
+        const buttons: { text: string; onPress?: () => void }[] = [{ text: t('common.close') }];
+        if (n.video_id && sys?.key === 'moderation.notifContentRestored') {
+          buttons.push({ text: t('moderation.openContent'), onPress: () => router.push(`/video/${n.video_id}`) });
+        }
+        Alert.alert(t('moderation.detailsTitle'), `${body}${contest}`, buttons);
+        return;
+      }
       if (n.video_id && n.type !== 'follow') {
         router.push(`/video/${n.video_id}`);
         return;
@@ -201,7 +221,7 @@ export default function NotificationsScreen() {
       const username = actorUsername(n);
       if (username) router.push(`/user/${username}`);
     },
-    [router],
+    [router, t],
   );
 
   const onPressItem = useCallback(
@@ -280,6 +300,12 @@ export default function NotificationsScreen() {
           height: 48,
           borderRadius: 24,
           backgroundColor: colors.noirSoft,
+        },
+        systemAvatar: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: colors.or,
         },
         typeBadge: {
           position: 'absolute',
@@ -436,7 +462,8 @@ export default function NotificationsScreen() {
           </View>
         )}
         renderItem={({ item }) => {
-          const video = item.video_id ? videoById.get(item.video_id) : undefined;
+          const system = isSystemNotification(item.type);
+          const video = item.video_id && !system ? videoById.get(item.video_id) : undefined;
           const badge = TYPE_ICONS[item.type];
           const unread = !item.read_at;
           return (
@@ -447,10 +474,16 @@ export default function NotificationsScreen() {
               accessibilityLabel={`${actorName(item)} ${label(item)}`}
             >
               <View style={styles.avatarWrap}>
-                <Image
-                  source={{ uri: actorAvatar(item) }}
-                  style={styles.avatar}
-                />
+                {system ? (
+                  <View style={[styles.avatar, styles.systemAvatar]}>
+                    <Ionicons name="shield-checkmark" size={22} color={colors.or} />
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: actorAvatar(item) }}
+                    style={styles.avatar}
+                  />
+                )}
                 {badge ? (
                   <View style={styles.typeBadge}>
                     <Ionicons name={badge} size={11} color={colors.onAccent} />

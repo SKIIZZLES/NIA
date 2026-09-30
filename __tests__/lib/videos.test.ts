@@ -233,3 +233,16 @@ describe('mapRowToVideoItem', () => {
     expect(item.soundCreatorHandle).toBe('@kwame');
   });
 });
+
+describe('moderationStateFromRow (017)', () => {
+  // import tardif : le fichier de test importe déjà '@/lib/videos' plus haut
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { moderationStateFromRow } = require('@/lib/videos') as typeof import('@/lib/videos');
+  it('lit held / removed / visible, ignore le reste et l’absence de colonne', () => {
+    expect(moderationStateFromRow({ moderation_state: 'held' })).toBe('held');
+    expect(moderationStateFromRow({ moderation_state: 'removed' })).toBe('removed');
+    expect(moderationStateFromRow({ moderation_state: 'visible' })).toBe('visible');
+    expect(moderationStateFromRow({ moderation_state: 'autre' })).toBeUndefined();
+    expect(moderationStateFromRow({})).toBeUndefined();
+  });
+});

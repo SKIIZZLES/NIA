@@ -27,3 +27,21 @@ PGHOST=/tmp PGPORT=55432 PGUSER=postgres supabase/tests/run_local.sh
 
 Chaque scénario tourne dans une transaction annulée. Le script s'arrête à la
 première assertion fausse (`not ok - …`).
+
+## Suite : 015, 016, 017
+
+6. 015 puis 016 (deux fois) et `016_publish_options.test.sql` ;
+7. `017_seed_before.sql` : signalements « d'avant 017 » (ancien motif en
+   texte, doublon, P0, 3 signaleurs) pour tester le rattrapage ;
+8. 017, appliquée **deux fois** (idempotence) ;
+9. `017_safety_reports.test.sql` : garde-fous (compteurs, colonnes serveur,
+   lives), limites de débit, blocage côté serveur (vidéos, commentaires,
+   lives, likes, enregistrements, abonnements), notifications, signalements
+   v2 (10 catégories, lives, précisions, doublons, 20/h), masquage P0 et à
+   3 signaleurs, garde-fou anti-abus P0 (5 / 24 h), décisions et
+   notifications (DSA 16/17), SQL Editor, suspension, preuves privées (3 ×
+   20 Mo, purge 90 / 180 jours), suppression du compte du signaleur
+   (signalement anonymisé), mise à l'abri des fichiers (`moderation_file_holds`),
+   domaine `@users.nia.app` réservé, rattrapage ;
+10. `017_verify_after_apply.sql` : toutes les lignes doivent être `t` ;
+11. 014 et 016 rejoués après 017 (non-régression).

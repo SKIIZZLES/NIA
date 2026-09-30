@@ -19,8 +19,16 @@ export type VideoVisibility = 'public' | 'followers' | 'private';
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'system' | string;
 
-export type ReportTargetType = 'video' | 'user' | 'comment';
-export type ReportStatus = 'open' | 'reviewed' | 'dismissed';
+export type ReportTargetType = 'video' | 'user' | 'comment' | 'live' | 'live_comment';
+export type ReportStatus =
+  | 'open'
+  | 'in_review'
+  | 'actioned'
+  | 'dismissed'
+  | 'escalated'
+  | 'reviewed';
+/** Migration 017 : état de modération d'une vidéo, d'un commentaire, d'un live. */
+export type ModerationState = 'visible' | 'held' | 'removed';
 
 export type Database = {
   public: {
@@ -33,6 +41,8 @@ export type Database = {
           bio: string | null;
           avatar_url: string | null;
           created_at: string;
+          /** Migration 017 — absent avant application. */
+          suspended_until?: string | null;
         };
         Insert: {
           id: string;
@@ -496,6 +506,8 @@ export type Database = {
           user_id: string;
           body: string;
           created_at: string;
+          /** Migration 017 — absent avant application. */
+          moderation_state?: ModerationState;
         };
         Insert: {
           id?: string;
@@ -571,6 +583,8 @@ export type Database = {
           body: string | null;
           read_at: string | null;
           created_at: string;
+          /** Migration 017 : code et catégorie des notifications système. */
+          meta?: Record<string, unknown> | null;
         };
         Insert: {
           id?: string;

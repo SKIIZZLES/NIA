@@ -40,6 +40,7 @@ export default function PublicProfileScreen() {
     videos: feedVideos,
     blockedIds,
     blockUser,
+    unblockUser,
   } = useFeed();
   const { width } = useWindowDimensions();
   const gap = 2;
@@ -107,7 +108,7 @@ export default function PublicProfileScreen() {
             void (async () => {
               const result = await blockUser(profile.id);
               if (!result.ok) {
-                Alert.alert(t('common.error'), result.message);
+                Alert.alert(t('common.error'), t(result.errorKey));
                 return;
               }
               Alert.alert(
@@ -117,6 +118,26 @@ export default function PublicProfileScreen() {
                   : t('safety.blockedBody', { username: profile.username }),
               );
               router.back();
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  const onUnblock = () => {
+    if (!profile || isOwn) return;
+    Alert.alert(
+      t('safety.unblockTitle', { username: profile.username }),
+      t('safety.unblockBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('safety.unblock'),
+          onPress: () => {
+            void (async () => {
+              const result = await unblockUser(profile.id);
+              if (!result.ok) Alert.alert(t('common.error'), t(result.errorKey));
             })();
           },
         },
@@ -188,11 +209,11 @@ export default function PublicProfileScreen() {
                   />
                   <Pressable
                     style={[styles.blockBtn, isBlocked && styles.blockBtnDone]}
-                    onPress={onBlock}
-                    disabled={isBlocked}
+                    onPress={isBlocked ? onUnblock : onBlock}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.blockBtnText}>
-                      {isBlocked ? t('safety.blocked') : t('safety.block')}
+                      {isBlocked ? t('safety.unblock') : t('safety.block')}
                     </Text>
                   </Pressable>
                 </View>
