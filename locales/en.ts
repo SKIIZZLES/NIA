@@ -164,7 +164,7 @@ const en: TranslationKeys = {
     alertCamera: 'Camera',
     errCameraDenied: 'Allow camera access to record a video.',
     coverLabel: 'Cover (optional)',
-    coverHint: 'Image shown on profile / Discover. Without a cover, a NIA placeholder is used.',
+    coverHint: 'Image shown on profile / Discover. Without a cover, a default NIA image is used.',
     pickCover: 'Choose a cover',
     changeCover: 'Change cover',
     clearCover: 'Remove cover',
@@ -720,7 +720,7 @@ const en: TranslationKeys = {
   },
   filter: {
     label: 'NIA Filters',
-    hint: 'Color overlay preview after capture. No face AR or native LUT (V3).',
+    hint: 'Tap a filter to try it.',
     none: 'None',
     feedBadge: 'NIA Filter',
     mvpNote: 'Preview filters (overlay / approx. matrix). Real LUT / AR = V3.',

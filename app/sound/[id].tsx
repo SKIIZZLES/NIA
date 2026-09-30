@@ -119,7 +119,7 @@ export default function SoundScreen() {
           width: 72,
           height: 72,
           borderRadius: Radii.lg,
-          backgroundColor: 'rgba(209, 127, 42, 0.16)',
+          backgroundColor: colors.or + '29',
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: Spacing.sm,

@@ -712,7 +712,7 @@ const arEG: TranslationKeys = {
   },
   filter: {
     label: 'فلاتر NIA',
-    hint: 'معاينة اللون / overlay بعد التصوير. مفيش AR للوش ولا LUT أصلية (V3).',
+    hint: 'المس فلتر علشان تجربه.',
     none: 'بدون',
     feedBadge: 'فلتر NIA',
     mvpNote: 'فلاتر معاينة (overlay / مصفوفة تقريبية). LUT / AR الحقيقية = V3.',

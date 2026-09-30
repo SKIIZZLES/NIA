@@ -67,13 +67,13 @@ export default function CreateStyleStep() {
           position: 'absolute',
           bottom: 8,
           left: 8,
-          backgroundColor: colors.noir + 'CC',
+          backgroundColor: colors.mediaScrimStrong,
           borderRadius: Radii.pill,
           paddingHorizontal: 10,
           paddingVertical: 4,
         },
         badgeText: {
-          color: colors.sable,
+          color: colors.onMedia,
           fontFamily: Fonts.medium,
           fontSize: 11,
         },
@@ -84,7 +84,7 @@ export default function CreateStyleStep() {
           marginTop: Spacing.md,
         },
         hint: {
-          color: colors.textMuted,
+          color: colors.textSecondary,
           fontFamily: Fonts.regular,
           fontSize: 12,
           lineHeight: 17,
@@ -135,13 +135,14 @@ export default function CreateStyleStep() {
             volume={sound ? originalVolume : 1}
             playbackRate={media.type === 'video' ? playbackSpeed : 1}
             overlays={overlays}
+            tapToPause
             sound={
               sound?.publicUrl
                 ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
                 : null
             }
           />
-          <View style={styles.badge}>
+          <View style={styles.badge} pointerEvents="none">
             <Text style={styles.badgeText}>
               {media.type === 'video' ? t('create.video') : t('create.image')}
               {filter ? ` · ${filter.name}` : ''}

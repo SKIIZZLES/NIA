@@ -75,9 +75,9 @@
 | **020** | **âge déclaré et contenus 18+** — appliquée et vérifiée le 30/09/2026 (#45, accord du fondateur) : `020_verify` 16/16, 017/018/019/022 relancées toutes `true`, empreinte des 10 tables inchangée |
 **Réservée, non écrite** : 021 enregistrements de lives.
 
-**Modération** : compte modérateur `niapp@outlook.com` (orthographe telle que
-transmise le 30/09/2026 ; l'adresse de contact publique est
-`niaapp@outlook.com` — à confirmer).
+**Modération** : compte modérateur `niaapp@outlook.com` (orthographe confirmée
+par le fondateur le 30/09/2026, identique à l'adresse de contact publique du
+dépôt).
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
 `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min),
@@ -185,5 +185,6 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |
 | 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
 | 30/09/2026 | Haby | Correctif 022 : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
-| 30/09/2026 | Haby | Âge / 18+ en PR (#45) : migration 020 (date de naissance privée, 13 ans minimum, marquage 18+ vidéo et live, choix d'affichage, outils modération) écrite et testée sur un Postgres local jetable, **non appliquée en prod** ; modale de date, réglage « Âge et contenus 18+ », CGU et confidentialité à jour. État actuel : 019 et 022 appliquées, `livekit-webhook` vérifiée, `niapp@outlook.com` modérateur. |
+| 30/09/2026 | Haby | Âge / 18+ en PR (#45) : migration 020 (date de naissance privée, 13 ans minimum, marquage 18+ vidéo et live, choix d'affichage, outils modération) écrite et testée sur un Postgres local jetable, **non appliquée en prod** ; modale de date, réglage « Âge et contenus 18+ », CGU et confidentialité à jour. État actuel : 019 et 022 appliquées, `livekit-webhook` vérifiée, `niaapp@outlook.com` modérateur. |
 | 30/09/2026 | Haby | 020 appliquée en prod après accord du fondateur : `020_verify` 16/16, 017/018/019/022 relancées toutes vraies, empreinte des 10 tables inchangée, sonde RLS (transaction annulée) conforme ; `live-token` v4 confirmée. |
+| 30/09/2026 | Haby | Contraste des thèmes (sans changement de base) : jetons revus (`textMuted` ≥ 4.5:1, `textDisabled`, `borderStrong`, `danger` lisible, ocre foncé sur Clair), jetons « sur média » fixes (voiles sombres + texte sable) et `MediaChrome` pour caméra / éditeur, `Button` thémé, lecture / pause au toucher dans l'éditeur et l'Habillage, test `themeContrast` ; textes de l'Habillage et de l'éditeur au « vous ». |

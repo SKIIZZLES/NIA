@@ -721,7 +721,7 @@ const arMA: TranslationKeys = {
   },
   filter: {
     label: 'فلاتر NIA',
-    hint: 'معاينة اللون / overlay من بعد التصوير. ما كاينش AR للوجه ولا LUT أصلية (V3).',
+    hint: 'المس فلتر باش تجربو.',
     none: 'بدون',
     feedBadge: 'فلتر NIA',
     mvpNote: 'فلاتر معاينة (overlay / مصفوفة تقريبية). LUT / AR الحقيقية = V3.',

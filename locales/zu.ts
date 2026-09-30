@@ -712,7 +712,7 @@ const zu: TranslationKeys = {
   },
   filter: {
     label: 'Amafilta e-NIA',
-    hint: 'Ukubuka umbala / i-overlay ngemva kokuthatha. Ayikho i-AR yobuso noma i-LUT yemvelo (V3).',
+    hint: 'Thepha ifilta ukuze uyizame.',
     none: 'Lutho',
     feedBadge: 'Ifilta ye-NIA',
     mvpNote: 'Amafilta okubuka (i-overlay / imethriksi elinganiselayo). I-LUT / AR yangempela = V3.',

@@ -59,8 +59,8 @@ import { CameraSoundSheet } from '@/components/CameraSoundSheet';
 import { FilterCarousel } from '@/components/FilterCarousel';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
-import { useColors } from '@/context/ThemeContext';
-import { Fonts, Radii, Spacing } from '@/constants/theme';
+import { MediaChrome, useColors } from '@/context/ThemeContext';
+import { Fonts, MediaTextShadow, Radii, Spacing } from '@/constants/theme';
 import { getFilterOverlayStyle } from '@/constants/filters';
 import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
@@ -123,7 +123,19 @@ function makeSegmentId(): string {
   return `seg-${Date.now().toString(36)}-${segmentSeq}`;
 }
 
+/**
+ * La caméra est un écran sur média : palette sombre quel que soit le thème
+ * (`MediaChrome`), voiles `mediaScrim` et texte `onMedia` sur la vidéo.
+ */
 export default function CreateCameraScreen() {
+  return (
+    <MediaChrome>
+      <CameraScreen />
+    </MediaChrome>
+  );
+}
+
+function CameraScreen() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
@@ -813,12 +825,12 @@ export default function CreateCameraScreen() {
           right: Spacing.md,
           height: 4,
           borderRadius: 2,
-          backgroundColor: 'rgba(11,11,11,0.45)',
+          backgroundColor: colors.mediaScrim,
           overflow: 'hidden',
         },
         progressFill: { height: '100%', backgroundColor: colors.or },
         progressRow: { flexDirection: 'row', height: '100%' },
-        progressCurrent: { height: '100%', backgroundColor: colors.sable },
+        progressCurrent: { height: '100%', backgroundColor: colors.onMedia },
         progressSep: {
           position: 'absolute',
           top: 0,
@@ -833,7 +845,7 @@ export default function CreateCameraScreen() {
           borderRadius: 22,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(11,11,11,0.55)',
+          backgroundColor: colors.mediaScrim,
         },
         segCtrlWrap: { width: 44, height: 44, alignItems: 'center', overflow: 'visible' },
         nextBtn: {
@@ -849,9 +861,9 @@ export default function CreateCameraScreen() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: Spacing.sm,
-          backgroundColor: 'rgba(11,11,11,0.7)',
+          backgroundColor: colors.mediaScrimStrong,
         },
-        assemblingText: { color: colors.sable, fontFamily: Fonts.medium, fontSize: 14 },
+        assemblingText: { color: colors.onMedia, fontFamily: Fonts.medium, fontSize: 14 },
         topBar: {
           position: 'absolute',
           left: 0,
@@ -868,7 +880,7 @@ export default function CreateCameraScreen() {
           borderRadius: 22,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(11,11,11,0.45)',
+          backgroundColor: colors.mediaScrim,
         },
         soundPill: {
           flexDirection: 'row',
@@ -878,7 +890,7 @@ export default function CreateCameraScreen() {
           paddingHorizontal: 14,
           paddingVertical: 8,
           borderRadius: Radii.pill,
-          backgroundColor: 'rgba(11,11,11,0.55)',
+          backgroundColor: colors.mediaScrimStrong,
         },
         soundPillText: { color: chrome, fontFamily: Fonts.medium, fontSize: 13 },
         side: {
@@ -894,9 +906,7 @@ export default function CreateCameraScreen() {
           fontFamily: Fonts.medium,
           fontSize: 10,
           textAlign: 'center',
-          textShadowColor: 'rgba(0,0,0,0.6)',
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 2,
+          ...MediaTextShadow,
         },
         bottom: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
         durationRow: { flexGrow: 0, marginBottom: Spacing.md },
@@ -906,14 +916,12 @@ export default function CreateCameraScreen() {
           paddingVertical: 6,
           borderRadius: Radii.pill,
         },
-        durationChipOn: { backgroundColor: 'rgba(11,11,11,0.6)' },
+        durationChipOn: { backgroundColor: colors.mediaScrimStrong },
         durationText: {
-          color: colors.sableMuted,
+          color: colors.onMediaMuted,
           fontFamily: Fonts.medium,
           fontSize: 13,
-          textShadowColor: 'rgba(0,0,0,0.6)',
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 2,
+          ...MediaTextShadow,
         },
         durationTextOn: { color: chrome, fontFamily: Fonts.bold },
         shutterRow: {
@@ -931,7 +939,7 @@ export default function CreateCameraScreen() {
           borderColor: chrome,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(11,11,11,0.45)',
+          backgroundColor: colors.mediaScrim,
         },
         draftsBtnWrap: { width: 44, height: 44, alignItems: 'center', overflow: 'visible' },
         draftsCount: {
@@ -955,9 +963,7 @@ export default function CreateCameraScreen() {
           color: chrome,
           fontFamily: Fonts.medium,
           fontSize: 10,
-          textShadowColor: 'rgba(0,0,0,0.6)',
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 2,
+          ...MediaTextShadow,
         },
         recordOuter: {
           width: 78,
@@ -994,12 +1000,10 @@ export default function CreateCameraScreen() {
         },
         modeTab: { paddingVertical: 6, paddingHorizontal: 4, alignItems: 'center' },
         modeText: {
-          color: colors.sableMuted,
+          color: colors.onMediaMuted,
           fontFamily: Fonts.medium,
           fontSize: 14,
-          textShadowColor: 'rgba(0,0,0,0.6)',
-          textShadowOffset: { width: 0, height: 1 },
-          textShadowRadius: 2,
+          ...MediaTextShadow,
         },
         modeTextOn: { color: chrome, fontFamily: Fonts.bold },
         modeDot: {
@@ -1019,7 +1023,7 @@ export default function CreateCameraScreen() {
           color: chrome,
           fontFamily: Fonts.bold,
           fontSize: 16,
-          backgroundColor: 'rgba(11,11,11,0.5)',
+          backgroundColor: colors.mediaScrimStrong,
           paddingHorizontal: 12,
           paddingVertical: 4,
           borderRadius: Radii.pill,
@@ -1043,6 +1047,7 @@ export default function CreateCameraScreen() {
           color: chrome,
           fontFamily: Fonts.medium,
           fontSize: 13,
+          ...MediaTextShadow,
           marginTop: Spacing.sm,
         },
         zoomBadge: {
@@ -1051,7 +1056,7 @@ export default function CreateCameraScreen() {
           color: chrome,
           fontFamily: Fonts.bold,
           fontSize: 12,
-          backgroundColor: 'rgba(11,11,11,0.5)',
+          backgroundColor: colors.mediaScrimStrong,
           paddingHorizontal: 10,
           paddingVertical: 3,
           borderRadius: Radii.pill,
@@ -1059,7 +1064,7 @@ export default function CreateCameraScreen() {
         },
         filtersPanel: {
           alignSelf: 'stretch',
-          backgroundColor: 'rgba(11,11,11,0.78)',
+          backgroundColor: colors.mediaScrimStrong,
           borderTopLeftRadius: Radii.lg,
           borderTopRightRadius: Radii.lg,
           paddingHorizontal: Spacing.md,
@@ -1070,13 +1075,13 @@ export default function CreateCameraScreen() {
           position: 'absolute',
           left: Spacing.lg,
           right: 80,
-          backgroundColor: 'rgba(11,11,11,0.6)',
+          backgroundColor: colors.mediaScrimStrong,
           borderRadius: Radii.md,
           paddingHorizontal: Spacing.md,
           paddingVertical: 8,
         },
         micWarnText: {
-          color: colors.sable,
+          color: colors.onMedia,
           fontFamily: Fonts.medium,
           fontSize: 12,
           textAlign: 'center',
@@ -1128,7 +1133,7 @@ export default function CreateCameraScreen() {
   }
 
   const bottomBase = Math.max(insets.bottom, 16) + Spacing.sm;
-  const sideDisabled = busy ? { opacity: 0.4 } : null;
+  const sideDisabled = busy ? { opacity: 0.6 } : null;
   const segmentLive = phase === 'recording' || phase === 'processing';
   const bar = progressParts(segments, maxMs, segmentLive ? currentMs : 0);
   const shutterDisabled =
@@ -1238,7 +1243,7 @@ export default function CreateCameraScreen() {
         <Pressable
           onPress={() => setSoundSheetOpen(true)}
           disabled={busy || hasSegments}
-          style={[styles.soundPill, (busy || hasSegments) && { opacity: 0.4 }]}
+          style={[styles.soundPill, (busy || hasSegments) && { opacity: 0.6 }]}
           accessibilityRole="button"
           accessibilityLabel={t('create.pickSound')}
         >
@@ -1428,7 +1433,7 @@ export default function CreateCameraScreen() {
             delayLongPress={HOLD_DELAY_MS}
             onPressOut={onShutterPressOut}
             disabled={shutterDisabled}
-            style={[styles.recordOuter, shutterDisabled && { opacity: 0.5 }]}
+            style={[styles.recordOuter, shutterDisabled && { opacity: 0.6 }]}
             accessibilityRole="button"
             accessibilityLabel={
               phase === 'recording'
@@ -1604,7 +1609,7 @@ function SideButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.sideItem, (disabled || dimmed) && { opacity: 0.4 }]}
+      style={[styles.sideItem, (disabled || dimmed) && { opacity: 0.6 }]}
       accessibilityRole="button"
       accessibilityLabel={a11y}
       accessibilityState={{ disabled: !!disabled, selected: !!active }}

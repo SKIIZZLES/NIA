@@ -712,7 +712,7 @@ const ig: TranslationKeys = {
   },
   filter: {
     label: 'Ihe nzacha NIA',
-    hint: 'Nlele agba / overlay mgbe ị sechara. Enweghị AR ihu ma ọ bụ LUT nke ọbụụ (V3).',
+    hint: 'Metụ ihe nzacha ka ị nwalee ya.',
     none: 'Ọ dịghị',
     feedBadge: 'Ihe nzacha NIA',
     mvpNote: 'Ihe nzacha nlele (overlay / matriks nso nso). LUT / AR ezigbo = V3.',

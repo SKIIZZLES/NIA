@@ -717,7 +717,7 @@ const es: TranslationKeys = {
   },
   filter: {
     label: 'Filtros NIA',
-    hint: 'Vista previa con overlay de color tras capturar. Sin AR facial ni LUT nativa (V3).',
+    hint: 'Toca un filtro para probarlo.',
     none: 'Ninguno',
     feedBadge: 'Filtro NIA',
     mvpNote: 'Filtros preview (overlay / matriz aprox.). LUT / AR real = V3.',

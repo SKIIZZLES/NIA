@@ -720,7 +720,7 @@ const arSD: TranslationKeys = {
   },
   filter: {
     label: 'فلاتر NIA',
-    hint: 'معاينة اللون / overlay بعد التصوير. ما في AR للوجه ولا LUT أصلية (V3).',
+    hint: 'المس فلتر عشان تجربو.',
     none: 'بدون',
     feedBadge: 'فلتر NIA',
     mvpNote: 'فلاتر معاينة (overlay / مصفوفة تقريبية). LUT / AR الحقيقية = V3.',

@@ -712,7 +712,7 @@ const yo: TranslationKeys = {
   },
   filter: {
     label: 'Àwọn ajọ̀dò NIA',
-    hint: 'Àyẹ̀wò àwọ̀ / overlay lẹ́yìn ìyàwòrán. Kò sí AR ojú tàbí LUT abínibí (V3).',
+    hint: 'Tẹ ajọ̀dò kan láti gbìyànjú rẹ̀.',
     none: 'Kò sí',
     feedBadge: 'Ajọ̀dò NIA',
     mvpNote: 'Ajọ̀dò àyẹ̀wò (overlay / matrix àfojúsùn). LUT / AR gidi = V3.',
