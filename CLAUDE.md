@@ -70,17 +70,25 @@
 | 016 | options de publication — appliquée et vérifiée |
 | **017** | **signalements / modération** — appliquée et vérifiée |
 | **018** | **filtre de mots-clés** (S3) — appliquée et vérifiée |
+| **019** | **live L2** (statut réel, webhook LiveKit) — appliquée (#42) |
+| **022** | **suppression définitive de vidéo, reposts conservés** — appliquée (#43) |
 
-**Dans `main`, non appliquées en prod** : **019** live L2
-(`019_live_l2.sql`, #42) et **022** suppression définitive de vidéo, reposts
-conservés (`022_video_delete_refs.sql`, #43). Ordre de mise en prod dans la
-description de chaque PR ; 022 ne dépend pas de 019.
-**Réservées, non écrites** : 020 âge / 18+, 021 enregistrements de lives.
+**Écrite, en PR, NON appliquée en prod** : **020** âge déclaré et contenus 18+
+(`020_age_mature.sql`, branche `haby/safety-age18`), testée sur un Postgres
+local jetable uniquement. **À appliquer seulement après l'accord du fondateur**,
+après 019 et 022 ; ordre et vérifications dans la description de la PR.
+**Réservée, non écrite** : 021 enregistrements de lives.
+
+**Modération** : compte modérateur `niapp@outlook.com` (orthographe telle que
+transmise le 30/09/2026 ; l'adresse de contact publique est
+`niaapp@outlook.com` — à confirmer).
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
 `live-token`, `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min).
-**Proposée en PR, non déployée** : `livekit-webhook` (L2, `--no-verify-jwt`,
-auth par signature LiveKit) ; `live-token` à redéployer avec L2.
+**Déployée et vérifiée** : `livekit-webhook` (L2, `--no-verify-jwt`, auth par
+signature LiveKit). Redéploiement L2 de `live-token` : non confirmé ici, à
+vérifier. 020 ne demande aucun redéploiement (live-token lit la ligne avec le
+JWT de l'appelant : un live 18+ répond 404 aux mineurs).
 
 ```bash
 npx supabase functions deploy <fn> --project-ref odlmbiaocdonlovjepxn --use-api
@@ -95,12 +103,12 @@ Détails : `supabase/functions/<fn>/README.md`.
 **PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
 #36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
 #39 (ce fichier), #40 (S3 filtre de mots, 018), #41 (docs, défauts connus de la
-suppression de vidéo), #42 (Live L2, 019) et #43 (022). Aucune PR ouverte à
-cette date.
+suppression de vidéo), #42 (Live L2, 019) et #43 (022). **Ouverte** : Âge /
+18+ (migration 020, en attente de l'accord du fondateur ; pas d'APK avant
+l'application de 020).
 
 **Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
-(#43, migration **non appliquée en prod** ; ordre de mise en prod dans la
-description de la PR) :
+(#43, migration appliquée en prod) :
 - défaut 1 (fil et profil annonçaient « Vidéo et fichier effacés » même quand
   le fichier était gardé pour un repost) : trois issues distinguées
   (`components/videoDeleteFeedback.ts`, clé `feed.deleteKeptForRepost`) ;
@@ -110,15 +118,14 @@ description de la PR) :
   les lignes. Décision du fondateur : les reposts des autres comptes restent
   visibles. La suppression de **compte** (014) continue, elle, d'effacer les
   reposts des autres (différence voulue, `docs/account-deletion.md`).
-- Tant que 022 n'est pas appliquée, l'app reprend l'ancien chemin : le
-  défaut 2 reste actif en prod jusque-là. Les anciens APK le gardent actif même
-  après application, faute de passer par la RPC.
+- 022 est appliquée : le défaut 2 est corrigé pour les APK qui passent par la
+  RPC. Les anciens APK le gardent actif, faute de passer par la RPC.
 
 **Feuille de route** :
 1. ~~S3 — filtre de mots-clés (018)~~ — fait
 2. ~~L2 — direct instantané, écran façon Instagram, statut réel (019 +
-   `livekit-webhook`)~~ — fait, migration à appliquer
-3. Âge / 18+ (020)
+   `livekit-webhook`)~~ — fait, appliqué
+3. Âge / 18+ (020) — en PR, migration écrite et testée en local, **non appliquée**
 4. L3 — chat et réactions en live ; L4 — modération des lives
 5. Durcissement
 6. Replays (optionnel, 021)
@@ -132,6 +139,11 @@ description de la PR) :
   par signaleur / 24 h).
 - Autres catégories : masquées à **3 signaleurs distincts** (comptes > 24 h).
 - **Aucune nudité ni contenu sexuel.** Âge minimum **13 ans**.
+- **18+ (020, en PR)** : date de naissance privée (`user_birthdates`, saisie
+  unique, correction par le support via `mod_set_birth_date`) ; marquage 18+
+  par un adulte déclaré ou imposé par la modération (`mod_set_mature`) ;
+  visible des seuls adultes ayant activé « Afficher les contenus 18+ »
+  (désactivé par défaut) ; jamais republiable ; n'autorise jamais la nudité.
 - Contact : niaapp@outlook.com.
 
 ## 4. Communication Claude ↔ Haby
@@ -164,7 +176,7 @@ Mode mock si `.env` vide ; Google, Snapchat et LiveKit exigent un build EAS
 Pour le détail, voir plutôt que dupliquer :
 - `README.md` — installation, mock vs Supabase, i18n, architecture, EAS
 - `SUPABASE.md` — backend, migrations 001–012, bucket
-- `supabase/tests/README.md` — tests SQL locaux (013 → 019, 022)
+- `supabase/tests/README.md` — tests SQL locaux (013 → 020, 022)
 - `supabase/functions/*/README.md` — déploiement, secrets, cron
 - `docs/account-deletion.md`, `GOOGLE_AUTH.md`, `SNAPCHAT_AUTH.md`,
   `PRODUCT.md`, `PERF.md`, `docs/legal/README.md`
@@ -177,3 +189,4 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |
 | 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
 | 30/09/2026 | Haby | Correctif 022 : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
+| 30/09/2026 | Haby | Âge / 18+ en PR : migration 020 (date de naissance privée, 13 ans minimum, marquage 18+ vidéo et live, choix d'affichage, outils modération) écrite et testée sur un Postgres local jetable, **non appliquée en prod** ; modale de date, réglage « Âge et contenus 18+ », CGU et confidentialité à jour. État actuel : 019 et 022 appliquées, `livekit-webhook` vérifiée, `niapp@outlook.com` modérateur. |
