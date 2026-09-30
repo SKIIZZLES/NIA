@@ -86,6 +86,7 @@
         }
       ],
       "./plugins/withMedia3Align",
+      "./plugins/withAndroidAbis",
       [
         "@livekit/react-native-expo-plugin",
         {

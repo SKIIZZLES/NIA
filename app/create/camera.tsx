@@ -57,6 +57,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { CameraSoundSheet } from '@/components/CameraSoundSheet';
 import { FilterCarousel } from '@/components/FilterCarousel';
+import { FaceMaskHud } from '@/components/FaceMaskHud';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
 import { MediaChrome, useColors } from '@/context/ThemeContext';
@@ -69,6 +70,22 @@ import { composerCachePath, isComposerAvailable, runComposition } from '@/lib/co
 import { buildSegmentsComposition, maxVideoSourceBytes } from '@/lib/composition';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
 import { concatVideoFiles, isConcatAvailable, videoFileDurationMs } from '@/lib/videoTrim';
+import {
+  acceptFaceNotice,
+  faceEffectA11yKey,
+  faceEffectShortLabelKey,
+  hasAcceptedFaceNotice,
+  isFaceShutterBlocked,
+  nextFaceEffect,
+  type FaceEffectId,
+} from '@/lib/faceEffects';
+import {
+  NiaCameraView,
+  isNiaCameraAvailable,
+  type NiaCameraHandle,
+  type NiaCameraStats,
+  type NiaSyncMode,
+} from '@/modules/nia-camera';
 import {
   addSegment,
   fileUriToPath,
@@ -95,6 +112,11 @@ import { useDraftCount } from '@/hooks/useDraftCount';
  * est ignoré et le système choisit sa qualité.
  */
 const VIDEO_QUALITY = '720p' as const;
+/**
+ * A1 : pause sans caméra entre expo-camera et la caméra à masque. expo-camera
+ * libère toute la session CameraX en se démontant (unbindAll).
+ */
+const CAMERA_SWITCH_MS = 400;
 
 /** Durées proposées, en secondes (toujours bornées par MAX_VIDEO_DURATION_SEC). */
 const DURATIONS = [
@@ -175,6 +197,8 @@ function CameraScreen() {
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
   const cameraRef = useRef<CameraView | null>(null);
+  /** A1 : caméra à masque visage (module nia-camera, Android). */
+  const niaCameraRef = useRef<NiaCameraHandle | null>(null);
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [phase, setPhase] = useState<Phase>('idle');
   const [seconds, setSeconds] = useState(0);
@@ -235,6 +259,24 @@ function CameraScreen() {
   const startedAtRef = useRef(0);
   /** Pincement : distance et zoom au début du geste à deux doigts. */
   const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+
+  // --- A1 : masque visage cuit dans le fichier (flou / pixels).
+  const faceMaskAvailable = useMemo(() => isNiaCameraAvailable(), []);
+  const [faceEffect, setFaceEffect] = useState<FaceEffectId>('off');
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [faceStats, setFaceStats] = useState<NiaCameraStats | null>(null);
+  const [faceSync, setFaceSync] = useState<NiaSyncMode>('exact');
+  const faceMaskActive = faceMaskAvailable && faceEffect !== 'off' && mode !== 'photo';
+  /**
+   * Caméra montée. Passer d'une caméra à l'autre laisse un temps sans caméra :
+   * expo-camera libère toute la session CameraX en se démontant, elle ne doit
+   * pas couper la caméra à masque qui vient de démarrer (et inversement).
+   */
+  const [mountedCamera, setMountedCamera] = useState<'expo' | 'mask' | 'none'>(
+    faceMaskActive ? 'mask' : 'expo',
+  );
+  const mountedCameraRef = useRef(mountedCamera);
+  mountedCameraRef.current = mountedCamera;
 
   const micGranted = micPermission?.granted === true;
   const busy = phase !== 'idle' || assembling;
@@ -336,14 +378,20 @@ function CameraScreen() {
     return () => clearInterval(id);
   }, [phase]);
 
+  /** Caméra qui filme : celle à masque si elle est montée. */
+  const videoCamera = useCallback(
+    () => (mountedCameraRef.current === 'mask' ? niaCameraRef.current : cameraRef.current),
+    [],
+  );
+
   const stopRecording = useCallback(() => {
     clearStopTimers();
     try {
-      cameraRef.current?.stopRecording();
+      videoCamera()?.stopRecording();
     } catch {
       // pas d'enregistrement en cours : rien à arrêter
     }
-  }, [clearStopTimers]);
+  }, [clearStopTimers, videoCamera]);
 
   /**
    * Arrêt demandé par l'utilisateur (toucher, fin de maintien). Un segment de
@@ -594,7 +642,8 @@ function CameraScreen() {
   );
 
   const record = useCallback(async () => {
-    if (!cameraRef.current || !ready) {
+    const cam = videoCamera();
+    if (!cam || !ready) {
       setPhase('idle');
       return;
     }
@@ -616,7 +665,7 @@ function CameraScreen() {
     autoStopRef.current = setTimeout(() => {
       autoStopRef.current = null;
       try {
-        cameraRef.current?.stopRecording();
+        cam.stopRecording();
       } catch {
         // déjà arrêté
       }
@@ -625,7 +674,7 @@ function CameraScreen() {
     try {
       // maxDuration et maxFileSize existent bien dans CameraRecordingOptions
       // de expo-camera 57 (maxDuration en secondes entières sur Android).
-      result = await cameraRef.current.recordAsync({
+      result = await cam.recordAsync({
         maxDuration: Math.min(limits.maxDurationSec, MAX_VIDEO_DURATION_SEC),
         maxFileSize: limits.maxFileSize,
       });
@@ -685,7 +734,7 @@ function CameraScreen() {
     }
     // Durée max atteinte : on passe à l'édition, comme une prise unique.
     if (isFull(next, maxMs)) void finish(next);
-  }, [ready, maxMs, clearStopTimers, leave, finish, t]);
+  }, [ready, maxMs, clearStopTimers, leave, finish, t, videoCamera]);
 
   /** « Supprimer le dernier segment ». */
   const undoLastSegment = useCallback(() => {
@@ -820,6 +869,54 @@ function CameraScreen() {
     setZoom(0);
     setFacing((f) => (f === 'back' ? 'front' : 'back'));
   }, [busy, t]);
+
+  // --- A1 : bascule entre expo-camera et la caméra à masque, avec un court
+  // temps sans caméra (voir `mountedCamera`).
+  useEffect(() => {
+    const want = faceMaskActive ? 'mask' : 'expo';
+    if (mountedCameraRef.current === want) return;
+    setReady(false);
+    setFaceDetected(false);
+    setFaceStats(null);
+    setMountedCamera('none');
+    const id = setTimeout(() => setMountedCamera(want), CAMERA_SWITCH_MS);
+    return () => clearTimeout(id);
+  }, [faceMaskActive]);
+
+  /** Bouton « Masque » : désactivé → flou → pixels ; avis à la 1re activation. */
+  const cycleFaceEffect = useCallback(async () => {
+    if (busy || segmentsRef.current.length > 0) return;
+    const next = nextFaceEffect(faceEffect);
+    if (faceEffect === 'off' && !(await hasAcceptedFaceNotice())) {
+      Alert.alert(t('camera.faceNoticeTitle'), t('camera.faceNoticeBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('camera.faceNoticeAccept'),
+          onPress: () => {
+            void acceptFaceNotice();
+            if (mode === 'photo') setMode('video');
+            setFaceEffect(next);
+          },
+        },
+      ]);
+      return;
+    }
+    if (next !== 'off' && mode === 'photo') setMode('video');
+    setFaceEffect(next);
+  }, [busy, faceEffect, mode, setMode, t]);
+
+  /**
+   * La caméra à masque n'a pas démarré : on revient à la caméra normale, SANS
+   * repli caméra système (il filmerait le visage en clair).
+   */
+  const onFaceCameraError = useCallback(() => {
+    if (phase === 'recording') {
+      abandonRef.current = true;
+      stopRecording();
+    }
+    setFaceEffect('off');
+    Alert.alert(t('common.error'), t('camera.faceUnavailable'));
+  }, [phase, stopRecording, t]);
 
   // --- Zoom au pincement : événements tactiles bruts, pas de dépendance.
   const onTouchMove = useCallback(
@@ -1213,18 +1310,42 @@ function CameraScreen() {
   const sideDisabled = busy ? { opacity: 0.6 } : null;
   const segmentLive = phase === 'recording' || phase === 'processing';
   const bar = progressParts(segments, maxMs, segmentLive ? currentMs : 0);
+  const faceShutterBlocked =
+    mountedCamera === 'mask' &&
+    isFaceShutterBlocked({
+      maskActive: faceMaskActive,
+      faceDetected,
+      recording: phase !== 'idle',
+    });
   const shutterDisabled =
     phase === 'processing' ||
     assembling ||
     (!ready && phase === 'idle') ||
-    (!isPhoto && full && phase === 'idle');
+    (!isPhoto && full && phase === 'idle') ||
+    faceShutterBlocked;
 
   return (
     <View style={styles.root}>
       {/* Monté seulement quand l'écran a le focus : une seule session caméra
           peut être active, et la laisser vivre hors focus la bloquerait pour
           le reste de l'application. */}
-      {isFocused && !cameraFailed ? (
+      {isFocused && !cameraFailed && mountedCamera === 'mask' ? (
+        // A1 : aperçu ET fichier portent déjà le masque (CameraX + MediaPipe).
+        <NiaCameraView
+          ref={niaCameraRef}
+          style={styles.fill}
+          facing={facing}
+          effect={faceEffect === 'pixelate' ? 'pixelate' : 'blur'}
+          syncMode={faceSync}
+          mute={!micGranted || playSoundWhileRecording}
+          zoom={zoom}
+          enableTorch={torch && torchUsable}
+          onCameraReady={() => setReady(true)}
+          onFaceChange={setFaceDetected}
+          onStats={setFaceStats}
+          onMountError={onFaceCameraError}
+        />
+      ) : isFocused && !cameraFailed && mountedCamera === 'expo' ? (
         <CameraView
           ref={cameraRef}
           style={styles.fill}
@@ -1256,6 +1377,16 @@ function CameraScreen() {
       ) : (
         <View style={styles.fill} />
       )}
+
+      {mountedCamera === 'mask' && !cameraFailed ? (
+        <FaceMaskHud
+          top={insets.top + 72}
+          faceDetected={faceDetected}
+          recording={phase === 'recording'}
+          stats={faceStats}
+          onToggleSync={() => setFaceSync((m) => (m === 'exact' ? 'queue' : 'exact'))}
+        />
+      ) : null}
 
       {/* Teinte d'aperçu du filtre NIA V2.6, comme à l'étape Habillage. */}
       {overlay && !cameraFailed ? (
@@ -1382,6 +1513,20 @@ function CameraScreen() {
           color={chrome}
           activeColor={colors.or}
         />
+        {faceMaskAvailable ? (
+          <SideButton
+            icon={faceEffect === 'off' ? 'eye-off-outline' : 'eye-off'}
+            label={t(faceEffectShortLabelKey(faceEffect))}
+            a11y={t(faceEffectA11yKey(faceEffect))}
+            onPress={() => void cycleFaceEffect()}
+            disabled={busy || hasSegments}
+            dimmed={hasSegments}
+            active={faceEffect !== 'off'}
+            styles={styles}
+            color={chrome}
+            activeColor={colors.or}
+          />
+        ) : null}
         {sound && !isPhoto ? (
           <SideButton
             icon={hearSound ? 'headset' : 'headset-outline'}
