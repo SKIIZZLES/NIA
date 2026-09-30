@@ -65,6 +65,13 @@ export function systemNotificationText(n: NotificationLike): SystemText | null {
       switch (code) {
         case 'held':
           return { ...base, key: 'moderation.notifContentHeld', detailsKey: 'moderation.detailsHeld', contest: true };
+        // 018 : retenu par le filtre de mots (en attente), puis validé.
+        case 'held_keywords':
+          return metaString(n, 'target_type') === 'user'
+            ? { ...base, key: 'moderation.notifProfileHeld', detailsKey: 'moderation.detailsProfileHeld', contest: false }
+            : { ...base, key: 'moderation.notifKeywordHeld', detailsKey: 'moderation.detailsKeywordHeld', contest: false };
+        case 'approved':
+          return { ...base, key: 'moderation.notifContentApproved', detailsKey: 'moderation.detailsApproved', contest: false };
         case 'removed':
           return { ...base, key: 'moderation.notifContentRemoved', detailsKey: 'moderation.detailsRemoved', contest: true };
         case 'restored':

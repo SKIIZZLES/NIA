@@ -29,6 +29,8 @@ describe('notifications système', () => {
     ['moderation_notice', 'restored', 'moderation.notifContentRestored'],
     ['moderation_notice', 'warned', 'moderation.notifContentWarned'],
     ['moderation_notice', 'suspended', 'moderation.notifContentSuspended'],
+    ['moderation_notice', 'held_keywords', 'moderation.notifKeywordHeld'],
+    ['moderation_notice', 'approved', 'moderation.notifContentApproved'],
   ];
   it.each(cases)('%s / %s → %s (clés existantes)', (type, code, key) => {
     const t = systemNotificationText({ type, meta: { code, category: 'negrophobie' } });
@@ -41,6 +43,23 @@ describe('notifications système', () => {
     expect(systemNotificationText({ type: 'moderation_notice', meta: { code: 'removed' } })?.contest).toBe(true);
     expect(systemNotificationText({ type: 'moderation_notice', meta: { code: 'restored' } })?.contest).toBe(false);
     expect(systemNotificationText({ type: 'report_decision', meta: { code: 'actioned' } })?.contest).toBe(false);
+  });
+
+  it('018 : retenue d’un profil, rien à contester tant que rien n’est décidé', () => {
+    const profile = systemNotificationText({
+      type: 'moderation_notice',
+      meta: { code: 'held_keywords', category: 'homophobie', target_type: 'user', field: 'bio' },
+    });
+    expect(profile?.key).toBe('moderation.notifProfileHeld');
+    expect(profile?.detailsKey).toBe('moderation.detailsProfileHeld');
+    expect(has(profile!.key) && has(profile!.detailsKey)).toBe(true);
+    expect(profile?.contest).toBe(false);
+    const video = systemNotificationText({
+      type: 'moderation_notice',
+      meta: { code: 'held_keywords', category: 'negrophobie', target_type: 'video' },
+    });
+    expect(video?.detailsKey).toBe('moderation.detailsKeywordHeld');
+    expect(video?.contest).toBe(false);
   });
 
   it('code inconnu, meta absente ou type ordinaire → null (repli sur body)', () => {

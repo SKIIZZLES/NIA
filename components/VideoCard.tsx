@@ -23,6 +23,7 @@ import { FollowButton } from '@/components/FollowButton';
 import { VideoMenuSheet } from '@/components/VideoMenuSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { ModerationBanner } from '@/components/ModerationBanner';
+import { isKeywordHeld } from '@/lib/textFilter';
 import { shareVideo } from '@/lib/share';
 import { VideoProgressBar } from '@/components/VideoProgressBar';
 import { useIsFocused, useRouter } from 'expo-router';
@@ -578,7 +579,7 @@ function VideoCardInner({
           ) : null}
         </View>
         {isOwn && (item.moderationState === 'held' || item.moderationState === 'removed') ? (
-          <ModerationBanner kind={item.moderationState} />
+          <ModerationBanner kind={isKeywordHeld(item) ? 'review' : item.moderationState} />
         ) : null}
         <Text style={styles.caption} numberOfLines={3}>
           {item.caption}

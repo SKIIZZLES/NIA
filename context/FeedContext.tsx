@@ -82,7 +82,8 @@ type FeedContextValue = {
   videos: VideoItem[];
   loading: boolean;
   refresh: () => Promise<void>;
-  publishPost: (input: PublishInput) => Promise<void>;
+  /** Renvoie la vidéo créée (018 : `moderationState` « held » si retenue par le filtre de mots). */
+  publishPost: (input: PublishInput) => Promise<VideoItem | null>;
   /** @deprecated préférer publishPost */
   addLocalPost: (caption: string, thumbnailUrl?: string) => void;
   toggleLike: (id: string) => void;
@@ -259,7 +260,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           locationText: input.publishOptions?.locationText.trim() || undefined,
         };
         setRawVideos((prev) => [item, ...prev]);
-        return;
+        return item;
       }
       if (!input.localUri) {
         throw new Error(PUBLISH_ERRORS.noMedia);
@@ -296,6 +297,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
           item.soundTitle = item.soundTitle || input.soundTitle || undefined;
         }
         setRawVideos((prev) => [item, ...prev.filter((v) => v.id !== item.id)]);
+        return item;
       } catch (e) {
         const msg =
           e instanceof Error && e.message

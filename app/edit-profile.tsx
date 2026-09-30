@@ -12,10 +12,13 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
+import { checkTexts } from '@/lib/textFilter';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 
 export default function EditProfileScreen() {
   const { user, updateProfile } = useAuth();
+  const { t } = useI18n();
   const router = useRouter();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
@@ -28,8 +31,21 @@ export default function EditProfileScreen() {
     }
     setBusy(true);
     try {
-      await updateProfile({ displayName, bio });
-      Alert.alert('Enregistré', 'Votre profil a été mis à jour.');
+      // 018 : prévenir avant d'envoyer un texte qui sera retenu (le serveur
+      // applique le filtre dans tous les cas).
+      const verdict = await checkTexts([
+        { text: displayName.trim() !== user.displayName ? displayName : '', field: 'display_name' },
+        { text: bio.trim() !== user.bio ? bio : '', field: 'bio' },
+      ]);
+      if (verdict === 'held' && !(await confirmSendAnyway())) return;
+      const result = await updateProfile({ displayName, bio });
+      if (result.pending) {
+        Alert.alert(t('textFilter.heldTitle'), t('textFilter.heldProfile'));
+      } else if (result.masked) {
+        Alert.alert('Enregistré', t('textFilter.maskedProfile'));
+      } else {
+        Alert.alert('Enregistré', 'Votre profil a été mis à jour.');
+      }
       router.back();
     } catch (e) {
       Alert.alert(
@@ -40,6 +56,19 @@ export default function EditProfileScreen() {
       setBusy(false);
     }
   };
+
+  const confirmSendAnyway = () =>
+    new Promise<boolean>((resolve) => {
+      Alert.alert(
+        t('textFilter.warnTitle'),
+        t('textFilter.warnHeld'),
+        [
+          { text: t('textFilter.edit'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('textFilter.sendAnyway'), onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      );
+    });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>

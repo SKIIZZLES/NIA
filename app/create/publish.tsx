@@ -41,6 +41,7 @@ import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
 import { importSoundFromDevice } from '@/lib/soundImport';
 import { applyMention, DEFAULT_PUBLISH_OPTIONS } from '@/lib/publishOptions';
+import { checkTexts } from '@/lib/textFilter';
 import { probePublishOptionsSupport } from '@/lib/videos';
 import { deleteDraft, isDraftStorageAvailable } from '@/lib/drafts';
 import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
@@ -187,8 +188,21 @@ export default function CreatePublishStep() {
     }
   };
 
+  const confirmSendAnyway = () =>
+    new Promise<boolean>((resolve) => {
+      Alert.alert(
+        t('textFilter.warnTitle'),
+        t('textFilter.warnHeld'),
+        [
+          { text: t('textFilter.edit'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('textFilter.sendAnyway'), onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      );
+    });
+
   const publish = async () => {
-    if (savingDraft) return;
+    if (savingDraft || busy) return;
     if (!media?.uri && !isMockFeed) {
       Alert.alert(t('create.alertMediaRequired'), t('create.errNoMedia'));
       return;
@@ -212,6 +226,18 @@ export default function CreatePublishStep() {
       return;
     }
 
+    // 018 : prévenir avant l'envoi si la légende, les hashtags, le texte
+    // alternatif ou le lieu seront retenus (le serveur filtre dans tous les cas).
+    if (!isMockFeed) {
+      const verdict = await checkTexts([
+        { text: caption, field: 'caption' },
+        { text: hashtags.join(' '), field: 'hashtags' },
+        { text: publishOptions.altText, field: 'alt_text' },
+        { text: publishOptions.locationText, field: 'location_text' },
+      ]);
+      if (verdict === 'held' && !(await confirmSendAnyway())) return;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setBusy(true);
@@ -219,7 +245,7 @@ export default function CreatePublishStep() {
     setProgress(null);
     setProgressStage('media');
     try {
-      await publishPost({
+      const created = await publishPost({
         caption,
         localUri: media?.uri || undefined,
         mimeType: media?.mimeType ?? null,
@@ -262,6 +288,9 @@ export default function CreatePublishStep() {
       // Pas de reset ici : quitter /create démonte le CreateProvider, donc le
       // brouillon. Le vider avant de naviguer ferait passer cet écran par son
       // garde Redirect vers l'étape 1, en course avec le replace.
+      if (created?.moderationState === 'held') {
+        Alert.alert(t('textFilter.heldTitle'), t('textFilter.heldVideo'));
+      }
       releaseLeaveGuard();
       setPublished(true);
     } catch (e) {

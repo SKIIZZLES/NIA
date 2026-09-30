@@ -29,6 +29,7 @@ import {
   type LiveVisibility,
 } from '@/constants/liveCategories';
 import { createScheduledStream, isSupabaseConfigured } from '@/lib/live';
+import { checkTexts } from '@/lib/textFilter';
 
 type ThumbPick = {
   uri: string;
@@ -104,6 +105,19 @@ export default function CreateLiveScreen() {
     });
   };
 
+  const confirmSendAnyway = () =>
+    new Promise<boolean>((resolve) => {
+      Alert.alert(
+        t('textFilter.warnTitle'),
+        t('textFilter.warnHeld'),
+        [
+          { text: t('textFilter.edit'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('textFilter.sendAnyway'), onPress: () => resolve(true) },
+        ],
+        { cancelable: true, onDismiss: () => resolve(false) },
+      );
+    });
+
   const publish = async () => {
     if (!user?.id) {
       Alert.alert(t('live.loginRequiredTitle'), t('live.loginRequiredCreate'));
@@ -130,6 +144,12 @@ export default function CreateLiveScreen() {
 
     setBusy(true);
     try {
+      // 018 : prévenir avant d'envoyer un titre qui sera retenu.
+      const verdict = await checkTexts([
+        { text: trimmed, field: 'live_title' },
+        { text: description, field: 'live_description' },
+      ]);
+      if (verdict === 'held' && !(await confirmSendAnyway())) return;
       const created = await createScheduledStream({
         userId: user.id,
         title: trimmed,
@@ -141,7 +161,8 @@ export default function CreateLiveScreen() {
         thumbnailMimeType: thumb?.mimeType ?? null,
         thumbnailFileName: thumb?.fileName ?? null,
       });
-      Alert.alert(t('live.publishSuccess'), t('live.publishSuccessBody'), [
+      const held = created.moderationState === 'held';
+      Alert.alert(held ? t('textFilter.heldTitle') : t('live.publishSuccess'), held ? t('textFilter.heldLive') : t('live.publishSuccessBody'), [
         {
           text: 'OK',
           onPress: () => router.replace(`/live/${created.id}`),

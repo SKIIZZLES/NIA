@@ -749,6 +749,16 @@ export type Database = {
         Args: { p_video_id: string };
         Returns: boolean;
       };
+      /** 018_keyword_filter — verdict du filtre de mots (jamais la liste). */
+      nia_check_text: {
+        Args: { p_text: string; p_field?: string };
+        Returns: 'ok' | 'masked' | 'held' | 'refused';
+      };
+      /** 018_keyword_filter — décision d'un modérateur sur un contenu retenu. */
+      mod_resolve_keyword_flag: {
+        Args: { p_flag_id: string; p_decision: 'approve' | 'reject'; p_note?: string | null };
+        Returns: undefined;
+      };
     };
     Enums: {
       [_ in never]: never;

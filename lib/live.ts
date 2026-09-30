@@ -37,6 +37,8 @@ export type LiveStreamItem = {
   createdAt: string;
   hostHandle: string;
   hostAvatarUrl?: string;
+  /** 017/018 : « held » = en cours de vérification (visible du seul créateur). */
+  moderationState?: 'visible' | 'held' | 'removed';
 };
 
 export const LIVE_PROFILE_SELECT =
@@ -94,7 +96,14 @@ function mapLiveRow(row: LiveStreamWithHost): LiveStreamItem {
     createdAt: row.created_at,
     hostHandle: `@${username}`,
     hostAvatarUrl: row.profiles?.avatar_url || undefined,
+    moderationState: liveModerationState(row),
   };
+}
+
+/** 017 : `moderation_state` lu via `*` ; undefined si la migration manque. */
+function liveModerationState(row: unknown): LiveStreamItem['moderationState'] {
+  const v = (row as { moderation_state?: unknown } | null)?.moderation_state;
+  return v === 'visible' || v === 'held' || v === 'removed' ? v : undefined;
 }
 
 function isMissingTableError(error: { message?: string; code?: string }): boolean {
