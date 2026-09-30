@@ -177,6 +177,11 @@ Deno.serve(async (req) => {
     password: randomPassword,
     email_confirm: true,
     user_metadata: meta,
+    // Migration 017 : le domaine @users.nia.app est réservé à cette fonction.
+    // Un trigger différé sur auth.users refuse toute adresse de ce domaine
+    // sans ce marqueur (app_metadata n'est pas modifiable par l'utilisateur).
+    // À DÉPLOYER AVANT d'appliquer 017.
+    app_metadata: { nia_origin: 'snapchat-auth' },
   });
 
   let userId: string | null = created.data.user?.id ?? null;

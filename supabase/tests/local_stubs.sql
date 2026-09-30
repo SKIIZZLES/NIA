@@ -37,6 +37,10 @@ create table if not exists auth.users (
   raw_user_meta_data jsonb default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+-- Colonnes réelles de Supabase Auth utilisées par 017 (app_metadata écrit par
+-- l'API admin, suspension).
+alter table auth.users add column if not exists raw_app_meta_data jsonb default '{}'::jsonb;
+alter table auth.users add column if not exists banned_until timestamptz;
 
 -- Même implémentation que Supabase (claims PostgREST).
 create or replace function auth.uid() returns uuid

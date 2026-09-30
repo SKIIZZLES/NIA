@@ -111,3 +111,37 @@ create function nia_test.snapshot() returns text language sql as $$
       'public.series_items', 'public.storage_purge_jobs', 'storage.objects'
     ]) as t
 $$;
+
+-- Comme exec_as, pour un INSERT / UPDATE / DELETE : {"ok": true, "n": lignes}.
+create function nia_test.dml_as(p_role text, p_sub uuid, p_sql text)
+returns jsonb language plpgsql as $$
+declare v_n bigint;
+begin
+  perform set_config('request.jwt.claims',
+    case when p_sub is null then '' else json_build_object('sub', p_sub, 'role', p_role)::text end, true);
+  execute format('set local role %I', p_role);
+  begin
+    execute p_sql;
+    get diagnostics v_n = row_count;
+  exception when others then
+    execute 'reset role';
+    perform set_config('request.jwt.claims', '', true);
+    return jsonb_build_object('ok', false, 'sqlstate', sqlstate, 'message', sqlerrm);
+  end;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', '', true);
+  return jsonb_build_object('ok', true, 'n', v_n);
+end $$;
+grant execute on function nia_test.dml_as(text, uuid, text) to anon, authenticated, service_role;
+
+-- Nombre de lignes vues par p_role / p_sub (lève si la requête échoue).
+create function nia_test.seen(p_role text, p_sub uuid, p_sql text)
+returns int language plpgsql as $$
+declare r jsonb;
+begin
+  r := nia_test.exec_as(p_role, p_sub, p_sql);
+  if not (r->>'ok')::boolean then
+    raise exception 'not ok - requête en erreur : %', r->>'message';
+  end if;
+  return jsonb_array_length(r->'rows');
+end $$;
