@@ -158,8 +158,9 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   // --- Props -----------------------------------------------------------------
 
   fun setEffectMode(value: String) {
-    effectMode = if (value == "pixelate") FaceMaskRenderer.Effect.PIXELATE else FaceMaskRenderer.Effect.BLUR
+    effectMode = FaceMaskRenderer.Effect.fromProp(value)
     renderer.effect = effectMode
+    analyzer?.landmarksWanted = effectMode.usesLandmarks
   }
 
   fun setSyncMode(value: String) {
@@ -266,12 +267,16 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     recorder = rec
     val videoCapture = VideoCapture.withOutput(rec)
 
+    // Analyse en 4:3 ~640 × 480 : le capteur réduit lui-même (le 16:9 de
+    // cet appareil tombait en 1280 × 720, à convertir et réduire sur le
+    // CPU), et le champ couvre plus large que l'aperçu 16:9. Toute taille
+    // reste juste : les masques passent par les matrices capteur → tampon.
     val analysis = ImageAnalysis.Builder()
       .setResolutionSelector(
         ResolutionSelector.Builder()
-          .setAspectRatioStrategy(ratio)
+          .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
           .setResolutionStrategy(
-            ResolutionStrategy(Size(640, 360), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER),
+            ResolutionStrategy(Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER),
           )
           .build(),
       )
@@ -281,7 +286,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     detectorFailed = false
     val r = FaceMaskRenderer(store, stats).also { it.effect = effectMode }
     renderer = r
-    val a = FaceAnalyzer(context, store, analyzerListener)
+    val a = FaceAnalyzer(context, store, analyzerListener).also { it.landmarksWanted = effectMode.usesLandmarks }
     analyzer = a
     analysis.setAnalyzer(analysisExecutor, a)
 
@@ -398,7 +403,12 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       override fun run() {
         if (released) return
         val mode = if (exactSync) "exact" else "queue"
-        val effectName = if (effectMode == FaceMaskRenderer.Effect.PIXELATE) "pixelate" else "blur"
+        val effectName = when (effectMode) {
+          FaceMaskRenderer.Effect.PIXELATE -> "pixelate"
+          FaceMaskRenderer.Effect.SKI_MASK -> "skimask"
+          FaceMaskRenderer.Effect.FULL_MASK -> "fullmask"
+          else -> "blur"
+        }
         stats.flush(SystemClock.elapsedRealtime(), mode, effectName)?.let { onStats(it) }
         mainHandler.postDelayed(this, 1000)
       }

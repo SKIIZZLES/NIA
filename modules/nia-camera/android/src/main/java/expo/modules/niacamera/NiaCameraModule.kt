@@ -30,6 +30,7 @@ class NiaCameraModule : Module() {
         view.facing = if (value == "front") "front" else "back"
       }
       Prop("effect") { view: NiaCameraView, value: String? ->
+        // "blur" | "pixelate" | "skimask" | "fullmask"
         view.setEffectMode(value ?: "blur")
       }
       Prop("syncMode") { view: NiaCameraView, value: String? ->

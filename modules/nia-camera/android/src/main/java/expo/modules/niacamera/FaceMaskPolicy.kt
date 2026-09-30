@@ -71,6 +71,11 @@ internal class FacePatch(
   val pixel: Bitmap,
   /** Encore moins de pixels pour le flou (agrandis avec lissage). */
   val blur: Bitmap,
+  /**
+   * Formes du masque (jalon 2), si Face Landmarker a trouvé ce visage. Sans
+   * elles, le visage reste couvert par le flou de `rect` (repli).
+   */
+  val mask: FaceMask? = null,
 )
 
 /** Résultat d'une analyse, pour une image caméra donnée. */

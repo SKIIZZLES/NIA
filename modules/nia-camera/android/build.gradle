@@ -14,7 +14,7 @@ android {
   }
   // Le modèle MediaPipe doit rester lisible tel quel (mmap) : pas de compression.
   androidResources {
-    noCompress 'tflite'
+    noCompress 'tflite', 'task'
   }
 }
 

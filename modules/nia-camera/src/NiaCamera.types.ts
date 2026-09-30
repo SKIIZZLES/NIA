@@ -4,7 +4,11 @@
 import type { ViewProps } from 'react-native';
 
 /** Effet cuit dans l'aperçu et dans le fichier. */
-export type NiaFaceEffect = 'blur' | 'pixelate';
+/**
+ * `skimask` (cagoule, yeux voilés) et `fullmask` (masque intégral) suivent
+ * les repères MediaPipe Face Landmarker ; sans repères, le visage reste flouté.
+ */
+export type NiaFaceEffect = 'blur' | 'pixelate' | 'skimask' | 'fullmask';
 
 /**
  * `exact` : chaque image attend sa propre analyse (latence la plus faible,
@@ -63,6 +67,24 @@ export type NiaCameraStats = {
   previewState?: string;
   /** Taille posée de la vue d'aperçu, « LxH ». */
   previewViewSize?: string;
+  /** Tampon reçu de CameraX, avant réduction à ≤ 640 px. */
+  sourceWidth?: number;
+  sourceHeight?: number;
+  /** Copie + réduction + redressement avant MediaPipe (ms). */
+  prepMsAvg?: number;
+  /** Capture → début d'analyse (ms) ; -1 si inconnu. */
+  cameraToAnalysisMsAvg?: number;
+  // --- Repères Face Landmarker (jalon 2).
+  /** 'off' | 'loading' | 'ready' | 'error'. */
+  landmarkState?: string;
+  landmarkMsAvg?: number;
+  landmarkMsMax?: number;
+  /** Analyses de la seconde avec au moins un visage à repères. */
+  landmarkFrames?: number;
+  /** Visages du détecteur sans repères (flou de repli). */
+  fallbackFaces?: number;
+  /** Visages vus par les repères seuls (profil…), masqués aussi. */
+  landmarkOnlyFaces?: number;
 };
 
 export type NiaCameraError = { code: 'ERR_CAMERA' | 'ERR_DETECTOR' | string; message: string };

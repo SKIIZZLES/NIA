@@ -9,10 +9,24 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type FaceEffectId = 'off' | 'blur' | 'pixelate';
+export type FaceEffectId = 'off' | 'blur' | 'pixelate' | 'skimask' | 'fullmask';
 
-/** Ordre du bouton « Masque » : désactivé → flou → pixels → désactivé. */
-export const FACE_EFFECT_ORDER: readonly FaceEffectId[] = ['off', 'blur', 'pixelate'];
+/**
+ * Ordre du bouton « Masque » : désactivé → flou → pixels → cagoule → masque
+ * intégral → désactivé. Aucun effet ne retouche le visage (ni éclaircissement
+ * de la peau, ni déformation) : il est caché, jamais embelli.
+ */
+export const FACE_EFFECT_ORDER: readonly FaceEffectId[] = ['off', 'blur', 'pixelate', 'skimask', 'fullmask'];
+
+/** Effets qui suivent les repères du visage (Face Landmarker). */
+export function isLandmarkFaceEffect(effect: FaceEffectId): boolean {
+  return effect === 'skimask' || effect === 'fullmask';
+}
+
+/** Valeur de la prop `effect` du module natif (null : caméra habituelle). */
+export function nativeFaceEffect(effect: FaceEffectId): Exclude<FaceEffectId, 'off'> | null {
+  return effect === 'off' ? null : effect;
+}
 
 export function nextFaceEffect(current: FaceEffectId): FaceEffectId {
   const i = FACE_EFFECT_ORDER.indexOf(current);
@@ -23,6 +37,8 @@ export function nextFaceEffect(current: FaceEffectId): FaceEffectId {
 export function faceEffectShortLabelKey(effect: FaceEffectId): string {
   if (effect === 'blur') return 'camera.faceMaskShortBlur';
   if (effect === 'pixelate') return 'camera.faceMaskShortPixel';
+  if (effect === 'skimask') return 'camera.faceMaskShortSki';
+  if (effect === 'fullmask') return 'camera.faceMaskShortFull';
   return 'camera.faceMask';
 }
 
@@ -30,6 +46,8 @@ export function faceEffectShortLabelKey(effect: FaceEffectId): string {
 export function faceEffectA11yKey(effect: FaceEffectId): string {
   if (effect === 'blur') return 'camera.faceMaskBlur';
   if (effect === 'pixelate') return 'camera.faceMaskPixel';
+  if (effect === 'skimask') return 'camera.faceMaskSki';
+  if (effect === 'fullmask') return 'camera.faceMaskFull';
   return 'camera.faceMaskOff';
 }
 
@@ -101,6 +119,22 @@ type StatsLike = {
   frameHeight?: number;
   previewState?: string;
   previewViewSize?: string;
+  sourceWidth?: number;
+  sourceHeight?: number;
+  prepMsAvg?: number;
+  cameraToAnalysisMsAvg?: number;
+  landmarkState?: string;
+  landmarkMsAvg?: number;
+  landmarkMsMax?: number;
+  landmarkFrames?: number;
+  fallbackFaces?: number;
+  landmarkOnlyFaces?: number;
+};
+
+const LANDMARK_STATE_LABEL: Record<string, string> = {
+  loading: 'chargement',
+  ready: 'prêts',
+  error: 'en erreur',
 };
 
 /** En dessous : l'image donnée à MediaPipe est (presque) noire ou plate. */
@@ -137,6 +171,18 @@ export function formatFaceStats(s: StatsLike): string[] {
   }
   if (s.rawDetections != null) {
     lines.push(`visages bruts ${s.rawDetections} · meilleur score ${(s.bestScore ?? 0).toFixed(2)}`);
+  }
+  if (s.cameraToAnalysisMsAvg != null) {
+    const cam = s.cameraToAnalysisMsAvg >= 0 ? `${Math.round(s.cameraToAnalysisMsAvg)} ms` : '—';
+    const source = s.sourceWidth ? ` · source ${s.sourceWidth}×${s.sourceHeight}` : '';
+    lines.push(`caméra→analyse ${cam} · préparation ${Math.round(s.prepMsAvg ?? 0)} ms${source}`);
+  }
+  if (s.landmarkState != null && s.landmarkState !== 'off') {
+    const label = LANDMARK_STATE_LABEL[s.landmarkState] ?? s.landmarkState;
+    lines.push(
+      `repères ${label} · ${Math.round(s.landmarkMsAvg ?? 0)} ms (max ${Math.round(s.landmarkMsMax ?? 0)}) · ` +
+        `images ${s.landmarkFrames ?? 0} · repli ${s.fallbackFaces ?? 0} · seuls ${s.landmarkOnlyFaces ?? 0}`,
+    );
   }
   if (s.drawMsAvg != null) {
     const wait = s.glWaitMsAvg != null && s.glWaitMsAvg >= 0 ? ` · attente GL ${Math.round(s.glWaitMsAvg)} ms` : '';

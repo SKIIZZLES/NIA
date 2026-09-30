@@ -12,6 +12,8 @@ import {
   hasAcceptedFaceNotice,
   isAnalysisFrameBlank,
   isFaceShutterBlocked,
+  isLandmarkFaceEffect,
+  nativeFaceEffect,
   nextFaceEffect,
 } from '@/lib/faceEffects';
 import fr from '@/locales/fr';
@@ -25,10 +27,12 @@ function frValue(key: string): unknown {
 }
 
 describe('nextFaceEffect', () => {
-  it('parcourt désactivé → flou → pixels → désactivé', () => {
+  it('parcourt désactivé → flou → pixels → cagoule → intégral → désactivé', () => {
     expect(nextFaceEffect('off')).toBe('blur');
     expect(nextFaceEffect('blur')).toBe('pixelate');
-    expect(nextFaceEffect('pixelate')).toBe('off');
+    expect(nextFaceEffect('pixelate')).toBe('skimask');
+    expect(nextFaceEffect('skimask')).toBe('fullmask');
+    expect(nextFaceEffect('fullmask')).toBe('off');
   });
 
   it('revient au départ après un tour complet', () => {
@@ -48,6 +52,27 @@ describe('libellés', () => {
     const body = frValue('camera.faceNoticeBody') as string;
     expect(body).toContain('ni enregistrés, ni envoyés à NIA ou à un tiers');
     expect(body).toContain('Les lives ne sont pas masqués');
+  });
+});
+
+describe('masques à repères (jalon 2)', () => {
+  it('seuls cagoule et intégral suivent les repères', () => {
+    expect(FACE_EFFECT_ORDER.filter(isLandmarkFaceEffect)).toEqual(['skimask', 'fullmask']);
+  });
+
+  it('prop native : chaque effet passe tel quel, « désactivé » ne monte pas la caméra à masque', () => {
+    expect(nativeFaceEffect('off')).toBeNull();
+    expect(nativeFaceEffect('blur')).toBe('blur');
+    expect(nativeFaceEffect('pixelate')).toBe('pixelate');
+    expect(nativeFaceEffect('skimask')).toBe('skimask');
+    expect(nativeFaceEffect('fullmask')).toBe('fullmask');
+  });
+
+  it('libellés français', () => {
+    expect(frValue('camera.faceMaskShortSki')).toBe('Cagoule');
+    expect(frValue('camera.faceMaskShortFull')).toBe('Intégral');
+    expect(frValue('camera.faceMaskSki')).toBe('Masquer mon visage : cagoule');
+    expect(frValue('camera.faceMaskFull')).toBe('Masquer mon visage : masque intégral');
   });
 });
 
@@ -155,6 +180,30 @@ describe('formatFaceStats', () => {
     expect(lines).toContain('aperçu inactif');
     expect(lines).toContain('analysé 640×360 · rotation 90° · luminance 3 (écart 2)');
     expect(lines[lines.length - 1]).toBe('alerte : image analysée noire ou uniforme');
+  });
+
+  it('repères et décomposition de la latence', () => {
+    const lines = formatFaceStats({
+      ...base,
+      cameraToAnalysisMsAvg: 54.4,
+      prepMsAvg: 3.6,
+      sourceWidth: 640,
+      sourceHeight: 480,
+      landmarkState: 'ready',
+      landmarkMsAvg: 11.2,
+      landmarkMsMax: 19.7,
+      landmarkFrames: 27,
+      fallbackFaces: 1,
+      landmarkOnlyFaces: 2,
+    });
+    expect(lines).toContain('caméra→analyse 54 ms · préparation 4 ms · source 640×480');
+    expect(lines).toContain('repères prêts · 11 ms (max 20) · images 27 · repli 1 · seuls 2');
+  });
+
+  it('repères désactivés (flou / pixels) : pas de ligne repères', () => {
+    const lines = formatFaceStats({ ...base, landmarkState: 'off', cameraToAnalysisMsAvg: -1 });
+    expect(lines.some((l) => l.startsWith('repères'))).toBe(false);
+    expect(lines).toContain('caméra→analyse — · préparation 0 ms');
   });
 
   it('ancien APK sans diagnostic : quatre lignes', () => {

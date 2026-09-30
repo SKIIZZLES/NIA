@@ -76,6 +76,7 @@ import {
   faceEffectShortLabelKey,
   hasAcceptedFaceNotice,
   isFaceShutterBlocked,
+  nativeFaceEffect,
   nextFaceEffect,
   type FaceEffectId,
 } from '@/lib/faceEffects';
@@ -1335,7 +1336,7 @@ function CameraScreen() {
           ref={niaCameraRef}
           style={styles.fill}
           facing={facing}
-          effect={faceEffect === 'pixelate' ? 'pixelate' : 'blur'}
+          effect={nativeFaceEffect(faceEffect) ?? 'blur'}
           syncMode={faceSync}
           mute={!micGranted || playSoundWhileRecording}
           zoom={zoom}
