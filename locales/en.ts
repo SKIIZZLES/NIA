@@ -39,7 +39,7 @@ const en: TranslationKeys = {
     registerTitle: 'Create an account',
     signIn: 'Sign in',
     createAccount: 'Create my account',
-    legalAccept: 'By creating an account, you agree to:',
+    legalAccept: 'By creating an account, you confirm you are at least 13 and you agree to:',
     emailPlaceholder: 'you@email.com',
     usernamePlaceholder: 'your_handle',
     loginFail: 'Could not sign in',
@@ -51,7 +51,7 @@ const en: TranslationKeys = {
     mockRegisterHint:
       'Stub form — no server validation. Creates a local session.',
     supabaseRegisterHint:
-      'Supabase Auth signup. A profile is created automatically (SQL trigger). Disable “Confirm email” in Auth → Providers to test without mail.',
+      'We may send you a confirmation email: open the link inside, then sign in.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -716,6 +716,21 @@ const en: TranslationKeys = {
     other: 'Other',
     errorNetwork: 'No connection. Try again later.',
     errorSend: 'Could not send the report. Try again later.',
+  },
+  safety: {
+    communityRules: 'Community guidelines',
+    contact: 'Contact us',
+    contactSubject: 'NIA — contact',
+    contactFallback: 'Write to us at %{email}',
+    reservedEmail: 'This email address is reserved. Please use your own address.',
+    reportProfile: 'Report profile',
+    blockTitle: 'Block this user?',
+    blockBody: 'You won\'t see @%{username}\'s videos anymore.',
+    block: 'Block',
+    blocked: 'Blocked',
+    blockedTitle: 'User blocked',
+    blockedBody: '@%{username} has been blocked.',
+    blockedMock: 'Block saved (demo mode).',
   },
 };
 

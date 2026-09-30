@@ -39,7 +39,7 @@ const pt: TranslationKeys = {
     registerTitle: 'Criar uma conta',
     signIn: 'Entrar',
     createAccount: 'Criar a minha conta',
-    legalAccept: 'Ao criar uma conta, aceita:',
+    legalAccept: 'Ao criar uma conta, confirma que tem pelo menos 13 anos e aceita:',
     emailPlaceholder: 'voce@email.com',
     usernamePlaceholder: 'seu_handle',
     loginFail: 'Não foi possível entrar',
@@ -51,7 +51,7 @@ const pt: TranslationKeys = {
     mockRegisterHint:
       'Formulário stub — sem validação no servidor. Cria uma sessão local.',
     supabaseRegisterHint:
-      'Registro Supabase Auth. Um perfil é criado automaticamente (trigger SQL). Desative «Confirm email» em Auth → Providers para testar sem email.',
+      'Poderá receber um e-mail de confirmação: abra a ligação e depois inicie sessão.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -714,6 +714,21 @@ const pt: TranslationKeys = {
     other: 'Outro',
     errorNetwork: 'Sem ligação. Tente mais tarde.',
     errorSend: 'Não foi possível enviar a denúncia. Tente mais tarde.',
+  },
+  safety: {
+    communityRules: 'Regras da comunidade',
+    contact: 'Contacte-nos',
+    contactSubject: 'NIA — contacto',
+    contactFallback: 'Escreva-nos para %{email}',
+    reservedEmail: 'Este endereço de e-mail está reservado. Utilize o seu próprio endereço.',
+    reportProfile: 'Denunciar o perfil',
+    blockTitle: 'Bloquear este utilizador?',
+    blockBody: 'Deixará de ver os vídeos de @%{username}.',
+    block: 'Bloquear',
+    blocked: 'Bloqueado',
+    blockedTitle: 'Utilizador bloqueado',
+    blockedBody: '@%{username} foi bloqueado.',
+    blockedMock: 'Bloqueio guardado (modo demo).',
   },
 };
 

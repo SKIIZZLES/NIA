@@ -11,7 +11,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { privacyPolicyUrl, termsOfServiceUrl } from '@/constants/legal';
+import {
+  communityGuidelinesUrl,
+  isReservedSignupEmail,
+  privacyPolicyUrl,
+  termsOfServiceUrl,
+} from '@/constants/legal';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
@@ -29,6 +34,11 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async () => {
+    // Domaine réservé aux comptes Snapchat : refusé avant tout appel réseau.
+    if (isReservedSignupEmail(email)) {
+      Alert.alert(t('common.error'), t('safety.reservedEmail'));
+      return;
+    }
     setLoading(true);
     try {
       await signUp(email || 'nouveau@nia.app', password || 'nia', username);
@@ -130,6 +140,16 @@ export default function RegisterScreen() {
           style={styles.legalBtn}
         >
           <Text style={styles.legalLink}>{t('profile.privacyPolicy')}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => {
+            void WebBrowser.openBrowserAsync(communityGuidelinesUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('safety.communityRules')}
+          style={styles.legalBtn}
+        >
+          <Text style={styles.legalLink}>{t('safety.communityRules')}</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

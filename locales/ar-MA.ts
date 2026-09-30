@@ -42,7 +42,7 @@ const arMA: TranslationKeys = {
     registerTitle: 'أنشئ كونط',
     signIn: 'دخل',
     createAccount: 'أنشئ الكونط ديالي',
-    legalAccept: 'ملي كتصاوب كونط، كتوافق على:',
+    legalAccept: 'ملي كتصاوب كونط، كتأكد بلي عندك على الأقل 13 عام وكتوافق على:',
     emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'السميت_ديالك',
     loginFail: 'ما قدرناش ندخلوك',
@@ -54,7 +54,7 @@ const arMA: TranslationKeys = {
     mockRegisterHint:
       'فورم تجريبي — بلا تحقق من السيرفر. كينشئ جلسة محلية.',
     supabaseRegisterHint:
-      'تسجيل عبر Supabase Auth. البروفيل كيتخلق أوتوماتيك (محفّز SQL). عطّل «Confirm email» فـ Auth → Providers باش تجرّب بلا إيميل.',
+      'يمكن نصيفطو ليك إيميل ديال التأكيد: حل الرابط اللي فيه، ومن بعد دخل.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -717,6 +717,21 @@ const arMA: TranslationKeys = {
     other: 'شي حاجة أخرى',
     errorNetwork: 'ما كاينش الاتصال. عاود من بعد.',
     errorSend: 'ما قدرناش نصيفطو البلاغ. عاود من بعد.',
+  },
+  safety: {
+    communityRules: 'قواعد المجتمع',
+    contact: 'تواصل معانا',
+    contactSubject: 'NIA — تواصل',
+    contactFallback: 'كتب لينا على %{email}',
+    reservedEmail: 'هاد الإيميل محجوز. استعمل الإيميل ديالك.',
+    reportProfile: 'بلّغ على البروفايل',
+    blockTitle: 'تحظر هاد المستخدم؟',
+    blockBody: 'ماغاديش تبقى تشوف الفيديوهات ديال @%{username}.',
+    block: 'احظر',
+    blocked: 'محظور',
+    blockedTitle: 'المستخدم تحظر',
+    blockedBody: '@%{username} تحظر.',
+    blockedMock: 'الحظر تسجل (وضع تجريبي).',
   },
 };
 

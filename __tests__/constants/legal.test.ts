@@ -6,7 +6,12 @@
  * revue, sans rien casser au typecheck ni au bundle.
  */
 import {
+  CONTACT_EMAIL,
   accountDeletionUrl,
+  childSafetyUrl,
+  communityGuidelinesUrl,
+  contactMailto,
+  isReservedSignupEmail,
   privacyPolicyUrl,
   termsOfServiceUrl,
 } from '@/constants/legal';
@@ -85,10 +90,71 @@ describe('forme des URL', () => {
       accountDeletionUrl('en'),
       termsOfServiceUrl('fr'),
       termsOfServiceUrl('en'),
+      communityGuidelinesUrl('fr'),
+      communityGuidelinesUrl('en'),
+      childSafetyUrl('fr'),
+      childSafetyUrl('en'),
     ]) {
       expect(url.startsWith('https://skiizzles.github.io/NIA/legal/')).toBe(true);
       expect(url.slice('https://'.length)).not.toContain('//');
       expect(url.endsWith('.html')).toBe(true);
     }
+  });
+});
+
+describe('communityGuidelinesUrl et childSafetyUrl', () => {
+  it('servent l’anglais à en, le français partout ailleurs', () => {
+    expect(communityGuidelinesUrl('en')).toBe(`${BASE}/community-guidelines.html`);
+    expect(communityGuidelinesUrl('fr')).toBe(`${BASE}/regles-communaute.html`);
+    expect(communityGuidelinesUrl('wo')).toBe(`${BASE}/regles-communaute.html`);
+    expect(childSafetyUrl('en')).toBe(`${BASE}/child-safety.html`);
+    expect(childSafetyUrl('fr')).toBe(`${BASE}/securite-enfants.html`);
+    expect(childSafetyUrl('ha')).toBe(`${BASE}/securite-enfants.html`);
+  });
+
+  it('ne pointent jamais vers une autre page légale', () => {
+    for (const locale of APP_LOCALES) {
+      const autres = new Set([
+        privacyPolicyUrl(locale),
+        accountDeletionUrl(locale),
+        termsOfServiceUrl(locale),
+      ]);
+      expect(autres.has(communityGuidelinesUrl(locale))).toBe(false);
+      expect(autres.has(childSafetyUrl(locale))).toBe(false);
+      expect(communityGuidelinesUrl(locale)).not.toBe(childSafetyUrl(locale));
+    }
+  });
+});
+
+describe('contact', () => {
+  it('est l’adresse validée, sans objet par défaut', () => {
+    expect(CONTACT_EMAIL).toBe('niaapp@outlook.com');
+    expect(contactMailto()).toBe('mailto:niaapp@outlook.com');
+  });
+
+  it('encode l’objet (accents, espaces, tiret long)', () => {
+    expect(contactMailto('NIA — contact')).toBe(
+      'mailto:niaapp@outlook.com?subject=NIA%20%E2%80%94%20contact',
+    );
+    expect(contactMailto('a&b=c')).toBe('mailto:niaapp@outlook.com?subject=a%26b%3Dc');
+  });
+});
+
+describe('isReservedSignupEmail', () => {
+  it('refuse le domaine des comptes Snapchat, quelle que soit la casse', () => {
+    expect(isReservedSignupEmail('snapchat_123@users.nia.app')).toBe(true);
+    expect(isReservedSignupEmail('  Quelqu.un@USERS.NIA.APP ')).toBe(true);
+    expect(isReservedSignupEmail('x@users.nia.app.')).toBe(true);
+    expect(isReservedSignupEmail('x@sous.users.nia.app')).toBe(true);
+  });
+
+  it('laisse passer les adresses ordinaires et les domaines voisins', () => {
+    expect(isReservedSignupEmail('moi@gmail.com')).toBe(false);
+    expect(isReservedSignupEmail('users.nia.app@gmail.com')).toBe(false);
+    expect(isReservedSignupEmail('x@nia.app')).toBe(false);
+    expect(isReservedSignupEmail('x@fakeusers.nia.app')).toBe(false);
+    expect(isReservedSignupEmail('x@users.nia.app.evil.com')).toBe(false);
+    expect(isReservedSignupEmail('')).toBe(false);
+    expect(isReservedSignupEmail('pas-une-adresse')).toBe(false);
   });
 });

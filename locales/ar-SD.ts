@@ -41,7 +41,7 @@ const arSD: TranslationKeys = {
     registerTitle: 'افتح حساب',
     signIn: 'ادخل',
     createAccount: 'افتح حسابي',
-    legalAccept: 'بإنشاء حساب، أنت توافق على:',
+    legalAccept: 'بإنشاء حساب، أنت بتأكد إنو عمرك 13 سنة على الأقل وبتوافق على:',
     emailPlaceholder: 'أنت@email.com',
     usernamePlaceholder: 'اسمك',
     loginFail: 'ما قدرنا ندخلك',
@@ -53,7 +53,7 @@ const arSD: TranslationKeys = {
     mockRegisterHint:
       'فورم تجريبي — ما فيه تحقق من السيرفر. بيعمل جلسة محلية.',
     supabaseRegisterHint:
-      'تسجيل عبر Supabase Auth. البروفايل بيتخلق أوتوماتيك (محفّز SQL). عطّل «Confirm email» في Auth → Providers عشان تجرب بدون إيميل.',
+      'ممكن نرسل ليك إيميل تأكيد: افتح الرابط الفيهو، وبعدين سجّل دخول.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -716,6 +716,21 @@ const arSD: TranslationKeys = {
     other: 'حاجة تانية',
     errorNetwork: 'ما في اتصال. حاول بعدين.',
     errorSend: 'ما قدرنا نبعت البلاغ. حاول بعدين.',
+  },
+  safety: {
+    communityRules: 'قواعد المجتمع',
+    contact: 'اتواصل معانا',
+    contactSubject: 'NIA — تواصل',
+    contactFallback: 'اكتب لينا في %{email}',
+    reservedEmail: 'عنوان الإيميل ده محجوز. استعمل عنوانك إنت.',
+    reportProfile: 'بلّغ عن الملف الشخصي',
+    blockTitle: 'تحظر المستخدم ده؟',
+    blockBody: 'ما حتشوف فيديوهات @%{username} تاني.',
+    block: 'احظر',
+    blocked: 'محظور',
+    blockedTitle: 'المستخدم اتحظر',
+    blockedBody: '@%{username} اتحظر.',
+    blockedMock: 'الحظر اتسجّل (وضع تجريبي).',
   },
 };
 

@@ -39,7 +39,7 @@ const dyo: TranslationKeys = {
     registerTitle: 'Kajeken kont',
     signIn: 'Kaj',
     createAccount: 'Kajeken sama kont',
-    legalAccept: 'En créant un compte, vous acceptez :',
+    legalAccept: 'En créant un compte, vous confirmez avoir au moins 13 ans et vous acceptez :',
     emailPlaceholder: 'yaw@email.com',
     usernamePlaceholder: 'sa_tur',
     loginFail: 'Mënul kaj',
@@ -51,7 +51,7 @@ const dyo: TranslationKeys = {
     mockRegisterHint:
       'Formulaire mock — amul kontrollu serveur. Dafay def session bu lokal.',
     supabaseRegisterHint:
-      'Bindu ci Supabase Auth. Karama bi dañu koy def automatik (SQL trigger). Tëj «Confirm email» ci Auth → Providers ngir natt te amul email.',
+      'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -715,6 +715,21 @@ const dyo: TranslationKeys = {
     other: 'Autre',
     errorNetwork: 'Connexion impossible. Réessayez plus tard.',
     errorSend: 'Impossible d\'envoyer le signalement. Réessayez plus tard.',
+  },
+  safety: {
+    communityRules: 'Règles de la communauté',
+    contact: 'Nous contacter',
+    contactSubject: 'NIA — contact',
+    contactFallback: 'Écrivez-nous à %{email}',
+    reservedEmail: 'Cette adresse e-mail est réservée. Utilisez votre propre adresse.',
+    reportProfile: 'Signaler le profil',
+    blockTitle: 'Bloquer cet utilisateur ?',
+    blockBody: 'Vous ne verrez plus les vidéos de @%{username}.',
+    block: 'Bloquer',
+    blocked: 'Bloqué',
+    blockedTitle: 'Utilisateur bloqué',
+    blockedBody: '@%{username} a été bloqué.',
+    blockedMock: 'Blocage enregistré (mode démo).',
   },
 };
 

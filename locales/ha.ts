@@ -39,7 +39,7 @@ const ha: TranslationKeys = {
     registerTitle: 'Ƙirƙiri asusu',
     signIn: 'Shiga',
     createAccount: 'Ƙirƙiri asusuna',
-    legalAccept: 'Ta hanyar buɗe asusu, ka yarda da:',
+    legalAccept: 'Ta hanyar buɗe asusu, ka tabbatar cewa shekarunka sun kai 13 aƙalla, kuma ka yarda da:',
     emailPlaceholder: 'kai@email.com',
     usernamePlaceholder: 'sunanka',
     loginFail: 'An kasa shiga',
@@ -51,7 +51,7 @@ const ha: TranslationKeys = {
     mockRegisterHint:
       'Fom na gwaji — babu tabbatarwa ta uwar garken. Yana ƙirƙirar zama na gida.',
     supabaseRegisterHint:
-      'Rajista ta Supabase Auth. Ana ƙirƙirar bayanan martaba ta atomatik (SQL trigger). Kashe «Confirm email» a Auth → Providers don gwaji ba tare da imel ba.',
+      'Za mu iya aiko maka da imel na tabbatarwa: buɗe mahaɗin da ke ciki, sannan ka shiga.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -714,6 +714,21 @@ const ha: TranslationKeys = {
     other: 'Sauran',
     errorNetwork: 'Babu haɗin yanar gizo. Sake gwada daga baya.',
     errorSend: 'An kasa aika ƙara. Sake gwada daga baya.',
+  },
+  safety: {
+    communityRules: 'Dokokin al\'umma',
+    contact: 'Tuntuɓe mu',
+    contactSubject: 'NIA — tuntuɓa',
+    contactFallback: 'Rubuto mana a %{email}',
+    reservedEmail: 'An keɓe wannan adireshin imel. Yi amfani da naka adireshin.',
+    reportProfile: 'Kai rahoton bayanan martaba',
+    blockTitle: 'A toshe wannan mai amfani?',
+    blockBody: 'Ba za ka ƙara ganin bidiyon @%{username} ba.',
+    block: 'Toshe',
+    blocked: 'An toshe',
+    blockedTitle: 'An toshe mai amfani',
+    blockedBody: 'An toshe @%{username}.',
+    blockedMock: 'An adana toshewa (yanayin gwaji).',
   },
 };
 

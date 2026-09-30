@@ -39,7 +39,7 @@ const sw: TranslationKeys = {
     registerTitle: 'Fungua akaunti',
     signIn: 'Ingia',
     createAccount: 'Fungua akaunti yangu',
-    legalAccept: 'Kwa kufungua akaunti, unakubali:',
+    legalAccept: 'Kwa kufungua akaunti, unathibitisha kuwa una umri wa angalau miaka 13 na unakubali:',
     emailPlaceholder: 'wewe@email.com',
     usernamePlaceholder: 'jina_lako',
     loginFail: 'Imeshindikana kuingia',
@@ -51,7 +51,7 @@ const sw: TranslationKeys = {
     mockRegisterHint:
       'Fomu ya majaribio — hakuna uthibitishaji wa seva. Inaunda kipindi cha ndani.',
     supabaseRegisterHint:
-      'Usajili wa Supabase Auth. Wasifu unaundwa kiotomatiki (kichocheo cha SQL). Zima «Confirm email» katika Auth → Providers ili kujaribu bila barua.',
+      'Tunaweza kukutumia barua pepe ya uthibitisho: fungua kiungo kilichomo, kisha uingie.',
     authMockBadge: 'AUTH MOCK MVP',
     authSupabaseBadge: 'AUTH SUPABASE',
   },
@@ -714,6 +714,21 @@ const sw: TranslationKeys = {
     other: 'Nyingine',
     errorNetwork: 'Hakuna mtandao. Jaribu baadaye.',
     errorSend: 'Imeshindikana kutuma ripoti. Jaribu baadaye.',
+  },
+  safety: {
+    communityRules: 'Kanuni za jumuiya',
+    contact: 'Wasiliana nasi',
+    contactSubject: 'NIA — mawasiliano',
+    contactFallback: 'Tuandikie kwa %{email}',
+    reservedEmail: 'Anwani hii ya barua pepe imehifadhiwa. Tumia anwani yako mwenyewe.',
+    reportProfile: 'Ripoti wasifu',
+    blockTitle: 'Umzuie mtumiaji huyu?',
+    blockBody: 'Hutaona tena video za @%{username}.',
+    block: 'Zuia',
+    blocked: 'Amezuiwa',
+    blockedTitle: 'Mtumiaji amezuiwa',
+    blockedBody: '@%{username} amezuiwa.',
+    blockedMock: 'Kuzuia kumehifadhiwa (hali ya majaribio).',
   },
 };
 
