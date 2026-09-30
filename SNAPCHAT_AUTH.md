@@ -98,6 +98,42 @@ supabase functions deploy snapchat-auth --no-verify-jwt
 
 Sans accès deploy CLI, le code reste dans le repo — l’app client est complète et remontera l’erreur de configuration jusqu’au déploiement.
 
+## Spike app-switch Android (PR `haby/snap-app-switch`, 30/09/2026)
+
+But : sur Android, quand Snapchat est installé, « Continuer avec Snapchat »
+ouvre **l'app Snapchat** plutôt qu'une page web. Sans SDK natif (le SDK Login
+Kit est déprécié par Snap), sans changement de base.
+
+| Variante | Lien ouvert | Remarque |
+|---|---|---|
+| `https` (défaut) | `https://accounts.snapchat.com/accounts/oauth2/auth?…` via `Linking.openURL` | Snapchat Android est vérifié pour ce domaine (`assetlinks.json`) : s'il revendique ce chemin, Android l'ouvre ; sinon navigateur par défaut |
+| `snapchat` | `snapchat://oauth2?…&package_name=app.nia.mobile&kit_version=3.0.0&link=<client_id>` | Lien construit par le SDK Login Kit Android 3.0.0 (lu dans l'AAR, **non documenté**) |
+| `web` | Custom Tab (flux historique) | Toujours utilisé si Snapchat est absent, si le lien ne s'ouvre pas en 4 s, ou sur iOS |
+
+- Choix : constante `SNAP_APP_SWITCH_DEFAULT` (`lib/snapchatAppSwitch.ts`) ou
+  **appui long (1,5 s) sur le bouton** (réglage caché, gardé sur le téléphone,
+  rappelé sous le bouton tant qu'il diffère du défaut).
+- PKCE S256 + `state` générés par `expo-auth-session` ; la demande (state +
+  code_verifier) est gardée dans SecureStore, usage unique, 10 min max.
+- Retour : `nia://snapchat-auth` → écran `app/snapchat-auth.tsx` (valide le
+  `state`, envoie code + verifier à `snapchat-auth`). Marche même si Android a
+  fermé NIA pendant le passage dans Snapchat.
+- Retour sur NIA sans valider : message « Connexion Snapchat non terminée… »
+  après 2,5 s ; pas de réponse en 5 min : message de délai dépassé.
+- `plugins/withSnapchatQueries.js` : `<queries>` `com.snapchat.android` +
+  scheme `snapchat` (Android 11+), **rebuild nécessaire**.
+
+### Edge Function v7 — client public
+
+Le Client ID Staging `7ea8f803-…` est **public** (fondateur, 30/09/2026).
+L'app envoie désormais `client_type: 'public'` + `client_id` : la fonction
+échange le code en **PKCE seul, sans en-tête Basic** (`core.ts`). Le
+client_id doit être `SNAP_CLIENT_ID` ou figurer dans le secret optionnel
+`SNAP_PUBLIC_CLIENT_IDS` (virgules ; ex. l'ID Production plus tard).
+L'ancien corps `{ code, code_verifier, redirect_uri }` (anciens APK) garde le
+chemin Basic, avec une seule nouvelle tentative en public si Snap refuse le
+client (`invalid_client` / `unauthorized_client`, jamais sur `invalid_grant`).
+
 ## Nouveau build EAS requis ?
 
 **En général non** pour ce MVP AuthSession :

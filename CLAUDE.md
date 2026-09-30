@@ -79,7 +79,8 @@
 par le fondateur le 30/09/2026, identique à l'adresse de contact publique du
 dépôt).
 
-**Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
+**Edge Functions déployées** : `snapchat-auth` **v7** (client public : PKCE sans
+Basic, 30/09/2026), `purge-user-storage`,
 `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min),
 `live-token` **v4** (L2, vérification JWT active), `livekit-webhook` (L2,
 `--no-verify-jwt`, auth par signature LiveKit, vérifiée). 020 ne demande aucun
@@ -102,7 +103,9 @@ Détails : `supabase/functions/<fn>/README.md`.
 suppression de vidéo), #42 (Live L2, 019) et #43 (022), puis #44 (contraste des
 thèmes), #45 (Âge / 18+, migration 020 appliquée en prod le 30/09/2026) et #46
 (éditeur P0, `nia-composer`), **mergées le 30/09/2026**. **Ouverte** : #47
-éditeur V1 (montage multi-clips, Android ; sans changement de base).
+éditeur V1 (montage multi-clips, Android ; sans changement de base) ;
+brouillon `haby/snap-app-switch` (spike app-switch Snapchat, sans changement
+de base, `snapchat-auth` v7 déployée).
 
 **Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
 (#43, migration appliquée en prod) :
@@ -191,3 +194,4 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Haby | Contraste des thèmes (sans changement de base) : jetons revus (`textMuted` ≥ 4.5:1, `textDisabled`, `borderStrong`, `danger` lisible, ocre foncé sur Clair), jetons « sur média » fixes (voiles sombres + texte sable) et `MediaChrome` pour caméra / éditeur, `Button` thémé, lecture / pause au toucher dans l'éditeur et l'Habillage, test `themeContrast` ; textes de l'Habillage et de l'éditeur au « vous ». |
 | 30/09/2026 | Haby | Éditeur P0 en PR (#46) : module local `modules/nia-composer` (Media3 Transformer 1.9, Android) qui compose un MP4 H.264 720p 30 i/s + AAC < 50 Mo sur l'appareil (découpe, vitesse, musique et volumes cuits), écran d'export au premier plan avec annulation, 3 min max, bascule de caméra entre segments ; `edit_meta.baked` pour les anciens APK, iOS inchangé (stub), aucune migration. |
 | 30/09/2026 | Haby | Éditeur V1 en PR (#47) : montage multi-clips sur Android (timeline : couper, découper, déplacer, dupliquer, supprimer ; vitesse par clip 0,3x → 2x ; photos de 3 s ; import multiple de la galerie ; segments caméra = clips), mixage son original / musique / début, aperçu enchaîné avec pause au toucher, export `nia-composer` (photos fixes, cadre 720 × 1280) en un MP4 ≤ 3 min et < 50 Mo, brouillons v2 avec migration des v1 ; iOS inchangé, aucune migration. |
+| 30/09/2026 | Haby | Spike app-switch Snapchat en PR brouillon (`haby/snap-app-switch`, accord du fondateur) : sur Android avec Snapchat installé, le bouton ouvre l'app via le lien https ou `snapchat://oauth2` (appui long pour choisir), retour `app/snapchat-auth.tsx` avec contrôle du `state`, secours Custom Tab, `<queries>` Snapchat ; `snapchat-auth` v7 déployée (client public : PKCE sans Basic, ancien chemin conservé) ; aucune migration. |
