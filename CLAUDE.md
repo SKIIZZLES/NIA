@@ -1,1 +1,151 @@
 @AGENTS.md
+
+# NIA — contexte partagé Claude Code ↔ Haby
+
+> Lu automatiquement par Claude Code. Haby = Lead Dev / CTO (assistant IA) ;
+> le fondateur valide et merge. La ligne `@AGENTS.md` ci-dessus importe les
+> consignes Expo existantes : la garder.
+
+## 1. Projet
+
+- **NIA** : écosystème des cultures africaines et diasporiques — vidéo, photo,
+  musique, live, événements, communautés, séries. **Pas « un TikTok africain ».**
+- **Stack** : Expo SDK 57, React Native 0.86, expo-router, TypeScript, Supabase
+  (réf. `odlmbiaocdonlovjepxn`, région eu-central-1), lives via LiveKit.
+- **Budget zéro** : offres gratuites uniquement (Supabase Free, EAS, LiveKit…).
+  Aucun service payant sans accord du fondateur.
+- **Design** : textes sable, bronze et ocre sur fond sombre (pas de blanc pur en
+  couleur principale) + thèmes par utilisateur (`constants/themes.ts`, `context/ThemeContext.tsx`,
+  écran `app/appearance.tsx`).
+- **Musique** : aucun catalogue illégal.
+- **Langues** : 20 locales dans `locales/*.ts` (fr = référence).
+
+### Arborescence
+
+| Dossier | Contenu |
+|---|---|
+| `app/` | écrans expo-router : `(auth)`, `(tabs)`, `create/`, `live/`, `events/`, `series/`, `sound/`, `video/`, `user/`, `search/` |
+| `components/`, `hooks/`, `context/`, `lib/`, `constants/`, `types/` | UI, logique, clients Supabase / LiveKit |
+| `locales/` | traductions (20 langues) |
+| `supabase/migrations/` | SQL numéroté `NNN_nom.sql` |
+| `supabase/tests/` | tests SQL locaux + scripts de vérification lecture seule |
+| `supabase/functions/` | Edge Functions (un `README.md` chacune) |
+| `__tests__/` | Jest (`jest-expo`) |
+| `docs/legal/` | pages légales publiées (CGU, confidentialité, règles, sécurité enfants) |
+
+## 2. Règles de travail (obligatoires)
+
+1. **Audit → plan → validation explicite du fondateur** avant de coder.
+2. **Aucun changement de base** (migration, SQL en prod, policies, cron, Vault)
+   sans OK explicite du fondateur.
+3. **Une branche + une PR par changement.** Préfixes : `claude/*` pour Claude
+   (ex. `claude/legal-014` #22, `claude/cgu` #24,
+   `claude/moderation-commentaires` #27), `haby/*` pour Haby.
+4. **Jamais de push sur `main`.** Le fondateur merge.
+5. **Haby relit chaque PR de Claude** avant qu'elle soit considérée approuvée.
+6. **Ne jamais modifier la branche d'un autre agent** : proposer via commentaire de PR.
+7. **Jamais de secret committé** (`.env`, `secrets/`, clés, jetons, client secrets).
+   `.env.example` ne contient que des placeholders.
+8. **Migrations** : numérotées, idempotentes (rejouables deux fois), avec un
+   script de vérification **lecture seule** dans `supabase/tests/`
+   (modèle : `017_verify_after_apply.sql`, toutes les lignes à `t`).
+   `supabase/tests/run_local.sh` = Postgres local jetable uniquement.
+9. **Textes UI en français**, clés présentes dans les 20 locales
+   (test `__tests__/locales/`).
+10. **Avant de rendre** : `npx tsc --noEmit` = 0 erreur et `npx jest` tout vert
+    (la CI joue aussi `expo export` iOS / Android / web).
+
+## 3. État actuel (au 30/09/2026)
+
+**Migrations appliquées en prod** (`supabase/migrations/`) :
+
+| N° | Objet |
+|---|---|
+| 001–002 | init (profiles, videos, RLS, bucket) ; likes, commentaires, follows, notifications, reports, blocks |
+| 003–007 | reposts, saves, archive/suppression, RLS insert vidéos, media_type + couverture |
+| 008–012 | sons, événements, live_streams, séries, filtres |
+| 013 | suppression de compte v1 — **remplacée par 014, ne jamais la rejouer** |
+| 014 | suppression de compte v2 (+ `purge-user-storage`) |
+| 015 | suppression douce de vidéo (RPC) |
+| 016 | options de publication — appliquée et vérifiée |
+| **017** | **signalements / modération** — appliquée et vérifiée |
+
+**Réservées, prévues, non écrites dans `main`** : 018 filtre de mots-clés,
+019 live L2, 020 âge / 18+, 021 enregistrements de lives.
+
+**Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
+`live-token`, `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min).
+
+```bash
+npx supabase functions deploy <fn> --project-ref odlmbiaocdonlovjepxn --use-api
+# + --no-verify-jwt pour snapchat-auth, moderation-hold et purge-user-storage
+#   (auth par secret dédié) ; live-token garde la vérification JWT.
+```
+
+Secrets : uniquement dans les secrets de fonction / Vault Supabase, jamais ici.
+Détails : `supabase/functions/<fn>/README.md`.
+
+**PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
+#36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**.
+Aucune autre PR ouverte à cette date.
+
+**Feuille de route** :
+1. S3 — filtre de mots-clés (018)
+2. L2 — live, écran « go live » façon Instagram (019) : statut `live`,
+   exclusions, blocages, fin auto (limites L1 listées dans #36)
+3. Âge / 18+ (020)
+4. L3 — chat et réactions en live ; L4 — modération des lives
+5. Durcissement
+6. Replays (optionnel, 021)
+
+**Règles de modération** (017, `docs/legal/`) :
+- 10 catégories : insultes/harcèlement, nudité/contenu sexuel, actes inhumains,
+  négrophobie, racisme/haine, **propos homophobes**, pédocriminalité,
+  menace/danger, spam, autre.
+- **Pédocriminalité (P0)** : masquée dès le 1er signalement, écran
+  PHAROS / 119 / 17, **aucun envoi de preuve** (garde-fou : 5 masquages P0
+  par signaleur / 24 h).
+- Autres catégories : masquées à **3 signaleurs distincts** (comptes > 24 h).
+- **Aucune nudité ni contenu sexuel.** Âge minimum **13 ans**.
+- Contact : niaapp@outlook.com.
+
+## 4. Communication Claude ↔ Haby
+
+- **Description de chaque PR**, sections :
+  1. Ce qui a été fait
+  2. Fichiers touchés
+  3. Changement de base : oui / non (+ lesquels)
+  4. Tests lancés
+  5. Risques connus
+  6. Reste à faire
+- **Question pour Haby** : commentaire de PR commençant par `@Haby`.
+- **Fin de sprint** : mettre à jour « État actuel » dans la même PR.
+- **Journal** (bas de ce fichier) : une ligne par changement notable —
+  date, auteur (Claude / Haby), une phrase.
+
+## 5. Commandes utiles
+
+```bash
+npm install                 # dépendances (la CI utilise npm ci)
+npx tsc --noEmit            # typecheck (= npm run typecheck)
+npx jest                    # tests (= npm test)
+npx expo start              # dev ; -c pour vider le cache Metro
+npx expo start --web        # web
+```
+
+Mode mock si `.env` vide ; Google, Snapchat et LiveKit exigent un build EAS
+(profils `development` / `preview` / `production` dans `eas.json`), pas Expo Go.
+
+Pour le détail, voir plutôt que dupliquer :
+- `README.md` — installation, mock vs Supabase, i18n, architecture, EAS
+- `SUPABASE.md` — backend, migrations 001–012, bucket
+- `supabase/tests/README.md` — tests SQL locaux (013 → 017)
+- `supabase/functions/*/README.md` — déploiement, secrets, cron
+- `docs/account-deletion.md`, `GOOGLE_AUTH.md`, `SNAPCHAT_AUTH.md`,
+  `PRODUCT.md`, `PERF.md`, `docs/legal/README.md`
+
+## Journal
+
+| Date | Auteur | Changement |
+|---|---|---|
+| 30/09/2026 | Haby | Haby : création du fichier |
