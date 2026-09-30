@@ -99,9 +99,10 @@ Détails : `supabase/functions/<fn>/README.md`.
 **PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
 #36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
 #39 (ce fichier), #40 (S3 filtre de mots, 018), #41 (docs, défauts connus de la
-suppression de vidéo), #42 (Live L2, 019) et #43 (022). **Ouverte** : #45 Âge /
-18+ (migration 020 appliquée en prod le 30/09/2026 ; APK à construire depuis
-cette PR).
+suppression de vidéo), #42 (Live L2, 019) et #43 (022), puis #44 (contraste des
+thèmes), #45 (Âge / 18+, migration 020 appliquée en prod le 30/09/2026) et #46
+(éditeur P0, `nia-composer`), **mergées le 30/09/2026**. **Ouverte** : #47
+éditeur V1 (montage multi-clips, Android ; sans changement de base).
 
 **Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
 (#43, migration appliquée en prod) :
@@ -121,7 +122,7 @@ cette PR).
 1. ~~S3 — filtre de mots-clés (018)~~ — fait
 2. ~~L2 — direct instantané, écran façon Instagram, statut réel (019 +
    `livekit-webhook`)~~ — fait, appliqué
-3. Âge / 18+ (020) — migration appliquée en prod (30/09/2026), app en PR #45
+3. ~~Âge / 18+ (020)~~ — fait (migration en prod, app mergée #45)
 4. L3 — chat et réactions en live ; L4 — modération des lives
 5. Durcissement
 6. Replays (optionnel, 021)
@@ -189,3 +190,4 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Haby | 020 appliquée en prod après accord du fondateur : `020_verify` 16/16, 017/018/019/022 relancées toutes vraies, empreinte des 10 tables inchangée, sonde RLS (transaction annulée) conforme ; `live-token` v4 confirmée. |
 | 30/09/2026 | Haby | Contraste des thèmes (sans changement de base) : jetons revus (`textMuted` ≥ 4.5:1, `textDisabled`, `borderStrong`, `danger` lisible, ocre foncé sur Clair), jetons « sur média » fixes (voiles sombres + texte sable) et `MediaChrome` pour caméra / éditeur, `Button` thémé, lecture / pause au toucher dans l'éditeur et l'Habillage, test `themeContrast` ; textes de l'Habillage et de l'éditeur au « vous ». |
 | 30/09/2026 | Haby | Éditeur P0 en PR (#46) : module local `modules/nia-composer` (Media3 Transformer 1.9, Android) qui compose un MP4 H.264 720p 30 i/s + AAC < 50 Mo sur l'appareil (découpe, vitesse, musique et volumes cuits), écran d'export au premier plan avec annulation, 3 min max, bascule de caméra entre segments ; `edit_meta.baked` pour les anciens APK, iOS inchangé (stub), aucune migration. |
+| 30/09/2026 | Haby | Éditeur V1 en PR (#47) : montage multi-clips sur Android (timeline : couper, découper, déplacer, dupliquer, supprimer ; vitesse par clip 0,3x → 2x ; photos de 3 s ; import multiple de la galerie ; segments caméra = clips), mixage son original / musique / début, aperçu enchaîné avec pause au toucher, export `nia-composer` (photos fixes, cadre 720 × 1280) en un MP4 ≤ 3 min et < 50 Mo, brouillons v2 avec migration des v1 ; iOS inchangé, aucune migration. |

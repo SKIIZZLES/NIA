@@ -41,6 +41,14 @@ type Props = {
    */
   originMs?: number;
   minRangeMs?: number;
+  /**
+   * Éditeur V1 (montage) : image à montrer pour un instant de la barre
+   * (fichier du clip et instant dans ce fichier, ou photo). Remplace alors
+   * `uri` / `originMs` pour la bande d'images.
+   */
+  frameSource?: (ms: number) => { uri: string; atMs: number; image: boolean } | null;
+  /** Change quand `frameSource` montre d'autres images (clé de la bande). */
+  frameKey?: string;
 };
 
 export function TrimBar({
@@ -56,10 +64,16 @@ export function TrimBar({
   endLabel,
   originMs = 0,
   minRangeMs = MIN_TRIM_MS,
+  frameSource,
+  frameKey,
 }: Props) {
   const colors = useColors();
   const [width, setWidth] = useState(0);
   const [frames, setFrames] = useState<(string | null)[]>([]);
+
+  const frameSourceRef = useRef(frameSource);
+  frameSourceRef.current = frameSource;
+  const hasFrameSource = !!frameSource;
 
   // Bande d'images : extraites une à une (léger pour le décodeur).
   useEffect(() => {
@@ -69,7 +83,16 @@ export function TrimBar({
     setFrames([]);
     void (async () => {
       for (const time of frameTimes(durationMs, FRAME_COUNT)) {
-        const f = await videoFrameAt(uri, originMs + time, 120);
+        const src = hasFrameSource ? frameSourceRef.current?.(time) ?? null : null;
+        if (src?.image) {
+          // Photo du montage : affichée telle quelle (jamais supprimée).
+          if (!alive) return;
+          setFrames((prev) => [...prev, src.uri]);
+          continue;
+        }
+        const f = src
+          ? await videoFrameAt(src.uri, src.atMs, 120)
+          : await videoFrameAt(uri, originMs + time, 120);
         if (!alive) {
           if (f) deleteCachedFile(f);
           return;
@@ -82,7 +105,7 @@ export function TrimBar({
       alive = false;
       made.forEach((f) => deleteCachedFile(f));
     };
-  }, [uri, durationMs, originMs]);
+  }, [uri, durationMs, originMs, hasFrameSource, frameKey]);
 
   const live = useRef({ startMs, endMs, width, durationMs, maxRangeMs, minRangeMs });
   live.current = { startMs, endMs, width, durationMs, maxRangeMs, minRangeMs };

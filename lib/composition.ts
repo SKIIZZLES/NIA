@@ -105,7 +105,25 @@ export type PublishCompositionInput = {
   outputPath: string;
   /** 1 au premier essai, RETRY_BITRATE_FACTOR ensuite. */
   bitrateFactor?: number;
+  /**
+   * Éditeur V1 (montage) : clips de la timeline, dans l'ordre. Remplacent
+   * alors le clip unique (sourceUri + trim + speed) ; le cadre de sortie est
+   * fixe (720 × 1280) dès qu'il y a plusieurs clips ou une photo, et le volume
+   * original s'applique même sans son ajouté.
+   */
+  clips?: ComposerClip[] | null;
 };
+
+/** Durée finale d'une liste de clips (null si l'une est inconnue). */
+export function clipsDurationMs(clips: readonly ComposerClip[]): number | null {
+  let sum = 0;
+  for (const c of clips) {
+    const d = clipOutputMs(c);
+    if (d == null) return null;
+    sum += d;
+  }
+  return sum;
+}
 
 /**
  * Composition de la vidéo publiée : un clip (source + découpe), la vitesse,
@@ -119,20 +137,27 @@ export function buildPublishComposition(input: PublishCompositionInput): {
   expectedDurationMs: number | null;
 } {
   const speed = finite(input.speed, 1) > 0 ? input.speed : 1;
-  const clip: ComposerClip = {
-    uri: input.sourceUri,
-    startMs: input.trim ? Math.max(0, Math.round(input.trim.startMs)) : 0,
-    endMs: input.trim ? Math.round(input.trim.endMs) : null,
-    speed,
-  };
-  const expectedDurationMs = composedDurationMs({
-    sourceDurationMs: input.sourceDurationMs,
-    trim: input.trim,
-    speed,
-  });
+  const montage = !!input.clips && input.clips.length > 0;
+  const clips: ComposerClip[] = montage
+    ? (input.clips as ComposerClip[])
+    : [
+        {
+          uri: input.sourceUri,
+          startMs: input.trim ? Math.max(0, Math.round(input.trim.startMs)) : 0,
+          endMs: input.trim ? Math.round(input.trim.endMs) : null,
+          speed,
+        },
+      ];
+  const expectedDurationMs = montage
+    ? clipsDurationMs(clips)
+    : composedDurationMs({
+        sourceDurationMs: input.sourceDurationMs,
+        trim: input.trim,
+        speed,
+      });
   const hasSound = !!input.soundUri;
   const composition: Composition = {
-    clips: [clip],
+    clips,
     audio: hasSound
       ? {
           uri: input.soundUri as string,
@@ -140,13 +165,18 @@ export function buildPublishComposition(input: PublishCompositionInput): {
           volume: clamp(finite(input.soundVolume, 1), 0, 1),
         }
       : null,
-    originalVolume: hasSound ? clamp(finite(input.originalVolume, 1), 0, 1) : 1,
+    // P0 : comme à la lecture, le volume original ne compte qu'avec un son
+    // ajouté. V1 : le panneau de mixage le règle dans tous les cas.
+    originalVolume:
+      hasSound || montage ? clamp(finite(input.originalVolume, 1), 0, 1) : 1,
     output: {
       path: input.outputPath,
       shortSide: OUTPUT_SHORT_SIDE,
       maxWidth: OUTPUT_MAX_WIDTH,
       maxHeight: OUTPUT_MAX_HEIGHT,
       fps: OUTPUT_FPS,
+      // Un seul clip vidéo garde son format (paysage compris, comme en P0).
+      ...(montage && (clips.length > 1 || clips.some((c) => c.image)) ? { fixedCanvas: true } : {}),
       // Durée inconnue : on vise le pire cas (3 min).
       videoBitrate: videoBitrateFor(
         expectedDurationMs ?? MAX_COMPOSED_DURATION_MS,

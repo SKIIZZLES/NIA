@@ -51,6 +51,7 @@ import { useComposerJob } from '@/hooks/useComposerJob';
 import { composeForPublish, isComposerAvailable, type ComposeResult } from '@/lib/composer';
 import { composedDurationMs, exceedsComposedMax, MAX_COMPOSED_DURATION_MS } from '@/lib/composition';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
+import { timelineComposerClips, timelineDurationMs, timelineKey } from '@/lib/timeline';
 
 export default function CreatePublishStep() {
   const router = useRouter();
@@ -87,7 +88,10 @@ export default function CreatePublishStep() {
     draftId,
     saveDraft,
     releaseLeaveGuard,
+    timeline,
   } = useCreateDraft();
+  /** Éditeur V1 : montage multi-clips (Android), exporté par NiaComposer. */
+  const montage = timeline && timeline.length > 0 ? timeline : null;
   const draftsAvailable = isDraftStorageAvailable();
   const [savingDraft, setSavingDraft] = useState(false);
   /** Publication terminée : on quitte le parcours après le rendu suivant. */
@@ -234,9 +238,9 @@ export default function CreatePublishStep() {
     const src = sourceMedia ?? media;
     if (!src?.uri) return null;
     const key = JSON.stringify([
-      src.uri,
-      trimRange,
-      playbackSpeed,
+      montage ? timelineKey(montage) : src.uri,
+      montage ? null : trimRange,
+      montage ? 1 : playbackSpeed,
       sound?.publicUrl ?? null,
       soundOffsetMs,
       soundVolume,
@@ -251,10 +255,11 @@ export default function CreatePublishStep() {
     const outcome = await composer.run((onProgress) =>
       composeForPublish(
         {
-          sourceUri: src.uri,
-          sourceDurationMs: src.durationMs,
-          trim: trimRange,
-          speed: playbackSpeed,
+          sourceUri: montage ? montage[0].uri : src.uri,
+          sourceDurationMs: montage ? null : src.durationMs,
+          trim: montage ? null : trimRange,
+          speed: montage ? 1 : playbackSpeed,
+          clips: montage ? timelineComposerClips(montage) : null,
           soundUrl: sound?.publicUrl ?? null,
           soundOffsetMs,
           soundVolume,
@@ -302,11 +307,13 @@ export default function CreatePublishStep() {
       return;
     }
     if (composerOn) {
-      const finalMs = composedDurationMs({
-        sourceDurationMs: (sourceMedia ?? media)?.durationMs ?? null,
-        trim: trimRange,
-        speed: playbackSpeed,
-      });
+      const finalMs = montage
+        ? timelineDurationMs(montage)
+        : composedDurationMs({
+            sourceDurationMs: (sourceMedia ?? media)?.durationMs ?? null,
+            trim: trimRange,
+            speed: playbackSpeed,
+          });
       if (exceedsComposedMax(finalMs)) {
         Alert.alert(
           t('composer.tooLongTitle'),

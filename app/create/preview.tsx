@@ -9,8 +9,10 @@
  * Sprint S3 : ces réglages se font à l'édition (/create/edit) ; l'aperçu
  * applique aussi la vitesse, et la couverture se choisit parmi les images de
  * la vidéo (galerie toujours possible).
+ * Éditeur V1 : un montage (timeline) est lu clip après clip, et la
+ * couverture se choisit parmi les images de tous ses clips vidéo.
  */
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
@@ -19,6 +21,8 @@ import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { FilterCarousel } from '@/components/FilterCarousel';
 import { FilteredMediaPreview } from '@/components/FilteredMediaPreview';
 import { CoverFramePicker } from '@/components/CoverFramePicker';
+import { TimelinePreview } from '@/components/TimelinePreview';
+import { frameSourceAt, hasVideoClip, timelineDurationMs, timelineKey } from '@/lib/timeline';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -43,7 +47,14 @@ export default function CreateStyleStep() {
     playbackSpeed,
     setCoverFromFrame,
     overlays,
+    timeline,
   } = useCreateDraft();
+  const montage = timeline && timeline.length > 0 ? timeline : null;
+  const frameSource = useCallback(
+    (ms: number) => (montage ? frameSourceAt(montage, ms) : null),
+    [montage],
+  );
+  const frameKey = useMemo(() => (montage ? timelineKey(montage) : undefined), [montage]);
 
   const styles = useMemo(
     () =>
@@ -126,25 +137,43 @@ export default function CreateStyleStep() {
         <CreateStepHeader step={2} title={t('create.stepStyleTitle')} />
 
         <View style={styles.preview}>
-          <FilteredMediaPreview
-            uri={media.uri}
-            mediaType={media.type}
-            filter={filter}
-            style={styles.thumb}
-            muted={false}
-            volume={sound ? originalVolume : 1}
-            playbackRate={media.type === 'video' ? playbackSpeed : 1}
-            overlays={overlays}
-            tapToPause
-            sound={
-              sound?.publicUrl
-                ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
-                : null
-            }
-          />
+          {montage ? (
+            <TimelinePreview
+              clips={montage}
+              filter={filter}
+              overlays={overlays}
+              originalVolume={originalVolume}
+              sound={
+                sound?.publicUrl
+                  ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
+                  : null
+              }
+            />
+          ) : (
+            <FilteredMediaPreview
+              uri={media.uri}
+              mediaType={media.type}
+              filter={filter}
+              style={styles.thumb}
+              muted={false}
+              volume={sound ? originalVolume : 1}
+              playbackRate={media.type === 'video' ? playbackSpeed : 1}
+              overlays={overlays}
+              tapToPause
+              sound={
+                sound?.publicUrl
+                  ? { url: sound.publicUrl, offsetMs: soundOffsetMs, volume: soundVolume }
+                  : null
+              }
+            />
+          )}
           <View style={styles.badge} pointerEvents="none">
             <Text style={styles.badgeText}>
-              {media.type === 'video' ? t('create.video') : t('create.image')}
+              {montage
+                ? t('timeline.summary', { count: String(montage.length) })
+                : media.type === 'video'
+                  ? t('create.video')
+                  : t('create.image')}
               {filter ? ` · ${filter.name}` : ''}
             </Text>
           </View>
@@ -163,12 +192,25 @@ export default function CreateStyleStep() {
             <Text style={[styles.hint, { marginTop: Spacing.sm }]}>
               {t('create.coverFromVideo')}
             </Text>
-            <CoverFramePicker
-              uri={media.uri}
-              durationMs={media.durationMs}
-              selectedUri={cover?.uri ?? null}
-              onPick={(uri) => setCoverFromFrame(uri)}
-            />
+            {montage ? (
+              hasVideoClip(montage) ? (
+                <CoverFramePicker
+                  uri={montage[0].uri}
+                  durationMs={timelineDurationMs(montage)}
+                  frameSource={frameSource}
+                  frameKey={frameKey}
+                  selectedUri={cover?.uri ?? null}
+                  onPick={(uri) => setCoverFromFrame(uri)}
+                />
+              ) : null
+            ) : (
+              <CoverFramePicker
+                uri={media.uri}
+                durationMs={media.durationMs}
+                selectedUri={cover?.uri ?? null}
+                onPick={(uri) => setCoverFromFrame(uri)}
+              />
+            )}
             {cover?.uri ? (
               <Image source={{ uri: cover.uri }} style={styles.coverPreview} />
             ) : null}

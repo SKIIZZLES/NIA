@@ -6,6 +6,13 @@
  * à maintenir dans chaque écran. Pour garder une création, l'utilisateur
  * l'enregistre en brouillon local (S6, lib/drafts) : saveDraft / restoreDraft.
  *
+ * Éditeur V1 (montage) : quand l'export natif existe (Android) et en mode
+ * vidéo, la création est une timeline de clips (`timeline`). `media` n'est
+ * alors qu'un représentant (premier fichier, type vidéo) qui dit « il y a un
+ * média » aux écrans et déclenche la navigation ; tout ce qui compte (durée,
+ * export, brouillon) se lit dans `timeline`. Sans module (iOS, web), la
+ * timeline reste null et rien ne change.
+ *
  * Toute la logique média (sélection, capture, validation taille/durée,
  * déduction du mimeType) est ici et non dans les écrans : les trois étapes la
  * partagent, et elle était la moitié de l'ancien app/(tabs)/create.tsx.
@@ -34,7 +41,17 @@ import type { SoundItem } from '@/lib/sounds';
 import { clampSoundOffsetMs } from '@/lib/soundSync';
 import { resolveUploadContentType } from '@/lib/videos';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
-import { videoFrameAt } from '@/lib/videoTrim';
+import { videoFileDurationMs, videoFrameAt } from '@/lib/videoTrim';
+import {
+  MAX_STILL_MS,
+  MAX_TIMELINE_CLIPS,
+  appendClips,
+  applySourceDuration,
+  makeImageClip,
+  makeVideoClip,
+  timelineDurationMs,
+  type TimelineClip,
+} from '@/lib/timeline';
 import {
   draftSignature,
   saveDraft as saveDraftRecord,
@@ -111,6 +128,39 @@ function inferMimeType(
   if (kind === 'image') return 'image/jpeg';
   if (kind === 'video') return 'video/mp4';
   return null;
+}
+
+/** Montage multi-clips possible sur cet appareil (export natif présent). */
+export function isTimelineSupported(): boolean {
+  return isComposerAvailable();
+}
+
+/** Segment de la caméra NIA transmis à la timeline. */
+export type CapturedClip = { uri: string; durationMs: number | null; size?: number | null };
+
+/** Média d'un clip, au format des brouillons et des écrans. */
+export function clipMedia(clip: TimelineClip): PickedMedia {
+  return {
+    uri: clip.uri,
+    mimeType: clip.mimeType,
+    fileName: clip.fileName,
+    fileSize: clip.fileSize,
+    durationMs: clip.kind === 'video' ? clip.sourceDurationMs : null,
+    type: clip.kind === 'image' ? 'image' : 'video',
+  };
+}
+
+/** Représentant d'une timeline dans `media` (toujours de type vidéo). */
+function timelineRepresentative(clips: readonly TimelineClip[]): PickedMedia {
+  const first = clips[0];
+  return {
+    uri: first.uri,
+    mimeType: 'video/mp4',
+    fileName: first.fileName,
+    fileSize: first.fileSize,
+    durationMs: timelineDurationMs(clips),
+    type: 'video',
+  };
 }
 
 /**
@@ -234,6 +284,22 @@ type CreateContextValue = {
    */
   releaseLeaveGuard: () => void;
   isLeaveGuardReleased: () => boolean;
+  /**
+   * Éditeur V1 : montage multi-clips actif (Android, mode vidéo). Faux sur
+   * iOS / web : les écrans gardent l'édition à média unique.
+   */
+  timelineMode: boolean;
+  /** Clips du montage, dans l'ordre ; null hors montage. */
+  timeline: TimelineClip[] | null;
+  /** Remplace la liste (refusée si vide) ; les calques suivent la durée. */
+  setTimelineClips: (next: readonly TimelineClip[]) => void;
+  /**
+   * Segments de la caméra NIA → clips. `append` : ajoutés à la fin du
+   * montage en cours, sinon ils le remplacent. false si refusés.
+   */
+  applyCapturedClips: (clips: readonly CapturedClip[], options?: { append?: boolean }) => boolean;
+  /** Galerie (plusieurs vidéos / photos) → clips ajoutés à la fin. */
+  addTimelineMedia: () => Promise<void>;
 };
 
 const CreateDraftContext = createContext<CreateContextValue | null>(null);
@@ -276,6 +342,18 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const [cleanTick, setCleanTick] = useState(0);
   const leaveGuardReleasedRef = useRef(false);
   const [leaveReleased, setLeaveReleased] = useState(false);
+  const timelineMode = isTimelineSupported() && mode === 'video';
+  const [timeline, setTimeline] = useState<TimelineClip[] | null>(null);
+  const timelineRef = useRef(timeline);
+  timelineRef.current = timeline;
+  /**
+   * Représentant posé par installTimeline : l'effet sur `media` ne doit pas
+   * le prendre pour un nouvel import à média unique. `fresh` : nouvelle
+   * création (découpe, vitesse, calques et brouillon remis à zéro).
+   */
+  const timelineMediaRef = useRef<{ media: PickedMedia; fresh: boolean } | null>(null);
+  /** Fichiers dont la durée réelle a déjà été mesurée. */
+  const probedUrisRef = useRef(new Set<string>());
 
   /** Un autre son repart de son début ; le même son garde son réglage. */
   const setSound = useCallback((next: SoundItem | null) => {
@@ -311,6 +389,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
    */
   const setMode = useCallback((next: CreateMode) => {
     setModeState((current) => (current === next ? current : next));
+    setTimeline((current) => (current === null ? current : null));
     setMedia((current) => (current === null ? current : null));
     setCover((current) => (current === null ? current : null));
     setFilter((current) => (current === null ? current : null));
@@ -382,7 +461,184 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     [t, maxMb, maxMinutes],
   );
 
+  // --- Éditeur V1 : timeline ------------------------------------------
+
+  /** Pose une timeline et son représentant dans `media`. */
+  const installTimeline = useCallback((clips: TimelineClip[], fresh: boolean) => {
+    const rep = timelineRepresentative(clips);
+    timelineMediaRef.current = { media: rep, fresh };
+    timelineRef.current = clips;
+    setTimeline(clips);
+    setMedia(rep);
+    if (fresh) setUploadId(makeUploadId());
+  }, []);
+
+  const setTimelineClips = useCallback((next: readonly TimelineClip[]) => {
+    if (next.length === 0) return;
+    const clips = next.slice(0, MAX_TIMELINE_CLIPS);
+    timelineRef.current = clips;
+    setTimeline(clips);
+    const total = timelineDurationMs(clips);
+    setOverlays((cur) => {
+      const items = clampOverlayTimes(cur.items, total);
+      const same = items.length === cur.items.length && items.every((o, i) => o === cur.items[i]);
+      return same ? cur : { ...cur, items };
+    });
+  }, []);
+
+  /**
+   * Assets de la galerie → clips. Vidéo trop lourde / trop longue / illisible,
+   * photo trop lourde : ignorées et comptées (une seule alerte).
+   */
+  const clipsFromAssets = useCallback(
+    async (assets: ImagePicker.ImagePickerAsset[]): Promise<{ clips: TimelineClip[]; skipped: number }> => {
+      const clips: TimelineClip[] = [];
+      let skipped = 0;
+      const videoMax = maxVideoSourceBytes(true);
+      for (const asset of assets) {
+        const isImage =
+          asset.type === 'image' || (asset.type !== 'video' && !!asset.mimeType?.startsWith('image'));
+        const fileSize = asset.fileSize ?? null;
+        const base = {
+          uri: asset.uri,
+          fileName: asset.fileName ?? null,
+          fileSize,
+        };
+        if (isImage) {
+          if (fileSize != null && fileSize > MAX_UPLOAD_BYTES) {
+            skipped += 1;
+            continue;
+          }
+          const clip = makeImageClip({ ...base, mimeType: inferMimeType(asset, 'image') });
+          if (clip) clips.push(clip);
+          else skipped += 1;
+          continue;
+        }
+        let durationMs = typeof asset.duration === 'number' ? asset.duration : null;
+        if (durationMs == null) durationMs = await videoFileDurationMs(asset.uri);
+        if (
+          (fileSize != null && fileSize > videoMax) ||
+          (durationMs != null && durationMs > MAX_VIDEO_DURATION_SEC * 1000)
+        ) {
+          skipped += 1;
+          continue;
+        }
+        const clip = makeVideoClip({ ...base, mimeType: inferMimeType(asset, 'video'), durationMs });
+        if (clip) clips.push(clip);
+        else skipped += 1;
+      }
+      return { clips, skipped };
+    },
+    [],
+  );
+
+  const launchTimelinePicker = useCallback(async (limit: number) => {
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['videos', 'images'],
+      allowsMultipleSelection: true,
+      selectionLimit: Math.max(1, limit),
+      orderedSelection: true,
+      quality: 0.8,
+      videoMaxDuration: MAX_VIDEO_DURATION_SEC,
+    });
+    return res.canceled ? [] : res.assets;
+  }, []);
+
+  const alertSkipped = useCallback(
+    (skipped: number) => {
+      if (skipped > 0) {
+        Alert.alert(t('timeline.importSkippedTitle'), t('timeline.importSkippedBody', { count: String(skipped) }));
+      }
+    },
+    [t],
+  );
+
+  const addTimelineMedia = useCallback(async () => {
+    const cur = timelineRef.current;
+    if (!cur) return;
+    const room = MAX_TIMELINE_CLIPS - cur.length;
+    if (room <= 0) {
+      Alert.alert(t('timeline.fullTitle'), t('timeline.fullBody', { count: String(MAX_TIMELINE_CLIPS) }));
+      return;
+    }
+    const assets = await launchTimelinePicker(room);
+    if (assets.length === 0) return;
+    const { clips, skipped } = await clipsFromAssets(assets);
+    alertSkipped(skipped);
+    const latest = timelineRef.current;
+    if (!latest || clips.length === 0) return;
+    setTimelineClips(appendClips(latest, clips));
+  }, [t, launchTimelinePicker, clipsFromAssets, alertSkipped, setTimelineClips]);
+
+  const applyCapturedClips = useCallback(
+    (captured: readonly CapturedClip[], options?: { append?: boolean }): boolean => {
+      const sourceMax = maxVideoSourceBytes(true);
+      const clips: TimelineClip[] = [];
+      for (const c of captured) {
+        if (!c.uri) continue;
+        const fileSize = c.size ?? localFileSize(c.uri);
+        if (fileSize != null && fileSize > sourceMax) {
+          Alert.alert(
+            t('create.alertTooLarge'),
+            t('create.errTooLarge', { mb: Math.round(sourceMax / (1024 * 1024)) }),
+          );
+          return false;
+        }
+        const fileName = c.uri.split('/').pop() || null;
+        const { contentType } = resolveUploadContentType({
+          mimeType: null,
+          localUri: c.uri,
+          fileName,
+          mediaKind: 'video',
+        });
+        const clip = makeVideoClip({ uri: c.uri, mimeType: contentType, fileName, fileSize, durationMs: c.durationMs });
+        if (clip) clips.push(clip);
+      }
+      if (clips.length === 0) {
+        Alert.alert(t('common.error'), t('timeline.importFailed'));
+        return false;
+      }
+      const cur = timelineRef.current;
+      if (options?.append && cur && cur.length > 0) {
+        // Nouvel objet `media` : l'écran caméra repousse l'édition.
+        installTimeline([...appendClips(cur, clips)], false);
+      } else {
+        installTimeline(clips.slice(0, MAX_TIMELINE_CLIPS), true);
+      }
+      return true;
+    },
+    [t, installTimeline],
+  );
+
+  // Durée réelle des fichiers (la galerie arrondit, la caméra mesure à la
+  // main) : les clips concernés sont bornés à la durée mesurée.
+  useEffect(() => {
+    if (!timeline) return;
+    const pending = [
+      ...new Set(timeline.filter((c) => c.kind === 'video').map((c) => c.uri)),
+    ].filter((uri) => !probedUrisRef.current.has(uri));
+    if (pending.length === 0) return;
+    for (const uri of pending) probedUrisRef.current.add(uri);
+    void (async () => {
+      for (const uri of pending) {
+        const d = await videoFileDurationMs(uri);
+        const cur = timelineRef.current;
+        if (d == null || !cur) continue;
+        const next = applySourceDuration(cur, uri, d);
+        if (next !== cur) setTimelineClips(next);
+      }
+    })();
+  }, [timeline, setTimelineClips]);
+
   const pickMedia = useCallback(async () => {
+    if (timelineMode) {
+      const assets = await launchTimelinePicker(MAX_TIMELINE_CLIPS);
+      if (assets.length === 0) return;
+      const { clips, skipped } = await clipsFromAssets(assets);
+      alertSkipped(skipped);
+      if (clips.length > 0) installTimeline(clips, true);
+      return;
+    }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: mode === 'photo' ? ['images'] : ['videos'],
       quality: 0.8,
@@ -390,7 +646,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     });
     if (res.canceled || !res.assets[0]) return;
     applyAsset(res.assets[0], mode);
-  }, [mode, applyAsset]);
+  }, [mode, applyAsset, timelineMode, launchTimelinePicker, clipsFromAssets, alertSkipped, installTimeline]);
 
   const captureMedia = useCallback(async () => {
     const cam = await ImagePicker.requestCameraPermissionsAsync();
@@ -525,7 +781,27 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   // Tout nouveau média capturé ou importé devient la source de l'édition, et
   // remet découpe et vitesse à zéro. Le fichier découpé, lui, n'en est pas une.
   useEffect(() => {
+    const owned = timelineMediaRef.current;
+    if (media && owned && owned.media === media) {
+      // Représentant de la timeline (V1).
+      timelineMediaRef.current = null;
+      if (!owned.fresh) return;
+      if (trimOutputRef.current) {
+        deleteCachedFile(trimOutputRef.current);
+        trimOutputRef.current = null;
+      }
+      setSourceMedia(media);
+      setTrimRange(null);
+      setTrimSelectionState(null);
+      setPlaybackSpeedState(1);
+      setOverlays(emptyOverlayDoc());
+      setDraftId(null);
+      setSavedSignature(null);
+      return;
+    }
     if (!media) {
+      timelineRef.current = null;
+      setTimeline(null);
       setSourceMedia(null);
       setTrimRange(null);
       setTrimSelectionState(null);
@@ -552,6 +828,10 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     setTrimSelectionState(null);
     setPlaybackSpeedState(1);
     setOverlays(emptyOverlayDoc());
+    // V1 : une vidéo importée seule (caméra système, repli) devient un clip.
+    const single = isTimelineSupported() && media.type === 'video' ? makeVideoClip(media) : null;
+    timelineRef.current = single ? [single] : null;
+    setTimeline(single ? [single] : null);
     // Nouveau média : ce n'est plus le brouillon rouvert (S6).
     setDraftId(null);
     setSavedSignature(null);
@@ -671,9 +951,11 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   const buildPublishEditMeta = useCallback(
     (options?: { baked?: boolean }) =>
       buildEditMeta({
-        trim: trimRange,
-        sourceDurationMs: sourceMedia?.durationMs ?? null,
-        speed: playbackSpeed,
+        // Montage : découpes et vitesses sont dans le fichier exporté, les
+        // calques déjà en temps de sortie.
+        trim: timeline ? null : trimRange,
+        sourceDurationMs: timeline ? timelineDurationMs(timeline) : sourceMedia?.durationMs ?? null,
+        speed: timeline ? 1 : playbackSpeed,
         hasSound: !!sound,
         soundOffsetMs,
         soundVolume,
@@ -683,6 +965,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         baked: options?.baked === true,
       }),
     [
+      timeline,
       trimRange,
       sourceMedia?.durationMs,
       playbackSpeed,
@@ -707,6 +990,35 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
 
   /** Tout ce qu'un brouillon enregistre, sauf la miniature. */
   const draftInput = useMemo<Omit<DraftInput, 'thumbUri'> | null>(() => {
+    if (timeline && timeline.length > 0) {
+      return {
+        mode,
+        source: clipMedia(timeline[0]),
+        trimmed: null,
+        trimRange: null,
+        trimSelection: null,
+        cover,
+        speed: 1,
+        sound,
+        soundOffsetMs,
+        soundVolume,
+        originalVolume,
+        filterId: filter?.id ?? null,
+        overlays,
+        caption,
+        category,
+        publishOptions,
+        timeline: timeline.map((c) => ({
+          id: c.id,
+          kind: c.kind,
+          media: clipMedia(c),
+          sourceDurationMs: c.sourceDurationMs,
+          startMs: c.startMs,
+          endMs: c.endMs,
+          speed: c.speed,
+        })),
+      };
+    }
     const src = sourceMedia ?? media;
     if (!src?.uri) return null;
     const trimmed = media && sourceMedia && media.uri !== sourceMedia.uri ? media : null;
@@ -729,6 +1041,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       publishOptions,
     };
   }, [
+    timeline,
     mode,
     media,
     sourceMedia,
@@ -774,7 +1087,12 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     // Miniature de la liste : la couverture si elle existe, sinon une image
     // de la vidéo au début de l'extrait retenu.
     let thumbUri: string | null = null;
-    if (input.source.type === 'video' && !input.cover) {
+    const firstClip = input.timeline?.[0];
+    if (firstClip) {
+      if (firstClip.kind === 'video' && !input.cover) {
+        thumbUri = await videoFrameAt(firstClip.media.uri, firstClip.startMs, 360);
+      }
+    } else if (input.source.type === 'video' && !input.cover) {
       const at = input.trimmed ? 0 : input.trimSelection?.startMs ?? 0;
       thumbUri = await videoFrameAt((input.trimmed ?? input.source).uri, at, 360);
     }
@@ -794,8 +1112,23 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
 
   const restoreDraft = useCallback((draft: LoadedDraft) => {
     const r = draft.record;
-    const src = draft.source;
-    const trimmed = draft.trimmed;
+    const clips: TimelineClip[] | null =
+      isTimelineSupported() && r.mode === 'video' && draft.timeline?.length
+        ? draft.timeline.map((c) => ({
+            id: c.id,
+            kind: c.kind,
+            uri: c.media.uri,
+            mimeType: c.media.mimeType,
+            fileName: c.media.fileName,
+            fileSize: c.media.fileSize,
+            sourceDurationMs: c.kind === 'image' ? MAX_STILL_MS : c.sourceDurationMs,
+            startMs: c.startMs,
+            endMs: c.endMs,
+            speed: c.speed,
+          }))
+        : null;
+    const src = clips ? timelineRepresentative(clips) : draft.source;
+    const trimmed = clips ? null : draft.trimmed;
     const shown = trimmed ?? src;
     // L'effet sur `media` ne doit pas traiter ce média comme un nouvel import.
     restoredDraftUriRef.current = shown.uri;
@@ -808,12 +1141,20 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
     leaveGuardReleasedRef.current = false;
     setLeaveReleased(false);
 
+    timelineMediaRef.current = null;
+    timelineRef.current = clips;
+    setTimeline(clips);
+    // Fichiers du brouillon : durées déjà justes.
+    for (const c of clips ?? []) probedUrisRef.current.add(c.uri);
+
     setModeState(r.mode);
     setMedia(shown);
     setSourceMedia(src);
     setTrimRange(trimmed ? r.trimRange : null);
-    setTrimSelectionState(r.trimSelection);
-    setPlaybackSpeedState((PLAYBACK_SPEEDS as readonly number[]).includes(r.speed) ? r.speed : 1);
+    setTrimSelectionState(clips ? null : r.trimSelection);
+    setPlaybackSpeedState(
+      !clips && (PLAYBACK_SPEEDS as readonly number[]).includes(r.speed) ? r.speed : 1,
+    );
     setCover(src.type === 'video' ? draft.cover : null);
     setSoundState(r.sound);
     setSoundOffsetMsState(r.sound ? clampSoundOffsetMs(r.soundOffsetMs, r.sound.durationMs) : 0);
@@ -917,8 +1258,18 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       discardChanges,
       releaseLeaveGuard,
       isLeaveGuardReleased,
+      timelineMode,
+      timeline,
+      setTimelineClips,
+      applyCapturedClips,
+      addTimelineMedia,
     }),
     [
+      timelineMode,
+      timeline,
+      setTimelineClips,
+      applyCapturedClips,
+      addTimelineMedia,
       mode,
       setMode,
       media,

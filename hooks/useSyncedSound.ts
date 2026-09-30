@@ -20,7 +20,7 @@ import type { VideoPlayer } from 'expo-video';
 import { needsResync, soundTargetSec } from '@/lib/soundSync';
 
 let audioModeReady = false;
-function ensureAudioMode() {
+export function ensureAudioMode() {
   if (audioModeReady) return;
   audioModeReady = true;
   setAudioModeAsync({
