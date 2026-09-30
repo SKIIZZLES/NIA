@@ -72,11 +72,7 @@
 | **018** | **filtre de mots-clés** (S3) — appliquée et vérifiée |
 | **019** | **live L2** (statut réel, webhook LiveKit) — appliquée (#42) |
 | **022** | **suppression définitive de vidéo, reposts conservés** — appliquée (#43) |
-
-**Écrite, en PR, NON appliquée en prod** : **020** âge déclaré et contenus 18+
-(`020_age_mature.sql`, #45, branche `haby/safety-age18`), testée sur un Postgres
-local jetable uniquement. **À appliquer seulement après l'accord du fondateur**,
-après 019 et 022 ; ordre et vérifications dans la description de la PR.
+| **020** | **âge déclaré et contenus 18+** — appliquée et vérifiée le 30/09/2026 (#45, accord du fondateur) : `020_verify` 16/16, 017/018/019/022 relancées toutes `true`, empreinte des 10 tables inchangée |
 **Réservée, non écrite** : 021 enregistrements de lives.
 
 **Modération** : compte modérateur `niapp@outlook.com` (orthographe telle que
@@ -84,11 +80,11 @@ transmise le 30/09/2026 ; l'adresse de contact publique est
 `niaapp@outlook.com` — à confirmer).
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
-`live-token`, `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min).
-**Déployée et vérifiée** : `livekit-webhook` (L2, `--no-verify-jwt`, auth par
-signature LiveKit). Redéploiement L2 de `live-token` : non confirmé ici, à
-vérifier. 020 ne demande aucun redéploiement (live-token lit la ligne avec le
-JWT de l'appelant : un live 18+ répond 404 aux mineurs).
+`moderation-hold` (cron `nia-moderation-hold` toutes les 5 min),
+`live-token` **v4** (L2, vérification JWT active), `livekit-webhook` (L2,
+`--no-verify-jwt`, auth par signature LiveKit, vérifiée). 020 ne demande aucun
+redéploiement (live-token lit la ligne avec le JWT de l'appelant : un live 18+
+répond 404 aux mineurs).
 
 ```bash
 npx supabase functions deploy <fn> --project-ref odlmbiaocdonlovjepxn --use-api
@@ -104,8 +100,8 @@ Détails : `supabase/functions/<fn>/README.md`.
 #36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
 #39 (ce fichier), #40 (S3 filtre de mots, 018), #41 (docs, défauts connus de la
 suppression de vidéo), #42 (Live L2, 019) et #43 (022). **Ouverte** : #45 Âge /
-18+ (migration 020, en attente de l'accord du fondateur ; pas d'APK avant
-l'application de 020).
+18+ (migration 020 appliquée en prod le 30/09/2026 ; APK à construire depuis
+cette PR).
 
 **Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
 (#43, migration appliquée en prod) :
@@ -125,7 +121,7 @@ l'application de 020).
 1. ~~S3 — filtre de mots-clés (018)~~ — fait
 2. ~~L2 — direct instantané, écran façon Instagram, statut réel (019 +
    `livekit-webhook`)~~ — fait, appliqué
-3. Âge / 18+ (020) — en PR, migration écrite et testée en local, **non appliquée**
+3. Âge / 18+ (020) — migration appliquée en prod (30/09/2026), app en PR #45
 4. L3 — chat et réactions en live ; L4 — modération des lives
 5. Durcissement
 6. Replays (optionnel, 021)
@@ -139,7 +135,7 @@ l'application de 020).
   par signaleur / 24 h).
 - Autres catégories : masquées à **3 signaleurs distincts** (comptes > 24 h).
 - **Aucune nudité ni contenu sexuel.** Âge minimum **13 ans**.
-- **18+ (020, en PR)** : date de naissance privée (`user_birthdates`, saisie
+- **18+ (020, appliquée)** : date de naissance privée (`user_birthdates`, saisie
   unique, correction par le support via `mod_set_birth_date`) ; marquage 18+
   par un adulte déclaré ou imposé par la modération (`mod_set_mature`) ;
   visible des seuls adultes ayant activé « Afficher les contenus 18+ »
@@ -190,3 +186,4 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
 | 30/09/2026 | Haby | Correctif 022 : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
 | 30/09/2026 | Haby | Âge / 18+ en PR (#45) : migration 020 (date de naissance privée, 13 ans minimum, marquage 18+ vidéo et live, choix d'affichage, outils modération) écrite et testée sur un Postgres local jetable, **non appliquée en prod** ; modale de date, réglage « Âge et contenus 18+ », CGU et confidentialité à jour. État actuel : 019 et 022 appliquées, `livekit-webhook` vérifiée, `niapp@outlook.com` modérateur. |
+| 30/09/2026 | Haby | 020 appliquée en prod après accord du fondateur : `020_verify` 16/16, 017/018/019/022 relancées toutes vraies, empreinte des 10 tables inchangée, sonde RLS (transaction annulée) conforme ; `live-token` v4 confirmée. |
