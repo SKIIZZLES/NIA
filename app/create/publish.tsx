@@ -30,6 +30,7 @@ import { CreateStepHeader } from '@/components/CreateStepHeader';
 import { SoundTrimControl } from '@/components/SoundTrimControl';
 import { MentionSuggestions } from '@/components/MentionSuggestions';
 import { PublishOptionsSection } from '@/components/PublishOptionsSection';
+import { useAge } from '@/context/AgeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCreateDraft } from '@/context/CreateContext';
 import { useFeed } from '@/context/FeedContext';
@@ -51,6 +52,7 @@ export default function CreatePublishStep() {
   const colors = useColors();
   const { t } = useI18n();
   const { user } = useAuth();
+  const { status: ageStatus } = useAge();
   const { publishPost, isMockFeed } = useFeed();
   const {
     mode,
@@ -619,6 +621,7 @@ export default function CreatePublishStep() {
           supported={optionsSupported}
           disabled={busy}
           isVideo={media?.type === 'video'}
+          ageStatus={ageStatus}
         />
 
         {busy ? (

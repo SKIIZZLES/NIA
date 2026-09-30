@@ -253,6 +253,7 @@ function parsePublishOptions(v: unknown): PublishOptions {
     allowComments: typeof r.allowComments === 'boolean' ? r.allowComments : d.allowComments,
     allowReuse: typeof r.allowReuse === 'boolean' ? r.allowReuse : d.allowReuse,
     aiGenerated: typeof r.aiGenerated === 'boolean' ? r.aiGenerated : d.aiGenerated,
+    isMature: typeof r.isMature === 'boolean' ? r.isMature : d.isMature,
     altText: typeof r.altText === 'string' ? r.altText : d.altText,
     locationText: typeof r.locationText === 'string' ? r.locationText : d.locationText,
   };

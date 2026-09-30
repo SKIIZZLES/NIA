@@ -765,6 +765,20 @@ export default function ProfileScreen() {
         {user ? (
           <Pressable
             style={styles.menuRow}
+            onPress={() => {
+              setMenuOpen(false);
+              router.push('/content-settings' as Href);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('age.settingsTitle')}
+          >
+            <Ionicons name="eye-off-outline" size={22} color={colors.or} />
+            <Text style={styles.menuRowLabel}>{t('age.settingsTitle')}</Text>
+          </Pressable>
+        ) : null}
+        {user ? (
+          <Pressable
+            style={styles.menuRow}
             // Feuille laissee ouverte : l'Alert de confirmation s'affiche
             // par-dessus (iOS ne l'affiche pas pendant la fermeture d'une Modal).
             onPress={onDeleteAccount}

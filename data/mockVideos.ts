@@ -47,6 +47,8 @@ export type VideoItem = {
   allowComments?: boolean;
   allowReuse?: boolean;
   aiGenerated?: boolean;
+  /** 020 : contenu 18+ (visible des adultes ayant choisi de voir ces contenus). */
+  isMature?: boolean;
   /** 017 : état de modération (le créateur voit « masquée / retirée »). */
   moderationState?: 'visible' | 'held' | 'removed';
   /** 017/018 : motif serveur ; « auto:keywords » = retenue par le filtre de mots. */
