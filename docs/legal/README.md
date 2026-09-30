@@ -42,6 +42,10 @@ URL obtenues, une à deux minutes après :
 | Deletion (EN) | `https://skiizzles.github.io/NIA/legal/delete-account.html` |
 | Conditions d'utilisation (FR) | `https://skiizzles.github.io/NIA/legal/conditions.html` |
 | Terms of Service (EN) | `https://skiizzles.github.io/NIA/legal/terms.html` |
+| Règles de la communauté (FR) | `https://skiizzles.github.io/NIA/legal/regles-communaute.html` |
+| Community guidelines (EN) | `https://skiizzles.github.io/NIA/legal/community-guidelines.html` |
+| Normes de protection de l'enfance (FR) | `https://skiizzles.github.io/NIA/legal/securite-enfants.html` |
+| Child safety standards (EN) | `https://skiizzles.github.io/NIA/legal/child-safety.html` |
 
 Ces URL sont déjà câblées dans `constants/legal.ts` et couvertes par
 `__tests__/constants/legal.test.ts`. Changer de domaine plus tard veut dire
@@ -53,6 +57,9 @@ changer ce fichier — les tests le rappelleront.
 |---|---|
 | Store listing → Privacy policy | `…/legal/confidentialite.html` |
 | App content → Data safety → Account deletion → URL | `…/legal/suppression-compte.html` |
+| App content → Child safety standards → URL des normes publiées | `…/legal/child-safety.html` |
+| App content → Child safety standards → Point de contact | **niaapp@outlook.com** (toi, modérateur pour l'instant) |
+| App content → Child safety standards → Mécanisme de signalement dans l'app | Oui : ⋯ → Signaler (vidéo/photo), drapeau (commentaire, profil) |
 
 Portail développeur Snapchat (client `7ea8f803-6cf0-40a0-98fe-ba9f3b3765ae`) :
 
@@ -115,3 +122,21 @@ done
 
 Les six doivent répondre `200`. Google vérifie que l'URL est joignable
 publiquement et sans géo-restriction.
+
+## 6. Sécurité S1 « Hygiène » — ce qui reste à faire à la main
+
+Le code et les pages ne couvrent pas les réglages suivants. Ils se font dans
+les consoles, sans migration ni déploiement :
+
+| Où | Réglage |
+|---|---|
+| Supabase → Authentication → Sign In / Providers → Email | **Confirm email : ON** |
+| Supabase → Authentication → Policies (mot de passe) | Longueur minimale ≥ 8, lettres et chiffres |
+| Supabase → Authentication → Rate Limits | Vérifier les limites d'inscription, de connexion et d'envoi d'e-mails |
+| Supabase → Authentication → Multi-Factor | Activer **TOTP** (inclus en Free ; l'interface dans l'app viendra en S4) |
+| Supabase → Authentication → Attack Protection | CAPTCHA Turnstile ou hCaptcha (gratuit) — **attention :** l'activer exige d'envoyer un jeton depuis l'app, sinon l'inscription et la connexion e-mail échouent. À faire en même temps que le code du sprint suivant. |
+| Play Console → App content → Child safety standards | URL `…/legal/child-safety.html`, contact niaapp@outlook.com |
+
+L'écran d'inscription refuse déjà les adresses en `@users.nia.app` (domaine des
+comptes Snapchat), mais ce contrôle est côté client : le blocage côté serveur
+(hook Auth ou trigger) est reporté au sprint 2.
