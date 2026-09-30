@@ -120,6 +120,11 @@ export function CommentsSheet({
 
     try {
       const saved = await addComment(user.id, videoId, text);
+      // 018 : commentaire retenu par le filtre de mots → l'auteur le voit,
+      // les autres après validation.
+      if (saved?.moderation_state === 'held') {
+        Alert.alert(t('textFilter.heldTitle'), t('textFilter.heldComment'));
+      }
       if (saved) {
         setComments((prev) =>
           prev.map((c) =>

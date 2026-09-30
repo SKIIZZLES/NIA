@@ -18,6 +18,7 @@ import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { MediaThumb } from '@/components/MediaThumb';
 import { ModerationBanner } from '@/components/ModerationBanner';
+import { isKeywordHeld } from '@/lib/textFilter';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
@@ -932,7 +933,13 @@ export default function ProfileScreen() {
                     color={colors.or}
                   />
                   <Text style={styles.modBadgeText}>
-                    {t(item.moderationState === 'held' ? 'moderation.badgeHeld' : 'moderation.badgeRemoved')}
+                    {t(
+                      isKeywordHeld(item)
+                        ? 'moderation.badgeReview'
+                        : item.moderationState === 'held'
+                          ? 'moderation.badgeHeld'
+                          : 'moderation.badgeRemoved',
+                    )}
                   </Text>
                 </View>
               ) : null}

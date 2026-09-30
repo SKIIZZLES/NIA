@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
+import { checkText, isTextRefusedError } from '@/lib/textFilter';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
@@ -41,10 +42,20 @@ export default function RegisterScreen() {
     }
     setLoading(true);
     try {
+      // 018 : un pseudo contenant un terme de la liste est refusé (sinon le
+      // serveur le remplacerait par « createur_… » à l'inscription).
+      if ((await checkText(username, 'username')) === 'refused') {
+        Alert.alert(t('common.error'), t('textFilter.usernameRefused'));
+        return;
+      }
       await signUp(email || 'nouveau@nia.app', password || 'nia', username);
       router.replace('/(tabs)');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : t('auth.registerFail');
+      const msg = isTextRefusedError(e)
+        ? t('textFilter.usernameRefused')
+        : e instanceof Error
+          ? e.message
+          : t('auth.registerFail');
       Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);

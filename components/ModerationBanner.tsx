@@ -6,10 +6,11 @@ import { CONTACT_EMAIL, contactMailto } from '@/constants/legal';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
 
-export type ModerationBannerKind = 'held' | 'removed' | 'suspended';
+export type ModerationBannerKind = 'held' | 'review' | 'removed' | 'suspended';
 
 const TEXT_KEY: Record<ModerationBannerKind, string> = {
   held: 'moderation.bannerHeld',
+  review: 'moderation.bannerReview',
   removed: 'moderation.bannerRemoved',
   suspended: 'moderation.bannerSuspended',
 };
@@ -17,10 +18,16 @@ const TEXT_KEY: Record<ModerationBannerKind, string> = {
 /**
  * Bannière visible par le seul créateur (017) : contenu masqué le temps
  * d'une vérification, retiré, ou compte suspendu. Toucher → contestation.
+ * 018 : « review » = retenu par le filtre de mots, en attente de validation ;
+ * toucher → explication (rien à contester tant que rien n'est décidé).
  */
 export function ModerationBanner({ kind, compact = false }: { kind: ModerationBannerKind; compact?: boolean }) {
   const colors = useColors();
   const { t } = useI18n();
+  const review = kind === 'review';
+  const explain = () => {
+    Alert.alert(t('textFilter.heldTitle'), t('moderation.detailsKeywordHeld'));
+  };
   const contest = () => {
     void Linking.openURL(contactMailto(t('moderation.contestSubject'))).catch(() => {
       Alert.alert(t('moderation.detailsTitle'), t('moderation.contest', { email: CONTACT_EMAIL }));
@@ -28,9 +35,13 @@ export function ModerationBanner({ kind, compact = false }: { kind: ModerationBa
   };
   return (
     <Pressable
-      onPress={contest}
+      onPress={review ? explain : contest}
       accessibilityRole="button"
-      accessibilityLabel={`${t(TEXT_KEY[kind])} ${t('moderation.contest', { email: CONTACT_EMAIL })}`}
+      accessibilityLabel={
+        review
+          ? `${t(TEXT_KEY[kind])} ${t('moderation.detailsKeywordHeld')}`
+          : `${t(TEXT_KEY[kind])} ${t('moderation.contest', { email: CONTACT_EMAIL })}`
+      }
       style={[
         styles.wrap,
         compact && styles.compact,
@@ -38,7 +49,7 @@ export function ModerationBanner({ kind, compact = false }: { kind: ModerationBa
       ]}
     >
       <Ionicons
-        name={kind === 'held' ? 'eye-off-outline' : 'shield-outline'}
+        name={kind === 'held' ? 'eye-off-outline' : review ? 'hourglass-outline' : 'shield-outline'}
         size={compact ? 14 : 18}
         color={colors.or}
       />
@@ -46,7 +57,7 @@ export function ModerationBanner({ kind, compact = false }: { kind: ModerationBa
         <Text style={[styles.title, compact && styles.titleCompact, { color: colors.sable }]}>
           {t(TEXT_KEY[kind])}
         </Text>
-        {compact ? null : (
+        {compact || review ? null : (
           <Text style={[styles.sub, { color: colors.textSecondary }]}>
             {t('moderation.contest', { email: CONTACT_EMAIL })}
           </Text>

@@ -171,7 +171,14 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
       : undefined,
     filterId: (row as { filter_id?: string | null }).filter_id || undefined,
     moderationState: moderationStateFromRow(row),
+    moderationReason: moderationReasonFromRow(row),
   };
+}
+
+/** 018 : `moderation_reason` (« auto:keywords » = retenue par le filtre de mots). */
+export function moderationReasonFromRow(row: unknown): string | undefined {
+  const v = (row as { moderation_reason?: unknown } | null)?.moderation_reason;
+  return typeof v === 'string' && v ? v : undefined;
 }
 
 /** 017 : `moderation_state` lu via `*` ; undefined si la migration manque. */

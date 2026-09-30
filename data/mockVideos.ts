@@ -49,6 +49,8 @@ export type VideoItem = {
   aiGenerated?: boolean;
   /** 017 : état de modération (le créateur voit « masquée / retirée »). */
   moderationState?: 'visible' | 'held' | 'removed';
+  /** 017/018 : motif serveur ; « auto:keywords » = retenue par le filtre de mots. */
+  moderationReason?: string;
   altText?: string;
   locationText?: string;
   /** Filtre NIA (012_filters) — registry id */

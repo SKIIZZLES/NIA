@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow } from '@/types/database';
 import { updateProfile as persistProfile } from '@/lib/profiles';
+import { profileFieldOutcome } from '@/lib/textFilter';
 import {
   getGoogleIdToken,
   signInWithGoogleIdToken,
@@ -54,8 +55,12 @@ type AuthContextValue = {
   signInWithGoogle: () => Promise<void>;
   signInWithSnapchat: () => Promise<void>;
   signOut: () => Promise<void>;
-  /** Met à jour bio / display_name (mock local ou profiles) */
-  updateProfile: (patch: { displayName?: string; bio?: string }) => Promise<void>;
+  /**
+   * Met à jour bio / display_name (mock local ou profiles). 018 : le serveur
+   * peut masquer des mots ou garder l'ancienne valeur le temps d'une
+   * vérification ; le résultat le dit, l'état local suit le serveur.
+   */
+  updateProfile: (patch: { displayName?: string; bio?: string }) => Promise<ProfileUpdateResult>;
   /** true = AsyncStorage mock ; false = Supabase Auth */
   isMockAuth: boolean;
 };
@@ -75,6 +80,8 @@ function mockUserFromEmail(email: string, username?: string): NiaUser {
     avatarUrl: `https://i.pravatar.cc/200?u=${encodeURIComponent(handle)}`,
   };
 }
+
+export type ProfileUpdateResult = { pending: boolean; masked: boolean };
 
 function profileToUser(sessionUser: AuthUser, profile: ProfileRow | null): NiaUser {
   const meta = sessionUser.user_metadata || {};
@@ -378,18 +385,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           bio: nextBio,
         };
         await persistMock(next);
-        return;
+        return { pending: false, masked: false };
       }
 
-      await persistProfile(user.id, {
+      const row = await persistProfile(user.id, {
         display_name: nextDisplay,
         bio: nextBio,
       });
+      if (!row) {
+        setUser({ ...user, displayName: nextDisplay, bio: nextBio });
+        return { pending: false, masked: false };
+      }
+      // 018 : seules les valeurs modifiées passent par le filtre ; une valeur
+      // inchangée revient telle quelle (« saved »).
+      const outcomes = [
+        nextDisplay === user.displayName ? 'saved' : profileFieldOutcome(nextDisplay, row.display_name),
+        nextBio === user.bio ? 'saved' : profileFieldOutcome(nextBio, row.bio),
+      ];
       setUser({
         ...user,
-        displayName: nextDisplay,
-        bio: nextBio,
+        displayName: row.display_name ?? user.displayName,
+        bio: row.bio ?? '',
       });
+      return {
+        pending: outcomes.includes('pending'),
+        masked: outcomes.includes('masked'),
+      };
     },
     [user, persistMock],
   );

@@ -246,3 +246,15 @@ describe('moderationStateFromRow (017)', () => {
     expect(moderationStateFromRow({})).toBeUndefined();
   });
 });
+
+describe('moderationReasonFromRow (018)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { moderationReasonFromRow } = require('@/lib/videos') as typeof import('@/lib/videos');
+  it('lit le motif serveur, ignore le vide et l’absence de colonne', () => {
+    expect(moderationReasonFromRow({ moderation_reason: 'auto:keywords' })).toBe('auto:keywords');
+    expect(moderationReasonFromRow({ moderation_reason: '' })).toBeUndefined();
+    expect(moderationReasonFromRow({ moderation_reason: null })).toBeUndefined();
+    expect(moderationReasonFromRow({})).toBeUndefined();
+    expect(moderationReasonFromRow(null)).toBeUndefined();
+  });
+});
