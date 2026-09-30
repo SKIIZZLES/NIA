@@ -95,6 +95,27 @@ Détails : `supabase/functions/<fn>/README.md`.
 `haby/live-l2`) — ordre de mise en prod dans sa description et dans
 `supabase/functions/livekit-webhook/README.md`.
 
+**Défauts connus, non corrigés** (suppression définitive de vidéo, #25) :
+
+- `components/VideoCard.tsx:368` — le fil annonce « Vidéo et fichier effacés »
+  même quand `deleteOwnVideoForGood` a **épargné** le fichier parce qu'un repost
+  le désigne encore (`removedFiles` vide, `keptFiles` non vide). L'écran ne
+  distingue que deux issues sur les trois que la fonction renvoie. Correctif :
+  une troisième branche + une clé i18n dans les 20 locales. Aucun changement de
+  base.
+- `lib/videos.ts:cheminEncoreReference` — le comptage des lignes qui désignent
+  encore un objet du bucket passe par un `select` ordinaire, donc soumis à
+  `videos_select_public`. Les lignes invisibles à l'appelant ne sont **pas
+  comptées**, et le fichier est effacé alors qu'un repost s'en sert : sa carte
+  pointe sur un 404, sans trace ni retour possible. Les 016 et 017 ont élargi le
+  trou — sont désormais invisibles au comptage un repost d'autrui `archived`,
+  en visibilité `followers`/`private`, masqué par la modération
+  (`moderation_state`), ou appartenant à un compte avec lequel il y a un blocage
+  (`nia_block_between`). **Non corrigeable côté client** : la RLS cache ces
+  lignes à raison. Il faut une fonction `security definer` qui ne rende qu'un
+  nombre, ou replier toute la suppression dans une RPC. **Changement de base
+  requis → accord du fondateur.**
+
 **Feuille de route** :
 1. ~~S3 — filtre de mots-clés (018)~~ — fait
 2. L2 — direct instantané, écran façon Instagram, statut réel (019 +
@@ -155,4 +176,5 @@ Pour le détail, voir plutôt que dupliquer :
 | Date | Auteur | Changement |
 |---|---|---|
 | 30/09/2026 | Haby | Haby : création du fichier |
+| 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |
 | 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
