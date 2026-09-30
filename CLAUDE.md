@@ -72,9 +72,8 @@
 | **018** | **filtre de mots-clés** (S3) — appliquée et vérifiée |
 
 **En PR, non appliquées** : 019 live L2 (PR #42) ; **022** suppression
-définitive de vidéo, reposts conservés (`022_video_delete_refs.sql`, PR
-« Correctif — suppression de vidéo : reposts conservés (022) », branche
-`haby/fix-022-reposts`).
+définitive de vidéo, reposts conservés (`022_video_delete_refs.sql`, PR #43,
+branche `haby/fix-022-reposts`).
 **Réservées, non écrites** : 020 âge / 18+, 021 enregistrements de lives.
 
 **Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
@@ -93,10 +92,10 @@ Détails : `supabase/functions/<fn>/README.md`.
 #36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
 #39 (ce fichier) et #40 (S3 filtre de mots, 018). **En cours** : #41 (docs,
 défauts connus de la suppression de vidéo — son bloc « Défauts connus »
-devient obsolète avec la PR 022), #42 (Live L2), PR 022 (ci-dessous).
+devient obsolète avec #43), #42 (Live L2), #43 (022, ci-dessous).
 
 **Suppression définitive de vidéo (#25) — défauts connus : corrigés par 022**
-(en PR, non appliquée ; ordre de mise en prod dans la description de la PR) :
+(#43, non appliquée ; ordre de mise en prod dans la description de la PR) :
 - défaut 1 (fil et profil annonçaient « Vidéo et fichier effacés » même quand
   le fichier était gardé pour un repost) : trois issues distinguées
   (`components/videoDeleteFeedback.ts`, clé `feed.deleteKeptForRepost`) ;
@@ -169,4 +168,4 @@ Pour le détail, voir plutôt que dupliquer :
 | Date | Auteur | Changement |
 |---|---|---|
 | 30/09/2026 | Haby | Haby : création du fichier |
-| 30/09/2026 | Haby | Correctif 022 en PR : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
+| 30/09/2026 | Haby | Correctif 022 en PR (#43) : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
