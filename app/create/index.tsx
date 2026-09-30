@@ -18,6 +18,7 @@ import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { fetchSoundById } from '@/lib/sounds';
+import { timelineDurationMs } from '@/lib/timeline';
 
 const MODES: { id: CreateMode; icon: React.ComponentProps<typeof Ionicons>['name']; labelKey: string }[] = [
   { id: 'video', icon: 'videocam', labelKey: 'create.hubVideo' },
@@ -39,7 +40,10 @@ export default function CreateMediaStep() {
     setSound,
     maxMb,
     maxMinutes,
+    timeline,
   } = useCreateDraft();
+  /** Éditeur V1 : import de plusieurs vidéos / photos (montage). */
+  const montage = timeline && timeline.length > 0 ? timeline : null;
 
   // Lien profond depuis la page d'un son : /create?soundId=…&mode=video
   // Chaque valeur de paramètre n'est appliquée qu'une fois : sinon un simple
@@ -205,7 +209,23 @@ export default function CreateMediaStep() {
         </View>
 
         <View style={styles.preview}>
-          {media?.uri ? (
+          {montage ? (
+            <>
+              <FilteredMediaPreview
+                uri={montage[0].uri}
+                mediaType={montage[0].kind === 'image' ? 'image' : 'video'}
+                filter={filter}
+                style={styles.thumb}
+              />
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {`${t('timeline.summary', { count: String(montage.length) })} · ${Math.round(
+                    timelineDurationMs(montage) / 1000,
+                  )} s`}
+                </Text>
+              </View>
+            </>
+          ) : media?.uri ? (
             <>
               <FilteredMediaPreview
                 uri={media.uri}
@@ -265,7 +285,8 @@ export default function CreateMediaStep() {
           title={t('create.continue')}
           variant="gold"
           disabled={!media?.uri}
-          onPress={() => router.push('/create/preview')}
+          // Un montage passe par l'édition (ordre, découpe, vitesse des clips).
+          onPress={() => router.push(montage ? '/create/edit' : '/create/preview')}
           style={{ marginTop: Spacing.lg }}
         />
 

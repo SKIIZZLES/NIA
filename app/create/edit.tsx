@@ -19,6 +19,10 @@
  * (flèche, retour Android, geste iOS) demande « Enregistrer le brouillon ? ».
  * La sélection de découpe vit donc dans le CreateContext (trimSelection) pour
  * être enregistrée même avant « Suivant ».
+ *
+ * Éditeur V1 (montage) : quand la création est une timeline de clips
+ * (Android), l'étape est components/TimelineEditor. Cet écran reste celui du
+ * média unique (iOS, web, photo).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -48,6 +52,7 @@ import {
 import { SoundTrimControl } from '@/components/SoundTrimControl';
 import { SyncedSound } from '@/components/SyncedSound';
 import { TrimBar } from '@/components/TrimBar';
+import { TimelineEditScreen } from '@/components/TimelineEditor';
 import { PLAYBACK_SPEEDS, useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
 import { MediaChrome, useColors } from '@/context/ThemeContext';
@@ -96,9 +101,10 @@ function LiveOverlayEditor({ player, originMs, ...rest }: LiveEditorProps) {
  * de Clair (voir `MediaChrome`). Texte sable sur voiles sombres partout.
  */
 export default function CreateEditStep() {
+  const { timelineMode, timeline } = useCreateDraft();
   return (
     <MediaChrome>
-      <CreateEditScreen />
+      {timelineMode && timeline && timeline.length > 0 ? <TimelineEditScreen /> : <CreateEditScreen />}
     </MediaChrome>
   );
 }

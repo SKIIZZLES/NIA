@@ -177,7 +177,7 @@ beforeEach(async () => {
 });
 
 describe('saveDraft', () => {
-  it('copie les fichiers dans documents/drafts/<id>/ et écrit un JSON v:1 aux chemins relatifs', async () => {
+  it('copie les fichiers dans documents/drafts/<id>/ et écrit un JSON v:2 aux chemins relatifs', async () => {
     const rec = await saveDraft(
       input({
         trimmed: {
@@ -204,7 +204,8 @@ describe('saveDraft', () => {
       { ownerId: 'u1', now: 1000 },
     );
 
-    expect(rec.v).toBe(1);
+    expect(rec.v).toBe(2);
+    expect(rec.timeline).toBeNull();
     expect(rec.ownerId).toBe('u1');
     expect(rec.source.name).toMatch(/^source-[a-z0-9]+\.mp4$/);
     expect(rec.trimmed?.name).toMatch(/^trimmed-.+\.mp4$/);
@@ -460,7 +461,7 @@ describe('entrées corrompues', () => {
   });
 
   it('ne supprime pas un brouillon d’un format plus récent, sans le lister', async () => {
-    await AsyncStorage.setItem(`${DRAFT_KEY_PREFIX}future`, JSON.stringify({ v: 2, id: 'future' }));
+    await AsyncStorage.setItem(`${DRAFT_KEY_PREFIX}future`, JSON.stringify({ v: 3, id: 'future' }));
     expect(await listDrafts(null)).toHaveLength(0);
     expect(await rawKeys()).toEqual([`${DRAFT_KEY_PREFIX}future`]);
   });
@@ -516,5 +517,194 @@ describe('parseDraftRecord / draftSignature', () => {
     expect(draftSignature({ ...base, speed: 2 })).not.toBe(sig);
     expect(draftSignature({ ...base, thumbUri: 'file:///cache/other.jpg' })).toBe(sig);
     expect(draftSignature({ ...base, overlays: emptyOverlayDoc(1) })).toBe(sig);
+  });
+});
+
+describe('format v2 (montage)', () => {
+  const photo = {
+    uri: 'file:///cache/photo-1.jpg',
+    mimeType: 'image/jpeg',
+    fileName: 'photo-1.jpg',
+    fileSize: 800,
+    durationMs: null,
+    type: 'image' as const,
+  };
+  const clip2 = {
+    uri: 'file:///cache/clip-2.mp4',
+    mimeType: 'video/mp4',
+    fileName: 'clip-2.mp4',
+    fileSize: 3000,
+    durationMs: 8000,
+    type: 'video' as const,
+  };
+  function montage(): DraftInput {
+    const base = input();
+    return input({
+      timeline: [
+        { id: 'a', kind: 'video', media: base.source, sourceDurationMs: 12000, startMs: 0, endMs: 4000, speed: 1 },
+        // Deuxième moitié du même fichier (découpage) : pas de nouvelle copie.
+        { id: 'b', kind: 'video', media: base.source, sourceDurationMs: 12000, startMs: 4000, endMs: 12000, speed: 2 },
+        { id: 'c', kind: 'image', media: photo, sourceDurationMs: 0, startMs: 0, endMs: 3000, speed: 1 },
+        { id: 'd', kind: 'video', media: clip2, sourceDurationMs: 8000, startMs: 1000, endMs: 5000, speed: 0.5 },
+      ],
+    });
+  }
+
+  beforeEach(() => {
+    fs.put('file:///cache/photo-1.jpg', 800);
+    fs.put('file:///cache/clip-2.mp4', 3000);
+  });
+
+  it('enregistre la timeline, copie chaque fichier une seule fois et la relit', async () => {
+    const rec = await saveDraft(montage(), { ownerId: 'u1', now: 1000 });
+    expect(rec.v).toBe(2);
+    expect(rec.timeline?.map((c) => c.id)).toEqual(['a', 'b', 'c', 'd']);
+    // source + photo + clip-2 (les clips a et b partagent la source).
+    expect(fs.copies()).toBe(3);
+    expect(rec.timeline?.[0].file.name).toBe(rec.source.name);
+    expect(rec.timeline?.[1].file.name).toBe(rec.source.name);
+    expect(rec.timeline?.[2].file.name).toMatch(/^clip-.+\.jpg$/);
+    expect(rec.timeline?.[3].file.name).toMatch(/^clip-.+\.mp4$/);
+
+    const loaded = await loadDraft(rec.id);
+    expect(loaded?.timeline?.map((c) => [c.id, c.kind, c.startMs, c.endMs, c.speed])).toEqual([
+      ['a', 'video', 0, 4000, 1],
+      ['b', 'video', 4000, 12000, 2],
+      ['c', 'image', 0, 3000, 1],
+      ['d', 'video', 1000, 5000, 0.5],
+    ]);
+    expect(loaded?.timeline?.[2].media.uri).toBe(`${DIR}${rec.id}/${rec.timeline?.[2].file.name}`);
+
+    // Durée listée = durée du montage : 4 s + 8 s / 2 + 3 s + 4 s / 0,5.
+    const [summary] = await listDrafts('u1');
+    expect(summary.durationMs).toBe(4000 + 4000 + 3000 + 8000);
+    expect(summary.mediaType).toBe('video');
+  });
+
+  it('réenregistrer ne recopie pas les clips et retire ceux supprimés', async () => {
+    const rec = await saveDraft(montage(), { ownerId: 'u1', now: 1000 });
+    const photoFile = `${DIR}${rec.id}/${rec.timeline?.[2].file.name}`;
+    const before = fs.copies();
+    const next = montage();
+    next.timeline = next.timeline!.filter((c) => c.id !== 'c');
+    const second = await saveDraft(next, { id: rec.id, ownerId: 'u1', now: 2000 });
+    expect(fs.copies()).toBe(before);
+    expect(second.timeline?.map((c) => c.id)).toEqual(['a', 'b', 'd']);
+    expect(fs.has(photoFile)).toBe(false);
+  });
+
+  it('un clip dont le fichier a disparu est oublié, le reste du montage demeure', async () => {
+    const rec = await saveDraft(montage(), { ownerId: 'u1', now: 1000 });
+    fs.remove(`${DIR}${rec.id}/${rec.timeline?.[3].file.name}`);
+    const loaded = await loadDraft(rec.id);
+    expect(loaded?.timeline?.map((c) => c.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('refuse d’enregistrer un clip dont l’original a disparu', async () => {
+    fs.remove('file:///cache/clip-2.mp4');
+    await expect(saveDraft(montage(), { ownerId: 'u1' })).rejects.toThrow('draft_clip_missing');
+    expect(await rawKeys()).toHaveLength(0);
+  });
+
+  it('l’empreinte change avec la timeline', () => {
+    const base = montage();
+    const sig = draftSignature(base);
+    const moved = { ...base, timeline: [...base.timeline!].reverse() };
+    expect(draftSignature(moved)).not.toBe(sig);
+    const faster = { ...base, timeline: base.timeline!.map((c) => (c.id === 'a' ? { ...c, speed: 1.5 } : c)) };
+    expect(draftSignature(faster)).not.toBe(sig);
+    expect(draftSignature({ ...base, timeline: null })).not.toBe(sig);
+  });
+
+  it('migre un brouillon v1 vidéo en un clip (sélection de découpe et vitesse)', () => {
+    const raw = JSON.stringify({
+      v: 1,
+      id: 'old',
+      mode: 'video',
+      source: { name: 'source-a.mp4', type: 'video', durationMs: 20000 },
+      trimSelection: { startMs: 2000, endMs: 9000 },
+      speed: 1.5,
+      caption: 'ancien',
+    });
+    const res = parseDraftRecord(raw, 'old');
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.record.v).toBe(2);
+    expect(res.record.caption).toBe('ancien');
+    expect(res.record.timeline).toEqual([
+      {
+        id: 'v1clip',
+        kind: 'video',
+        file: expect.objectContaining({ name: 'source-a.mp4' }),
+        sourceDurationMs: 20000,
+        startMs: 2000,
+        endMs: 9000,
+        speed: 1.5,
+      },
+    ]);
+  });
+
+  it('migre un v1 sans découpe (vidéo entière) et laisse une photo sans timeline', () => {
+    const video = parseDraftRecord(
+      JSON.stringify({ v: 1, id: 'a', mode: 'video', source: { name: 's.mp4', type: 'video', durationMs: 6000 } }),
+      'a',
+    );
+    expect(video.ok && video.record.timeline?.[0]).toMatchObject({ startMs: 0, endMs: 6000, speed: 1 });
+    const unknown = parseDraftRecord(
+      JSON.stringify({ v: 1, id: 'a', mode: 'video', source: { name: 's.mp4', type: 'video' } }),
+      'a',
+    );
+    expect(unknown.ok && unknown.record.timeline).toBeNull();
+    const photo = parseDraftRecord(
+      JSON.stringify({ v: 1, id: 'a', mode: 'photo', source: { name: 's.jpg', type: 'image' } }),
+      'a',
+    );
+    expect(photo.ok && photo.record.timeline).toBeNull();
+  });
+
+  it('un brouillon v1 enregistré avant la mise à jour se relit et se liste', async () => {
+    fs.mkdir(`${DIR}legacy/`);
+    fs.put(`${DIR}legacy/source-l.mp4`, 5000);
+    await AsyncStorage.setItem(
+      `${DRAFT_KEY_PREFIX}legacy`,
+      JSON.stringify({
+        v: 1,
+        id: 'legacy',
+        ownerId: 'u1',
+        createdAt: 1,
+        updatedAt: 2,
+        mode: 'video',
+        source: { name: 'source-l.mp4', type: 'video', durationMs: 10000 },
+        trimSelection: { startMs: 0, endMs: 4000 },
+      }),
+    );
+    const loaded = await loadDraft('legacy');
+    expect(loaded?.timeline).toHaveLength(1);
+    expect(loaded?.timeline?.[0].media.uri).toBe(`${DIR}legacy/source-l.mp4`);
+    const [summary] = await listDrafts('u1');
+    expect(summary.durationMs).toBe(4000);
+  });
+
+  it('ignore les clips invalides d’une timeline v2 (id en double, bornes, vitesse)', () => {
+    const raw = JSON.stringify({
+      v: 2,
+      id: 'a',
+      mode: 'video',
+      source: { name: 's.mp4', type: 'video', durationMs: 6000 },
+      timeline: [
+        { id: 'x', kind: 'video', file: { name: 's.mp4', type: 'video' }, sourceDurationMs: 6000, startMs: 0, endMs: 3000, speed: 7 },
+        { id: 'x', kind: 'video', file: { name: 's.mp4', type: 'video' }, sourceDurationMs: 6000, startMs: 0, endMs: 3000, speed: 1 },
+        { id: 'y', kind: 'video', file: { name: 's.mp4', type: 'video' }, sourceDurationMs: 6000, startMs: 4000, endMs: 3000, speed: 1 },
+        { id: 'z', kind: 'image', file: { name: '../p.jpg', type: 'image' }, startMs: 0, endMs: 3000, speed: 1 },
+        { id: 'p', kind: 'image', file: { name: 'p.jpg', type: 'image' }, startMs: 0, endMs: 3000, speed: 2 },
+      ],
+    });
+    const res = parseDraftRecord(raw, 'a');
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.record.timeline?.map((c) => [c.id, c.speed])).toEqual([
+      ['x', 1],
+      ['p', 1],
+    ]);
   });
 });

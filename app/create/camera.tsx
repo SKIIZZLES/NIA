@@ -164,6 +164,9 @@ function CameraScreen() {
     captureMedia,
     pickMedia,
     isLeaveGuardReleased,
+    timelineMode,
+    timeline,
+    applyCapturedClips,
   } = useCreateDraft();
   const isPhoto = mode === 'photo';
   const draftCount = useDraftCount();
@@ -212,6 +215,11 @@ function CameraScreen() {
   const composerRun = composer.run;
   const mediaUriRef = useRef<string | null>(null);
   mediaUriRef.current = (sourceMedia ?? media)?.uri ?? null;
+  /** Éditeur V1 : fichiers utilisés par la timeline (à ne pas supprimer). */
+  const timelineRef = useRef(timeline);
+  timelineRef.current = timeline;
+  /** Éditeur V1 : segments déjà confiés à la timeline, dans l'ordre. */
+  const sentSegmentsRef = useRef<{ ids: string[]; key: string } | null>(null);
 
   /** Marque un enregistrement dont le résultat doit être jeté (abandon). */
   const abandonRef = useRef(false);
@@ -244,7 +252,9 @@ function CameraScreen() {
 
   /** Supprime un fichier de segment, sauf s'il est devenu le média du brouillon. */
   const dropSegmentFile = useCallback((uri: string) => {
-    if (uri && uri !== mediaUriRef.current) deleteCachedFile(uri);
+    if (!uri || uri === mediaUriRef.current) return;
+    if (timelineRef.current?.some((c) => c.uri === uri)) return;
+    deleteCachedFile(uri);
   }, []);
 
   const clearStopTimers = useCallback(() => {
@@ -479,6 +489,32 @@ function CameraScreen() {
     async (list: Segment[]) => {
       if (list.length === 0 || assembling) return;
       const key = segmentsKey(list);
+      if (timelineMode) {
+        // Éditeur V1 : chaque segment devient un clip, sans assemblage (ni
+        // ré-encodage : retournement de caméra compris, l'export s'en charge).
+        const sent = sentSegmentsRef.current;
+        const current = timelineRef.current;
+        const stillThere =
+          !!sent && !!current?.length && current.some((c) => list.some((sg) => sg.uri === c.uri));
+        if (sent && stillThere && sent.key === key) {
+          router.push('/create/edit');
+          return;
+        }
+        // Des segments ajoutés après un passage à l'édition : ajoutés en fin
+        // de montage (découpes et réglages déjà faits conservés).
+        const grows =
+          !!sent &&
+          stillThere &&
+          sent.ids.length < list.length &&
+          sent.ids.every((id, i) => list[i]?.id === id);
+        const fresh = grows && sent ? list.slice(sent.ids.length) : list;
+        const accepted = applyCapturedClips(
+          fresh.map((sg) => ({ uri: sg.uri, durationMs: sg.durationMs, size: sg.size })),
+          { append: grows },
+        );
+        if (accepted) sentSegmentsRef.current = { ids: list.map((sg) => sg.id), key };
+        return;
+      }
       const last = lastConcatRef.current;
       if (last && last.key === key && mediaUriRef.current === last.uri) {
         router.push('/create/edit');
@@ -554,7 +590,7 @@ function CameraScreen() {
       }
       setAssembling(false);
     },
-    [assembling, router, applyCapturedVideo, t, composerRun],
+    [assembling, router, applyCapturedVideo, t, composerRun, timelineMode, applyCapturedClips],
   );
 
   const record = useCallback(async () => {

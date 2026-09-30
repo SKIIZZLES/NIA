@@ -172,6 +172,50 @@ describe('buildPublishComposition', () => {
   });
 });
 
+describe('buildPublishComposition — montage (V1)', () => {
+  const base = {
+    sourceUri: 'file:///cache/a.mp4',
+    sourceDurationMs: 10_000,
+    trim: { startMs: 1_000, endMs: 2_000 },
+    speed: 2,
+    soundUri: null,
+    soundOffsetMs: 0,
+    soundVolume: 1,
+    originalVolume: 0.5,
+    outputPath: '/cache/out.mp4',
+  };
+  const clips = [
+    { uri: 'file:///cache/a.mp4', startMs: 0, endMs: 6_000, speed: 2 },
+    { uri: 'file:///cache/p.jpg', startMs: 0, endMs: 3_000, speed: 1, image: true, mimeType: 'image/jpeg' },
+    { uri: 'file:///cache/b.mp4', startMs: 1_000, endMs: 3_000, speed: 0.5 },
+  ];
+
+  it('les clips remplacent la source ; durée = somme des clips', () => {
+    const { composition, expectedDurationMs } = buildPublishComposition({ ...base, clips });
+    expect(composition.clips).toEqual(clips);
+    expect(expectedDurationMs).toBe(3_000 + 3_000 + 4_000);
+    expect(composition.output.videoBitrate).toBe(videoBitrateFor(10_000));
+  });
+
+  it('cadre fixe dès qu’il y a plusieurs clips ou une photo', () => {
+    expect(buildPublishComposition({ ...base, clips }).composition.output.fixedCanvas).toBe(true);
+    expect(buildPublishComposition({ ...base, clips: [clips[1]] }).composition.output.fixedCanvas).toBe(true);
+    // Un seul clip vidéo garde son format (comme P0).
+    expect(buildPublishComposition({ ...base, clips: [clips[0]] }).composition.output.fixedCanvas).toBeUndefined();
+    expect(buildPublishComposition(base).composition.output.fixedCanvas).toBeUndefined();
+  });
+
+  it('le volume original s’applique même sans son ajouté', () => {
+    expect(buildPublishComposition({ ...base, clips }).composition.originalVolume).toBe(0.5);
+    expect(buildPublishComposition(base).composition.originalVolume).toBe(1);
+  });
+
+  it('liste vide : repli sur la source unique', () => {
+    const { composition } = buildPublishComposition({ ...base, clips: [] });
+    expect(composition.clips).toEqual([{ uri: base.sourceUri, startMs: 1_000, endMs: 2_000, speed: 2 }]);
+  });
+});
+
 describe('buildSegmentsComposition', () => {
   it('assemble les segments dans l’ordre, en qualité haute, sans son ajouté', () => {
     const c = buildSegmentsComposition([{ uri: 'file:///a.mp4' }, { uri: 'file:///b.mp4' }], '/cache/seg.mp4');

@@ -41,11 +41,12 @@ import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /**
- * NIA — export vidéo sur l'appareil (phase P0 de l'éditeur).
+ * NIA — export vidéo sur l'appareil (éditeur P0, montage V1).
  *
- * Reçoit une composition JSON (clips avec début / fin / vitesse, son ajouté,
- * volumes) et produit UN fichier MP4 : H.264 (petit côté 720 px, 30 i/s au
- * plus), AAC, débit fixé par l'appelant pour tenir sous le plafond d'envoi.
+ * Reçoit une composition JSON (clips vidéo avec début / fin / vitesse,
+ * photos fixes en V1, son ajouté, volumes) et produit UN fichier MP4 : H.264
+ * (petit côté 720 px, 30 i/s au plus), AAC, débit fixé par l'appelant pour
+ * tenir sous le plafond d'envoi.
  * Media3 Transformer 1.9 ; le muxer Media3 (InAppMp4Muxer) place le moov en
  * tête quand il tient dans l'espace réservé (400 Ko, soit bien plus que ce
  * que demandent 3 min) : le résultat « faststart » est vérifié et renvoyé.
@@ -155,7 +156,7 @@ class NiaComposerModule : Module() {
           return@finish
         }
         val durationMs =
-          if (exportResult.durationMs > 0) exportResult.durationMs else probeDurationMs(file.absolutePath) ?: 0L
+          probeDurationMs(file.absolutePath) ?: exportResult.approximateDurationMs.takeIf { it > 0 } ?: 0L
         current.promise.resolve(
           mapOf(
             "uri" to Uri.fromFile(file).toString(),
@@ -228,7 +229,15 @@ class NiaComposerModule : Module() {
 
   // --- Composition ---------------------------------------------------------
 
-  private data class Clip(val uri: String, val startMs: Long, val endMs: Long?, val speed: Float)
+  /** `image` (V1) : photo fixe affichée endMs − startMs ms, sans son ni vitesse. */
+  private data class Clip(
+    val uri: String,
+    val startMs: Long,
+    val endMs: Long?,
+    val speed: Float,
+    val image: Boolean,
+    val mimeType: String?,
+  )
 
   private data class Audio(val uri: String, val offsetMs: Long, val volume: Float)
 
@@ -241,6 +250,7 @@ class NiaComposerModule : Module() {
     val maxWidth: Int,
     val maxHeight: Int,
     val fps: Float,
+    val fixedCanvas: Boolean,
     val videoBitrate: Int,
     val audioBitrate: Int,
   )
@@ -255,7 +265,14 @@ class NiaComposerModule : Module() {
       val start = max(0L, c.optLong("startMs", 0L))
       val end = if (c.isNull("endMs")) null else c.optLong("endMs", -1L).takeIf { it > start }
       val speed = c.optDouble("speed", 1.0).toFloat().coerceIn(MIN_SPEED, MAX_SPEED)
-      Clip(c.getString("uri"), start, end, speed)
+      val image = c.optBoolean("image", false)
+      val mime = if (c.isNull("mimeType")) null else c.optString("mimeType", "").takeIf { it.startsWith("image/") }
+      if (image) {
+        require(end != null && end - start in MIN_STILL_MS..MAX_STILL_MS) { "image clip: duration expected" }
+        Clip(c.getString("uri"), 0L, end - start, 1f, true, mime ?: "image/jpeg")
+      } else {
+        Clip(c.getString("uri"), start, end, speed, false, null)
+      }
     }
     val audio = if (o.isNull("audio") || !o.has("audio")) null else o.getJSONObject("audio").let { a ->
       Audio(
@@ -276,20 +293,43 @@ class NiaComposerModule : Module() {
       maxWidth = out.optInt("maxWidth", 720),
       maxHeight = out.optInt("maxHeight", 1280),
       fps = out.optDouble("fps", 30.0).toFloat().coerceIn(1f, 60f),
+      // Une photo en tête n'a pas de format vidéo à suivre : cadre fixe.
+      fixedCanvas = out.optBoolean("fixedCanvas", false) || clips[0].image,
       videoBitrate = out.optInt("videoBitrate", 2_000_000).coerceIn(200_000, 20_000_000),
       audioBitrate = out.optInt("audioBitrate", 128_000).coerceIn(32_000, 320_000),
     )
   }
 
   private fun buildComposition(r: Request): Built {
-    // Taille de sortie : format (après rotation) du premier clip, petit côté
-    // ramené à shortSide, dans une boîte maxWidth × maxHeight (orientée comme
-    // le clip). Un clip d'un autre format est inscrit dans ce cadre.
-    val first = probeVideo(r.clips[0].uri) ?: throw IllegalArgumentException("Unreadable video")
-    val (outW, outH) = outputSize(first.width, first.height, r.shortSide, r.maxWidth, r.maxHeight)
+    // Taille de sortie (P0) : format (après rotation) du premier clip, petit
+    // côté ramené à shortSide, dans une boîte maxWidth × maxHeight (orientée
+    // comme le clip). V1 (montage) : cadre fixe maxWidth × maxHeight. Un clip
+    // d'un autre format est inscrit dans ce cadre (bandes noires).
+    val (outW, outH) = if (r.fixedCanvas) {
+      Pair(max(2, even(r.maxWidth)), max(2, even(r.maxHeight)))
+    } else {
+      val first = probeVideo(r.clips[0].uri) ?: throw IllegalArgumentException("Unreadable video")
+      outputSize(first.width, first.height, r.shortSide, r.maxWidth, r.maxHeight)
+    }
+    val present = Presentation.createForWidthAndHeight(outW, outH, Presentation.LAYOUT_SCALE_TO_FIT)
 
     var totalOutMs = 0.0
     val items = r.clips.map { clip ->
+      if (clip.image) {
+        // Photo fixe : Media3 la répète à `fps` images/s pendant sa durée ;
+        // la séquence (pistes audio + vidéo) comble le son par du silence.
+        val durationMs = clip.endMs ?: STILL_DEFAULT_MS
+        totalOutMs += durationMs.toDouble()
+        val item = MediaItem.Builder()
+          .setUri(Uri.parse(clip.uri))
+          .setMimeType(clip.mimeType ?: MimeTypes.IMAGE_JPEG)
+          .setImageDurationMs(durationMs)
+          .build()
+        return@map EditedMediaItem.Builder(item)
+          .setFrameRate(r.fps.roundToInt().coerceAtLeast(1))
+          .setEffects(Effects(emptyList(), listOf<Effect>(present)))
+          .build()
+      }
       val info = probeVideo(clip.uri) ?: throw IllegalArgumentException("Unreadable video: clip")
       val srcEnd = info.durationMs.takeIf { it > 0 }
       val end = when {
@@ -311,7 +351,7 @@ class NiaComposerModule : Module() {
         )
         .build()
       val videoEffects: List<Effect> = listOf(
-        Presentation.createForWidthAndHeight(outW, outH, Presentation.LAYOUT_SCALE_TO_FIT),
+        present,
         FrameDropEffect.createDefaultFrameDropEffect(r.fps),
       )
       val audioProcessors: List<AudioProcessor> =
@@ -448,6 +488,9 @@ class NiaComposerModule : Module() {
     private const val MIN_CLIP_MS = 100L
     private const val MIN_SPEED = 0.25f
     private const val MAX_SPEED = 4f
+    private const val MIN_STILL_MS = 100L
+    private const val MAX_STILL_MS = 60_000L
+    private const val STILL_DEFAULT_MS = 3_000L
 
     /** Dimensions paires, petit côté ≤ shortSide, dans la boîte maxW × maxH orientée comme la source. */
     fun outputSize(srcW: Int, srcH: Int, shortSide: Int, maxW: Int, maxH: Int): Pair<Int, Int> {
@@ -465,6 +508,6 @@ class NiaComposerModule : Module() {
       return Pair(max(2, w), max(2, h))
     }
 
-    private fun even(v: Int): Int = if (v % 2 == 0) v else v - 1
+    fun even(v: Int): Int = if (v % 2 == 0) v else v - 1
   }
 }

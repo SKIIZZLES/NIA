@@ -8,9 +8,17 @@
  *   dans `Paths.document/drafts/<id>/` : le cache de l'app peut être vidé par
  *   le système, le dossier documents non ;
  * - la description du brouillon (réglages, légende, options) est un JSON
- *   versionné (`v: 1`) sous la clé AsyncStorage `nia.drafts.item.<id>`. Les
- *   clés sont retrouvées par préfixe (getAllKeys) : pas d'index à tenir à jour,
- *   donc pas d'index désynchronisé.
+ *   versionné sous la clé AsyncStorage `nia.drafts.item.<id>`. Les clés sont
+ *   retrouvées par préfixe (getAllKeys) : pas d'index à tenir à jour, donc pas
+ *   d'index désynchronisé.
+ *
+ * Versions :
+ * - v1 (S6) : un média source (+ découpe, vitesse) ;
+ * - v2 (éditeur V1, montage) : v1 + `timeline`, la liste des clips (fichier,
+ *   extrait, vitesse ; photos fixes). Un brouillon v1 est migré à la lecture
+ *   (un clip = la source avec sa découpe et sa vitesse) et réécrit en v2 au
+ *   prochain enregistrement. Une app plus ancienne ignore un v2 sans
+ *   l'effacer (« format plus récent »).
  *
  * Les chemins de fichiers sont enregistrés RELATIFS au dossier du brouillon :
  * sur iOS, le chemin absolu du conteneur de l'app change à chaque mise à jour.
@@ -27,7 +35,9 @@ import type { SoundItem } from '@/lib/sounds';
 import { sanitizeOverlayDoc, type OverlayDoc } from '@/lib/overlays';
 import { DEFAULT_PUBLISH_OPTIONS, type PublishOptions } from '@/lib/publishOptions';
 
-export const DRAFT_VERSION = 1 as const;
+export const DRAFT_VERSION = 2 as const;
+/** Plus ancien format relu (et migré). */
+export const MIN_DRAFT_VERSION = 1;
 export const DRAFT_KEY_PREFIX = 'nia.drafts.item.';
 export const DRAFTS_DIR_NAME = 'drafts';
 
@@ -53,7 +63,21 @@ export type DraftFileRef = Omit<DraftMedia, 'uri'> & {
   origin: string | null;
 };
 
-type FileRole = 'source' | 'trimmed' | 'cover' | 'thumb';
+type FileRole = 'source' | 'trimmed' | 'cover' | 'thumb' | 'clip';
+
+/** Clip de la timeline (V1) tel que l'éditeur le confie au stockage. */
+export type DraftClipInput = {
+  id: string;
+  kind: 'video' | 'image';
+  media: DraftMedia;
+  sourceDurationMs: number;
+  startMs: number;
+  endMs: number;
+  speed: number;
+};
+
+/** Clip stocké : fichier relatif au dossier du brouillon. */
+export type DraftClipRef = Omit<DraftClipInput, 'media'> & { file: DraftFileRef };
 
 /** Ce que l'éditeur confie au stockage. */
 export type DraftInput = {
@@ -77,11 +101,13 @@ export type DraftInput = {
   caption: string;
   category: string | null;
   publishOptions: PublishOptions;
+  /** Montage (V1) : clips dans l'ordre ; absent / null = média unique. */
+  timeline?: DraftClipInput[] | null;
 };
 
-/** Format stocké (v1). */
+/** Format v1 (S6), relu et migré en v2. */
 export type DraftRecordV1 = {
-  v: typeof DRAFT_VERSION;
+  v: 1;
   id: string;
   ownerId: string | null;
   createdAt: number;
@@ -105,13 +131,26 @@ export type DraftRecordV1 = {
   publishOptions: PublishOptions;
 };
 
+/** Format stocké (v2) : v1 + la timeline du montage. */
+export type DraftRecordV2 = Omit<DraftRecordV1, 'v'> & {
+  v: typeof DRAFT_VERSION;
+  timeline: DraftClipRef[] | null;
+};
+
+export type DraftRecord = DraftRecordV2;
+
+/** Clip relu, fichier vérifié et résolu en URI absolue. */
+export type LoadedDraftClip = DraftClipInput;
+
 /** Brouillon relu, fichiers vérifiés et résolus en URI absolues. */
 export type LoadedDraft = {
-  record: DraftRecordV1;
+  record: DraftRecord;
   source: DraftMedia;
   trimmed: DraftMedia | null;
   cover: DraftMedia | null;
   thumbUri: string | null;
+  /** Clips du montage (fichiers présents), null si le brouillon n'en a pas. */
+  timeline: LoadedDraftClip[] | null;
 };
 
 /** Ligne de la liste des brouillons. */
@@ -259,8 +298,75 @@ function parsePublishOptions(v: unknown): PublishOptions {
   };
 }
 
+const CLIP_ID_RE = /^[a-zA-Z0-9_-]{1,40}$/;
+const MAX_DRAFT_CLIPS = 30;
+const CLIP_SPEEDS = [0.3, 0.5, 1, 1.5, 2];
+
+function parseClipRef(v: unknown): DraftClipRef | null {
+  if (!isObj(v)) return null;
+  const file = parseFileRef(v.file);
+  const kind = v.kind === 'image' ? 'image' : v.kind === 'video' ? 'video' : null;
+  if (!file || !kind || typeof v.id !== 'string' || !CLIP_ID_RE.test(v.id)) return null;
+  if (!finite(v.startMs) || !finite(v.endMs) || v.startMs < 0 || v.endMs <= v.startMs) return null;
+  const sourceDurationMs = finite(v.sourceDurationMs) ? Math.round(v.sourceDurationMs) : 0;
+  if (kind === 'video' && (sourceDurationMs <= 0 || v.endMs > sourceDurationMs + 1)) return null;
+  const speed = kind === 'image' ? 1 : CLIP_SPEEDS.includes(v.speed as number) ? (v.speed as number) : 1;
+  return {
+    id: v.id,
+    kind,
+    file,
+    sourceDurationMs,
+    startMs: Math.round(v.startMs),
+    endMs: Math.round(v.endMs),
+    speed,
+  };
+}
+
+function parseTimeline(v: unknown): DraftClipRef[] | null {
+  if (!Array.isArray(v)) return null;
+  const out: DraftClipRef[] = [];
+  const ids = new Set<string>();
+  for (const item of v.slice(0, MAX_DRAFT_CLIPS)) {
+    const clip = parseClipRef(item);
+    if (!clip || ids.has(clip.id)) continue;
+    ids.add(clip.id);
+    out.push(clip);
+  }
+  return out.length ? out : null;
+}
+
+/**
+ * Migration v1 → v2 : une vidéo devient un clip unique (sa sélection de
+ * découpe, ou la découpe appliquée, et sa vitesse). Une photo, ou une vidéo
+ * de durée inconnue, n'a pas de timeline.
+ */
+export function migrateDraftV1(r: DraftRecordV1): DraftRecordV2 {
+  const { v: _v, ...rest } = r;
+  let timeline: DraftClipRef[] | null = null;
+  const dur = r.source.durationMs;
+  if (r.mode === 'video' && r.source.type === 'video' && dur != null && dur > 0) {
+    const range = r.trimSelection ?? r.trimRange;
+    const startMs = range ? Math.min(range.startMs, dur) : 0;
+    const endMs = range ? Math.min(range.endMs, dur) : dur;
+    if (endMs > startMs) {
+      timeline = [
+        {
+          id: 'v1clip',
+          kind: 'video',
+          file: r.source,
+          sourceDurationMs: Math.round(dur),
+          startMs,
+          endMs,
+          speed: CLIP_SPEEDS.includes(r.speed) ? r.speed : 1,
+        },
+      ];
+    }
+  }
+  return { ...rest, v: DRAFT_VERSION, timeline };
+}
+
 export type ParseResult =
-  | { ok: true; record: DraftRecordV1 }
+  | { ok: true; record: DraftRecord }
   /** Format plus récent que cette version de l'app : on n'y touche pas. */
   | { ok: false; reason: 'future' }
   | { ok: false; reason: 'corrupt' };
@@ -276,7 +382,7 @@ export function parseDraftRecord(raw: string | null | undefined, expectedId?: st
   }
   if (!isObj(data)) return { ok: false, reason: 'corrupt' };
   if (finite(data.v) && data.v > DRAFT_VERSION) return { ok: false, reason: 'future' };
-  if (data.v !== DRAFT_VERSION) return { ok: false, reason: 'corrupt' };
+  if (data.v !== 1 && data.v !== DRAFT_VERSION) return { ok: false, reason: 'corrupt' };
   if (typeof data.id !== 'string' || !ID_RE.test(data.id)) return { ok: false, reason: 'corrupt' };
   if (expectedId && data.id !== expectedId) return { ok: false, reason: 'corrupt' };
   const source = parseFileRef(data.source);
@@ -287,10 +393,8 @@ export function parseDraftRecord(raw: string | null | undefined, expectedId?: st
   const updatedAt = finite(data.updatedAt) ? data.updatedAt : createdAt;
   const trimmed = parseFileRef(data.trimmed);
   const trimRange = parseRange(data.trimRange);
-  return {
-    ok: true,
-    record: {
-      v: DRAFT_VERSION,
+  const v1: DraftRecordV1 = {
+      v: 1,
       id: data.id,
       ownerId: strOrNull(data.ownerId),
       createdAt,
@@ -313,8 +417,10 @@ export function parseDraftRecord(raw: string | null | undefined, expectedId?: st
       caption: typeof data.caption === 'string' ? data.caption : '',
       category: strOrNull(data.category),
       publishOptions: parsePublishOptions(data.publishOptions),
-    },
   };
+  if (data.v === 1) return { ok: true, record: migrateDraftV1(v1) };
+  const { v: _v, ...rest } = v1;
+  return { ok: true, record: { ...rest, v: DRAFT_VERSION, timeline: parseTimeline(data.timeline) } };
 }
 
 /**
@@ -340,6 +446,7 @@ export function draftSignature(input: DraftInput): string {
     input.caption,
     input.category,
     input.publishOptions,
+    input.timeline?.map((c) => [c.kind, c.media.uri, c.startMs, c.endMs, c.speed]) ?? null,
   ]);
 }
 
@@ -390,13 +497,23 @@ function resolveRef(id: string, ref: DraftFileRef | null): DraftMedia | null {
  * Vérifie les fichiers d'un enregistrement valide. null si le média source a
  * disparu ; les fichiers secondaires manquants sont simplement oubliés.
  */
-function resolveRecord(record: DraftRecordV1): LoadedDraft | null {
+function resolveRecord(record: DraftRecord): LoadedDraft | null {
   const source = resolveRef(record.id, record.source);
   if (!source) return null;
   const trimmed = resolveRef(record.id, record.trimmed);
   const cover = resolveRef(record.id, record.cover);
   const thumb = resolveRef(record.id, record.thumb);
-  const fixed: DraftRecordV1 = {
+  // Clips dont le fichier a disparu : oubliés, le reste du montage demeure.
+  const clips: LoadedDraftClip[] = [];
+  const keptRefs: DraftClipRef[] = [];
+  for (const ref of record.timeline ?? []) {
+    const media = resolveRef(record.id, ref.file);
+    if (!media) continue;
+    const { file: _f, ...rest } = ref;
+    clips.push({ ...rest, media });
+    keptRefs.push(ref);
+  }
+  const fixed: DraftRecord = {
     ...record,
     trimmed: trimmed ? record.trimmed : null,
     trimRange: trimmed ? record.trimRange : null,
@@ -404,26 +521,46 @@ function resolveRecord(record: DraftRecordV1): LoadedDraft | null {
     trimSelection: trimmed ? record.trimSelection : record.trimSelection ?? record.trimRange,
     cover: cover ? record.cover : null,
     thumb: thumb ? record.thumb : null,
+    timeline: keptRefs.length ? keptRefs : null,
   };
-  return { record: fixed, source, trimmed, cover, thumbUri: thumb?.uri ?? null };
+  return {
+    record: fixed,
+    source,
+    trimmed,
+    cover,
+    thumbUri: thumb?.uri ?? null,
+    timeline: clips.length ? clips : null,
+  };
+}
+
+/** Durée d'un clip relu (vitesse appliquée), en ms. */
+function draftClipDurationMs(c: Pick<DraftClipRef, 'kind' | 'startMs' | 'endMs' | 'speed'>): number {
+  const span = Math.max(0, c.endMs - c.startMs);
+  return Math.round(c.kind === 'image' ? span : span / (c.speed > 0 ? c.speed : 1));
 }
 
 function summarize(d: LoadedDraft): DraftSummary {
   const r = d.record;
-  const isVideo = d.source.type === 'video';
-  const durationMs = !isVideo
-    ? null
-    : d.trimmed?.durationMs ??
-      (r.trimSelection ? r.trimSelection.endMs - r.trimSelection.startMs : d.source.durationMs);
+  const montage = r.mode === 'video' && !!d.timeline?.length;
+  const isVideo = montage || d.source.type === 'video';
+  const durationMs = montage
+    ? (d.timeline ?? []).reduce((sum, c) => sum + draftClipDurationMs(c), 0)
+    : !isVideo
+      ? null
+      : d.trimmed?.durationMs ??
+        (r.trimSelection ? r.trimSelection.endMs - r.trimSelection.startMs : d.source.durationMs);
   return {
     id: r.id,
     updatedAt: r.updatedAt,
     createdAt: r.createdAt,
     mode: r.mode,
-    mediaType: d.source.type,
+    mediaType: montage ? 'video' : d.source.type,
     caption: r.caption,
     durationMs,
-    thumbUri: d.cover?.uri ?? d.thumbUri ?? (isVideo ? null : d.source.uri),
+    thumbUri:
+      d.cover?.uri ??
+      d.thumbUri ??
+      (!isVideo ? d.source.uri : d.source.type === 'image' ? d.source.uri : null),
   };
 }
 
@@ -525,7 +662,7 @@ export function deleteDraft(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Écriture
 
-async function readRecord(id: string): Promise<DraftRecordV1 | null> {
+async function readRecord(id: string): Promise<DraftRecord | null> {
   try {
     const parsed = parseDraftRecord(await AsyncStorage.getItem(draftKey(id)), id);
     return parsed.ok ? parsed.record : null;
@@ -583,9 +720,9 @@ async function placeFile(
 }
 
 /** Retire les fichiers du dossier que l'enregistrement ne référence plus. */
-function collectGarbage(dir: Directory, record: DraftRecordV1): void {
+function collectGarbage(dir: Directory, record: DraftRecord): void {
   const used = new Set(
-    [record.source, record.trimmed, record.cover, record.thumb]
+    [record.source, record.trimmed, record.cover, record.thumb, ...(record.timeline ?? []).map((c) => c.file)]
       .filter((r): r is DraftFileRef => !!r)
       .map((r) => r.name),
   );
@@ -616,7 +753,7 @@ export type SaveDraftOptions = {
  * d'écrire la description, et les anciens ne sont supprimés qu'APRÈS : une
  * coupure en plein enregistrement laisse l'ancienne version intacte.
  */
-export function saveDraft(input: DraftInput, opts: SaveDraftOptions): Promise<DraftRecordV1> {
+export function saveDraft(input: DraftInput, opts: SaveDraftOptions): Promise<DraftRecord> {
   if (!isDraftStorageAvailable()) return Promise.reject(new Error('drafts_unavailable'));
   return serialized(async () => {
     const id = opts.id && ID_RE.test(opts.id) ? opts.id : makeDraftId();
@@ -655,7 +792,44 @@ export function saveDraft(input: DraftInput, opts: SaveDraftOptions): Promise<Dr
         : null;
       const thumb = await optional('thumb', thumbMedia, previous?.thumb ?? null);
 
-      const record: DraftRecordV1 = {
+      // Montage : un fichier partagé par plusieurs clips (découpage,
+      // duplication) n'est copié qu'une fois ; la source en fait partie.
+      let timeline: DraftClipRef[] | null = null;
+      if (input.timeline?.length) {
+        const placed = new Map<string, DraftFileRef>([[input.source.uri, source]]);
+        const previousByOrigin = new Map<string, DraftFileRef>();
+        for (const ref of [previous?.source, ...(previous?.timeline ?? []).map((c) => c.file)]) {
+          if (ref?.origin) previousByOrigin.set(ref.origin, ref);
+        }
+        timeline = [];
+        let n = 0;
+        for (const clip of input.timeline.slice(0, MAX_DRAFT_CLIPS)) {
+          let file = placed.get(clip.media.uri);
+          if (!file) {
+            // Un clip manquant rendrait le montage faux : on échoue.
+            file = await placeFile(
+              dir,
+              id,
+              'clip',
+              clip.media,
+              previousByOrigin.get(clip.media.uri) ?? null,
+              `${stamp}-${(n++).toString(36)}`,
+            );
+            placed.set(clip.media.uri, file);
+          }
+          timeline.push({
+            id: clip.id,
+            kind: clip.kind,
+            file,
+            sourceDurationMs: clip.sourceDurationMs,
+            startMs: clip.startMs,
+            endMs: clip.endMs,
+            speed: clip.kind === 'image' ? 1 : clip.speed,
+          });
+        }
+      }
+
+      const record: DraftRecord = {
         v: DRAFT_VERSION,
         id,
         ownerId: opts.ownerId ?? null,
@@ -678,6 +852,7 @@ export function saveDraft(input: DraftInput, opts: SaveDraftOptions): Promise<Dr
         caption: input.caption,
         category: input.category,
         publishOptions: input.publishOptions,
+        timeline,
       };
       await AsyncStorage.setItem(draftKey(id), JSON.stringify(record));
       collectGarbage(dir, record);

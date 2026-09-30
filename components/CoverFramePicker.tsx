@@ -6,7 +6,7 @@
  * (generateThumbnailsAsync d'expo-video ne produit pas de fichier et demande
  * expo-image pour l'affichage.) La galerie reste proposée à côté.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
@@ -21,13 +21,24 @@ type Props = {
   durationMs: number | null;
   selectedUri: string | null;
   onPick: (uri: string) => void;
+  /**
+   * Éditeur V1 (montage) : `durationMs` est celle de la timeline et chaque
+   * instant désigne un clip (fichier + instant). Les photos sont sautées :
+   * la galerie reste là pour elles.
+   */
+  frameSource?: (ms: number) => { uri: string; atMs: number; image: boolean } | null;
+  frameKey?: string;
 };
 
-export function CoverFramePicker({ uri, durationMs, selectedUri, onPick }: Props) {
+export function CoverFramePicker({ uri, durationMs, selectedUri, onPick, frameSource, frameKey }: Props) {
   const colors = useColors();
   const { t } = useI18n();
   const [frames, setFrames] = useState<{ time: number; uri: string }[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const frameSourceRef = useRef(frameSource);
+  frameSourceRef.current = frameSource;
+  const hasFrameSource = !!frameSource;
 
   useEffect(() => {
     if (!uri || !durationMs || durationMs <= 0) return;
@@ -36,8 +47,10 @@ export function CoverFramePicker({ uri, durationMs, selectedUri, onPick }: Props
     setLoading(true);
     void (async () => {
       for (const time of frameTimes(durationMs, COUNT)) {
+        const src = hasFrameSource ? frameSourceRef.current?.(time) ?? null : null;
+        if (hasFrameSource && (!src || src.image)) continue;
         // 480 px : assez net pour une couverture, léger à envoyer.
-        const f = await videoFrameAt(uri, time, 480);
+        const f = await videoFrameAt(src ? src.uri : uri, src ? src.atMs : time, 480);
         if (!alive) return;
         if (f) setFrames((prev) => [...prev, { time, uri: f }]);
       }
@@ -46,7 +59,7 @@ export function CoverFramePicker({ uri, durationMs, selectedUri, onPick }: Props
     return () => {
       alive = false;
     };
-  }, [uri, durationMs]);
+  }, [uri, durationMs, hasFrameSource, frameKey]);
 
   if (!durationMs) return null;
 
