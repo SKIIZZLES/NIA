@@ -18,6 +18,8 @@ export type PublishOptions = {
   allowComments: boolean;
   allowReuse: boolean;
   aiGenerated: boolean;
+  /** 020 : contenu 18+ (adultes ayant choisi de voir ces contenus). */
+  isMature: boolean;
   altText: string;
   locationText: string;
 };
@@ -27,6 +29,7 @@ export const DEFAULT_PUBLISH_OPTIONS: PublishOptions = {
   allowComments: true,
   allowReuse: true,
   aiGenerated: false,
+  isMature: false,
   altText: '',
   locationText: '',
 };
@@ -49,12 +52,18 @@ function clip(s: string, max: number): string | null {
   return chars.length > max ? chars.slice(0, max).join('') : t;
 }
 
-/** Champs 016 de l'insert `videos`. */
+/**
+ * Champs 016 de l'insert `videos`, plus `is_mature` (020) seulement s'il est
+ * choisi : sans 020, une publication ordinaire n'envoie pas la colonne et
+ * passe ; une publication 18+ échoue avec un message clair (jamais publiée
+ * sans le marquage).
+ */
 export function publishOptionsPayload(
   opts: PublishOptions,
   editMeta: EditMeta | null,
-): Record<(typeof PUBLISH_OPTION_COLUMNS)[number], unknown> {
+): Record<(typeof PUBLISH_OPTION_COLUMNS)[number], unknown> & { is_mature?: true } {
   return {
+    ...(opts.isMature ? { is_mature: true as const } : {}),
     visibility: opts.visibility,
     allow_comments: opts.allowComments,
     // Une vidéo non publique n'est jamais republiable (garde-fou 016 aussi).
@@ -68,7 +77,7 @@ export function publishOptionsPayload(
 
 /** Le choix restreint la diffusion : impossible à honorer sans 016. */
 export function hasRestrictiveOptions(opts: PublishOptions): boolean {
-  return opts.visibility !== 'public' || !opts.allowComments || !opts.allowReuse;
+  return opts.visibility !== 'public' || !opts.allowComments || !opts.allowReuse || opts.isMature;
 }
 
 /**
@@ -90,8 +99,10 @@ export function isMissingPublishOptionsColumn(
 export function canRepostItem(item: {
   visibility?: VideoVisibility;
   allowReuse?: boolean;
+  /** 020 : un contenu 18+ n'est jamais republiable (garde-fou serveur aussi). */
+  isMature?: boolean;
 }): boolean {
-  return (item.visibility ?? 'public') === 'public' && item.allowReuse !== false;
+  return (item.visibility ?? 'public') === 'public' && item.allowReuse !== false && item.isMature !== true;
 }
 
 /** Remplace le mot en cours (#… ou @…) par la suggestion choisie. */

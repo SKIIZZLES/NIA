@@ -12,10 +12,14 @@
  * est une pile : pousser /create/preview laisse /create/index monté, et deux
  * décodages du même fichier tourneraient en parallèle. Ce composant n'est
  * rendu que dans cette pile, donc le contexte de navigation est toujours là.
+ *
+ * `tapToPause` : toucher la vidéo la met en pause / la relance, avec une
+ * icône lecture sur voile sombre (`mediaScrim`) tant qu'elle est en pause.
  */
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  Pressable,
   StyleSheet,
   View,
   type ImageStyle,
@@ -24,6 +28,9 @@ import {
 } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
+import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '@/context/ThemeContext';
+import { useI18n } from '@/context/I18nContext';
 import {
   getFilterById,
   getFilterOverlayStyle,
@@ -53,6 +60,8 @@ type Props = {
   playbackRate?: number;
   /** Calques texte / stickers du brouillon (S4), au-dessus du filtre. */
   overlays?: OverlayDoc | null;
+  /** Toucher la vidéo : pause / lecture, icône lecture en pause. */
+  tapToPause?: boolean;
 };
 
 export function FilteredMediaPreview({
@@ -68,7 +77,11 @@ export function FilteredMediaPreview({
   sound = null,
   playbackRate = 1,
   overlays = null,
+  tapToPause = false,
 }: Props) {
+  const colors = useColors();
+  const { t } = useI18n();
+  const [userPaused, setUserPaused] = useState(false);
   const isVideo =
     mediaType === 'video' ||
     ((mediaType == null || mediaType === 'unknown') && isLikelyVideoUrl(uri));
@@ -84,13 +97,16 @@ export function FilteredMediaPreview({
   // expo-router réexporte useIsFocused depuis sa copie de React Navigation
   // (@react-navigation/native n'est pas une dépendance du projet).
   const isFocused = useIsFocused();
+  // Quitter l'écran met en pause ; la pause voulue par l'utilisateur tient
+  // jusqu'à ce qu'il retouche la vidéo.
+  const playing = isFocused && !(tapToPause && userPaused);
 
   // Suspendre, pas détruire : le même lecteur reprend là où il s'est arrêté
   // quand l'écran revient au premier plan. Le brouillon n'est pas touché.
   useEffect(() => {
     if (!isVideo) return;
     try {
-      if (isFocused) {
+      if (playing) {
         player.play();
       } else {
         player.pause();
@@ -98,7 +114,7 @@ export function FilteredMediaPreview({
     } catch {
       // aperçu non lisible : la première frame reste affichée
     }
-  }, [isVideo, isFocused, player]);
+  }, [isVideo, playing, player]);
 
   useEffect(() => {
     if (!isVideo) return;
@@ -124,7 +140,7 @@ export function FilteredMediaPreview({
         <SyncedSound
           url={sound.url}
           video={isVideo ? player : null}
-          active={isFocused}
+          active={isVideo ? playing : isFocused}
           offsetMs={sound.offsetMs ?? 0}
           volume={sound.volume ?? 1}
           rate={isVideo ? playbackRate : 1}
@@ -157,6 +173,22 @@ export function FilteredMediaPreview({
         />
       ) : null}
       <OverlayLayer doc={overlays} player={isVideo ? player : null} timeMs={isVideo ? undefined : null} />
+      {isVideo && tapToPause ? (
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => setUserPaused((p) => !p)}
+          accessibilityRole="button"
+          accessibilityLabel={userPaused ? t('feed.play') : t('feed.pause')}
+        >
+          {userPaused ? (
+            <View style={styles.playBadge} pointerEvents="none">
+              <View style={[styles.playCircle, { backgroundColor: colors.mediaScrim }]}>
+                <Ionicons name="play" size={30} color={colors.onMedia} style={{ marginLeft: 3 }} />
+              </View>
+            </View>
+          ) : null}
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -170,5 +202,17 @@ const styles = StyleSheet.create({
   media: {
     width: '100%',
     height: '100%',
+  },
+  playBadge: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

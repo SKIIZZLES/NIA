@@ -65,7 +65,7 @@ export function CreateStepHeader({ step, title, disabled = false }: Props) {
           }
           disabled={disabled}
           hitSlop={10}
-          style={disabled ? { opacity: 0.4 } : null}
+          style={disabled ? { opacity: 0.55 } : null}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
           accessibilityState={{ disabled }}

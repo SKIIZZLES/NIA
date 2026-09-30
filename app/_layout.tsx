@@ -12,6 +12,8 @@ import {
   PlusJakartaSans_500Medium,
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import { AgeGate } from '@/components/AgeGate';
+import { AgeProvider } from '@/context/AgeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { FeedProvider } from '@/context/FeedContext';
 import { I18nProvider } from '@/context/I18nContext';
@@ -93,6 +95,7 @@ function RootNavigator() {
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
         <Stack.Screen name="appearance" options={{ headerShown: false }} />
         <Stack.Screen name="blocked" options={{ headerShown: false }} />
+        <Stack.Screen name="content-settings" options={{ headerShown: false }} />
         <Stack.Screen name="sound/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="events" options={{ headerShown: false }} />
         <Stack.Screen name="series" options={{ headerShown: false }} />
@@ -100,6 +103,7 @@ function RootNavigator() {
         <Stack.Screen name="live" options={{ headerShown: false }} />
         <Stack.Screen name="video/[id]" options={{ headerShown: false }} />
       </Stack>
+      <AgeGate />
     </>
   );
 }
@@ -147,9 +151,11 @@ export default function RootLayout() {
       <ThemeProvider>
         <I18nProvider>
           <AuthProvider>
-            <FeedProvider>
-              <RootNavigator />
-            </FeedProvider>
+            <AgeProvider>
+              <FeedProvider>
+                <RootNavigator />
+              </FeedProvider>
+            </AgeProvider>
           </AuthProvider>
         </I18nProvider>
       </ThemeProvider>

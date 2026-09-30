@@ -202,7 +202,7 @@ export default function EventsIndexScreen() {
           paddingHorizontal: 8,
           paddingVertical: 3,
           borderRadius: Radii.pill,
-          backgroundColor: 'rgba(209, 127, 42, 0.16)',
+          backgroundColor: colors.or + '29',
           borderWidth: 1,
           borderColor: colors.border,
           marginTop: 4,

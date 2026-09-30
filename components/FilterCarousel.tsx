@@ -48,7 +48,7 @@ export function FilterCarousel({ selectedId, onSelect, compact }: Props) {
           marginBottom: 6,
         },
         hint: {
-          color: colors.textMuted,
+          color: colors.textSecondary,
           fontFamily: Fonts.regular,
           fontSize: 12,
           marginBottom: Spacing.sm,
@@ -72,15 +72,19 @@ export function FilterCarousel({ selectedId, onSelect, compact }: Props) {
         },
         catChipOn: {
           borderColor: colors.or,
-          backgroundColor: 'rgba(209, 127, 42, 0.18)',
+          // Teinte de l'accent du thème (Clair a un ocre plus foncé).
+          backgroundColor: colors.or + '2E',
         },
         catText: {
-          color: colors.textSecondary,
+          color: colors.textPrimary,
           fontFamily: Fonts.medium,
           fontSize: 12,
         },
+        // Puce active : contour et teinte ocre, libellé en texte principal
+        // (l'ocre sur sa propre teinte tombait sous 4.5:1).
         catTextOn: {
-          color: colors.or,
+          color: colors.textPrimary,
+          fontFamily: Fonts.bold,
         },
         filterScroll: {
           marginTop: 4,
@@ -136,9 +140,9 @@ export function FilterCarousel({ selectedId, onSelect, compact }: Props) {
         },
         chipName: {
           marginTop: 6,
-          color: colors.textSecondary,
+          color: colors.textPrimary,
           fontFamily: Fonts.medium,
-          fontSize: 10,
+          fontSize: 11,
           textAlign: 'center',
         },
         chipNameOn: {

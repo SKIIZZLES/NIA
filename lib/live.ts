@@ -12,6 +12,8 @@ import {
 } from '@/constants/liveCategories';
 import type { LiveStreamRow, ProfileRow } from '@/types/database';
 import { filterLiveStrip } from '@/lib/liveGo';
+import { matureError, matureErrorKey } from '@/lib/age';
+import { t } from '@/lib/i18n';
 
 export type LiveStreamStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
 
@@ -46,6 +48,8 @@ export type LiveStreamItem = {
   hostAvatarUrl?: string;
   /** 017/018 : « held » = en cours de vérification (visible du seul créateur). */
   moderationState?: 'visible' | 'held' | 'removed';
+  /** 020 : live 18+ (adultes ayant choisi de voir ces contenus). */
+  isMature?: boolean;
 };
 
 export const LIVE_PROFILE_SELECT =
@@ -108,6 +112,7 @@ function mapLiveRow(row: LiveStreamWithHost): LiveStreamItem {
     createdAt: row.created_at,
     hostHandle: `@${username}`,
     hostAvatarUrl: row.profiles?.avatar_url || undefined,
+    isMature: row.is_mature === true ? true : undefined,
     moderationState: liveModerationState(row),
   };
 }
@@ -235,6 +240,8 @@ export type CreateLiveStreamInput = {
   description?: string | null;
   category: LiveCategoryId;
   visibility?: LiveVisibility;
+  /** 020 : envoyé seulement s'il est choisi (sans 020, un live ordinaire passe). */
+  isMature?: boolean;
   scheduledAt: string;
   thumbnailLocalUri?: string | null;
   thumbnailMimeType?: string | null;
@@ -321,6 +328,7 @@ export async function createScheduledStream(
     viewer_count: 0,
     provider: null,
     provider_stream_id: null,
+    ...(input.isMature ? { is_mature: true } : {}),
   };
 
   const { data: inserted, error: insErr } = await sb
@@ -329,7 +337,7 @@ export async function createScheduledStream(
     .select(LIVE_PROFILE_SELECT)
     .single();
 
-  if (insErr) throw insErr;
+  if (insErr) throw liveInsertError(insErr, input.isMature);
   return mapLiveRow(inserted as unknown as LiveStreamWithHost);
 }
 
@@ -373,7 +381,18 @@ export type CreateInstantLiveInput = {
   title: string;
   visibility: 'public' | 'followers';
   category?: LiveCategoryId;
+  /** 020 : live 18+ (adulte déclaré uniquement ; le serveur revérifie). */
+  isMature?: boolean;
 };
+
+/** 020 : erreur d'insertion lisible si le marquage 18+ est refusé ou pas encore en base. */
+function liveInsertError(
+  err: { code?: string | null; message?: string | null },
+  isMature: boolean | undefined,
+): unknown {
+  const key = isMature ? matureErrorKey(err) : null;
+  return key ? matureError(t(key)) : err;
+}
 
 /**
  * Direct instantané (L2) : crée la ligne `live_streams` au moment où l'hôte
@@ -403,10 +422,11 @@ export async function createInstantStream(input: CreateInstantLiveInput): Promis
       visibility,
       status: 'scheduled',
       scheduled_at: new Date().toISOString(),
+      ...(input.isMature ? { is_mature: true } : {}),
     } as never)
     .select(LIVE_PROFILE_SELECT)
     .single();
-  if (error) throw error;
+  if (error) throw liveInsertError(error, input.isMature);
   return mapLiveRow(data as unknown as LiveStreamWithHost);
 }
 

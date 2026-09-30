@@ -13,6 +13,7 @@ import {
   ORIGINAL_COLORS,
   THEME_STORAGE_KEY,
   isThemeId,
+  mediaPalette,
   resolveThemeColors,
   type ThemeColors,
   type ThemeId,
@@ -106,4 +107,40 @@ export function useTheme(): ThemeContextValue {
 export function useColors(): ThemeColors {
   const ctx = useContext(ThemeContext);
   return ctx?.colors ?? ORIGINAL_COLORS;
+}
+
+/**
+ * Force une palette pour tout un sous-arbre (`useColors()` la renvoie).
+ * Sert à `MediaChrome` et aux écrans encore dessinés avec les couleurs
+ * statiques de NIA Original (`Colors`) : leurs composants thémés (`Button`)
+ * restent assortis au fond sombre au lieu de suivre Clair.
+ */
+export function PaletteScope({
+  palette,
+  children,
+}: {
+  palette: ThemeColors | ((current: ThemeColors) => ThemeColors);
+  children: ReactNode;
+}) {
+  const ctx = useContext(ThemeContext);
+  const current = ctx?.colors ?? ORIGINAL_COLORS;
+  const colors = typeof palette === 'function' ? palette(current) : palette;
+  const value = useMemo<ThemeContextValue>(
+    () =>
+      ctx
+        ? { ...ctx, colors }
+        : { themeId: 'original', colors, setTheme: async () => {}, ready: true },
+    [ctx, colors],
+  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+/**
+ * Écrans posés sur un média plein écran (caméra, éditeur) : tout ce qui est
+ * rendu dessous lit la palette média (`mediaPalette`) — un thème sombre garde
+ * ses couleurs, Clair bascule sur NIA Original. Évite du texte sombre de
+ * Clair sur un voile sombre, ou du sable pâle sur une barre claire.
+ */
+export function MediaChrome({ children }: { children: ReactNode }) {
+  return <PaletteScope palette={mediaPalette}>{children}</PaletteScope>;
 }

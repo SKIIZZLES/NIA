@@ -93,6 +93,10 @@ export type Database = {
           location_text?: string | null;
           /** 016 — réglages d'édition (lib/editMeta.ts), ≤ 16 Ko. */
           edit_meta?: Json | null;
+          /** 020 — 18+ (thèmes matures licites) ; absents avant la migration. */
+          is_mature?: boolean;
+          /** 020 — 18+ imposé par un modérateur (lecture seule pour l'app). */
+          mature_locked?: boolean;
         };
         Insert: {
           id?: string;
@@ -122,6 +126,7 @@ export type Database = {
           alt_text?: string | null;
           location_text?: string | null;
           edit_meta?: Json | null;
+          is_mature?: boolean;
         };
         Update: {
           id?: string;
@@ -147,6 +152,7 @@ export type Database = {
           alt_text?: string | null;
           location_text?: string | null;
           edit_meta?: Json | null;
+          is_mature?: boolean;
         };
         Relationships: [
           {
@@ -318,6 +324,9 @@ export type Database = {
           peak_viewer_count?: number;
           ended_reason?: string | null;
           host_left_at?: string | null;
+          /** 020 — 18+ ; mature_locked imposé par un modérateur. */
+          is_mature?: boolean;
+          mature_locked?: boolean;
         };
         Insert: {
           id?: string;
@@ -335,6 +344,7 @@ export type Database = {
           provider?: string | null;
           provider_stream_id?: string | null;
           created_at?: string;
+          is_mature?: boolean;
         };
         Update: {
           id?: string;
@@ -765,6 +775,21 @@ export type Database = {
         Returns:
           | { ok: true; removable: string[]; kept: string[] }
           | { ok: false; reason: 'not_found' | 'moderation_hold' };
+      };
+      /** 020_age_mature — date de naissance déclarée (une seule fois) ; true = majeur. */
+      set_my_birth_date: {
+        Args: { p_birth_date: string };
+        Returns: boolean;
+      };
+      /** 020_age_mature — « Afficher les contenus 18+ » (majeurs uniquement). */
+      set_my_mature_opt_in: {
+        Args: { p_on: boolean };
+        Returns: boolean;
+      };
+      /** 020_age_mature — état de l'âge pour l'app (jamais la date elle-même). */
+      get_my_age_status: {
+        Args: Record<string, never>;
+        Returns: { declared: boolean; adult: boolean; show_mature: boolean; min_age: number };
       };
       /** 018_keyword_filter — verdict du filtre de mots (jamais la liste). */
       nia_check_text: {

@@ -599,8 +599,15 @@ function VideoCardInner({
             </Text>
           </Pressable>
         ) : null}
-        {item.filterId || item.aiGenerated ? (
+        {item.filterId || item.aiGenerated || item.isMature ? (
           <View style={styles.badgeRow}>
+            {/* 020 : contenu réservé aux adultes ayant choisi de le voir. */}
+            {item.isMature ? (
+              <View style={styles.filterBadge} accessibilityLabel={t('age.badgeA11y')}>
+                <Ionicons name="eye-off-outline" size={12} color={colors.or} />
+                <Text style={styles.filterBadgeText}>{t('age.badge')}</Text>
+              </View>
+            ) : null}
             {item.filterId ? (
               <View style={styles.filterBadge}>
                 <Ionicons name="color-filter-outline" size={12} color={colors.or} />
