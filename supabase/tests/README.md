@@ -1,4 +1,4 @@
-# Tests SQL — suppression de compte (013 / 014), 015 → 019, 022
+# Tests SQL — suppression de compte (013 / 014), 015 → 020, 022
 
 **Uniquement sur un Postgres local et jetable.** `local_stubs.sql` recrée des
 doubles minimaux des schémas `auth` et `storage` de Supabase (`auth.users`,
@@ -83,7 +83,7 @@ première assertion fausse (`not ok - …`).
 ## Suite : 022 (suppression définitive de vidéo, reposts conservés)
 
 Jouée après 018, et après 019 si `019_live_l2.sql` est dans le dépôt (022 n'en
-dépend pas ; 020 et 021 sont réservées).
+dépend pas ; 020 vient après, 021 est réservée).
 
 - 022, appliquée **deux fois** (idempotence) ;
 - `022_video_delete_refs.test.sql` (D1 → D12, Z1) : droits (anon et
@@ -102,3 +102,35 @@ dépend pas ; 020 et 021 sont réservées).
 - `017_verify_after_apply.sql`, `018_verify_after_apply.sql` (et
   `019_verify_after_apply.sql` si présent) relancés après 022, puis 014, 016,
   017, 018 (et 019) rejoués.
+
+## Suite : 020 (âge déclaré, contenus 18+)
+
+Jouée en dernier, après 017, 018, 019 et 022 (même ordre que la prod).
+
+- `020_seed_before.sql` : vidéo, repost, commentaire et live « d'avant 020 »,
+  puis empreinte complète (jsonb de chaque ligne) de `videos`, `live_streams`,
+  `profiles`, `comments`, `likes`, `saves`, `reposts`, `follows`, `reports`
+  et `notifications` ;
+- 020, appliquée **deux fois** (idempotence) ;
+- `020_age_mature.test.sql` (G0 → G8) :
+  - G0 : **aucune ligne existante modifiée** (empreinte identique, nouvelles
+    colonnes exclues), contenus d'avant 020 toujours visibles des visiteurs ;
+  - G1 : table privée (lecture de sa seule ligne, aucune écriture directe,
+    fermée à `anon`), saisie unique, 13 ans minimum (à un jour près), bornes
+    de date, rien d'enregistré en cas de refus ;
+  - G2 : « Afficher les contenus 18+ » désactivé par défaut, réservé aux
+    majeurs, `get_my_age_status` ;
+  - G3 : marquage 18+ réservé aux majeurs (insertion et après coup),
+    lecture limitée au créateur, aux modérateurs et aux majeurs ayant activé
+    l'option ; cumul avec « Abonnés », blocage et masquage de 017 ;
+  - G4 : commentaires, j'aime, enregistrements, pas de republication d'un
+    18+, repost antérieur masqué puis revenu ;
+  - G5 : `mod_set_mature` (verrou, retrait, SQL Editor), `mod_set_birth_date`
+    (correction, effacement, 18+ remis à zéro si mineur) ;
+  - G6 : lives 18+ avec 019 (webhook, Abonnés, masquage, fin par l'hôte) :
+    un mineur ne voit pas la ligne, donc `live-token` lui répond 404 ;
+  - G7 : la date part avec le compte (014) ;
+  - G8 : droits et `search_path` des fonctions ;
+- `020_verify_after_apply.sql` (16 lignes, lecture seule) : toutes `t` ;
+- `017`, `018`, `019` et `022_verify_after_apply.sql` relancés après 020, puis
+  014, 016, 017, 018, 019 et 022 rejoués.
