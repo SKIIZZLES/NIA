@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
+import { useI18n } from '@/context/I18nContext';
 import {
   REPORT_REASONS,
   createReport,
@@ -17,13 +18,24 @@ import {
 } from '@/lib/reports';
 import type { ReportTargetType } from '@/types/database';
 
+/**
+ * Motif stocké → clé affichée. Le `Record` complet est le garde-fou : ajouter
+ * un motif dans REPORT_REASONS sans sa traduction ne compile pas.
+ */
+const CLE_MOTIF: Record<ReportReasonId, string> = {
+  spam: 'report.spam',
+  harcelement: 'report.harassment',
+  illegal: 'report.illegal',
+  autre: 'report.other',
+};
+
 type Props = {
   visible: boolean;
   onClose: () => void;
   reporterId?: string | null;
   targetType: ReportTargetType;
   targetId: string;
-  /** Appelé après succès (mock ou persisté) avec message FR */
+  /** Appelé après succès ou échec, avec un message déjà traduit. */
   onDone?: (message: string) => void;
 };
 
@@ -36,6 +48,7 @@ export function ReportSheet({
   onDone,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const [sending, setSending] = useState(false);
   const [selected, setSelected] = useState<ReportReasonId | null>(null);
 
@@ -51,14 +64,10 @@ export function ReportSheet({
         reason,
       });
       if (!result.ok) {
-        onDone?.(result.message);
+        onDone?.(t(result.errorKey));
         return;
       }
-      onDone?.(
-        result.mock
-          ? 'Signalement enregistré (mode démo). Merci.'
-          : 'Merci. Votre signalement a été envoyé.',
-      );
+      onDone?.(t(result.mock ? 'report.sentMock' : 'report.sent'));
       onClose();
     } finally {
       setSending(false);
@@ -76,10 +85,8 @@ export function ReportSheet({
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.md }]}>
         <View style={styles.handle} />
-        <Text style={styles.title}>Signaler</Text>
-        <Text style={styles.subtitle}>
-          Pourquoi signalez-vous ce contenu ?
-        </Text>
+        <Text style={styles.title}>{t('feed.report')}</Text>
+        <Text style={styles.subtitle}>{t('report.question')}</Text>
         {REPORT_REASONS.map((r) => (
           <Pressable
             key={r.id}
@@ -87,7 +94,7 @@ export function ReportSheet({
             disabled={sending}
             onPress={() => void submit(r.id)}
           >
-            <Text style={styles.rowLabel}>{r.label}</Text>
+            <Text style={styles.rowLabel}>{t(CLE_MOTIF[r.id])}</Text>
             {sending && selected === r.id ? (
               <ActivityIndicator color={Colors.or} size="small" />
             ) : (
@@ -96,7 +103,7 @@ export function ReportSheet({
           </Pressable>
         ))}
         <Pressable style={styles.cancel} onPress={onClose} disabled={sending}>
-          <Text style={styles.cancelText}>Annuler</Text>
+          <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </Pressable>
       </View>
     </Modal>

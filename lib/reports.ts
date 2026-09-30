@@ -4,6 +4,12 @@
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ReportTargetType } from '@/types/database';
 
+/**
+ * `label` n'est PAS ce qui s'affiche — c'est ce qui est stocké dans
+ * `reports.reason`. La valeur reste en français, stable, quelle que soit la
+ * langue de qui signale : la modération lit une colonne, pas vingt. L'affichage
+ * passe par les clés `report.*` (voir components/ReportSheet.tsx).
+ */
 export const REPORT_REASONS = [
   { id: 'spam', label: 'Spam' },
   { id: 'harcelement', label: 'Harcèlement' },
@@ -15,7 +21,8 @@ export type ReportReasonId = (typeof REPORT_REASONS)[number]['id'];
 
 export type ReportResult =
   | { ok: true; mock: boolean }
-  | { ok: false; message: string };
+  /** Clé i18n, pas une phrase : l'appelant traduit dans la langue en cours. */
+  | { ok: false; errorKey: 'report.errorNetwork' | 'report.errorSend' };
 
 function isUuid(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -55,20 +62,13 @@ export async function createReport(input: {
       status: 'open',
     });
     if (error) {
-      return {
-        ok: false,
-        message:
-          error.message?.includes('network') || error.message?.includes('fetch')
-            ? 'Connexion impossible. Réessayez plus tard.'
-            : 'Impossible d’envoyer le signalement.',
-      };
+      const reseau =
+        error.message?.includes('network') || error.message?.includes('fetch');
+      return { ok: false, errorKey: reseau ? 'report.errorNetwork' : 'report.errorSend' };
     }
     return { ok: true, mock: false };
   } catch {
-    return {
-      ok: false,
-      message: 'Service indisponible. Votre signalement n’a pas pu être envoyé.',
-    };
+    return { ok: false, errorKey: 'report.errorSend' };
   }
 }
 
