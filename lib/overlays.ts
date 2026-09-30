@@ -41,25 +41,65 @@ export const OVERLAY_COLORS = {
   terre: '#6B3E26',
   baobab: '#1B4D3E',
   rouge: '#A33227',
+  // Éditeur V2 : quelques teintes vives en plus, façon Instagram.
+  jaune: '#F2C94C',
+  rose: '#E58FB0',
+  bleu: '#3F7CC8',
+  vert: '#5FB36B',
 } as const;
 export type OverlayColorId = keyof typeof OVERLAY_COLORS;
 export const OVERLAY_COLOR_IDS = Object.keys(OVERLAY_COLORS) as OverlayColorId[];
 
 /** Couleurs claires : texte foncé quand elles servent de fond. */
-const LIGHT_COLORS: ReadonlySet<OverlayColorId> = new Set(['sable', 'blanc', 'orDoux']);
+const LIGHT_COLORS: ReadonlySet<OverlayColorId> = new Set(['sable', 'blanc', 'orDoux', 'jaune', 'rose']);
 
-/** Polices déjà embarquées (Plus Jakarta Sans) + polices système Android. */
+/**
+ * Styles de texte. Éditeur V2 : sept styles façon Instagram, polices libres
+ * (SIL Open Font License 1.1, Google Fonts) embarquées par expo-font
+ * (constants/overlayFonts.ts, licences dans docs/fonts-licenses.md).
+ * Les mêmes polices servent à l'aperçu et à l'image incrustée dans la vidéo.
+ * `leger`, `moyen` et `mono` (S4) restent lisibles mais ne sont plus proposés.
+ */
 export const OVERLAY_FONTS = {
   classique: 'PlusJakartaSans_700Bold',
+  machine: 'CourierPrime_700Bold',
+  neon: 'TiltNeon_400Regular',
+  manuscrit: 'Caveat_700Bold',
+  condense: 'Oswald_700Bold',
+  serif: 'PlayfairDisplay_700Bold',
+  arrondi: 'Fredoka_600SemiBold',
   leger: 'PlusJakartaSans_300Light',
   moyen: 'PlusJakartaSans_500Medium',
-  serif: 'serif',
   mono: 'monospace',
 } as const;
 export type OverlayFontId = keyof typeof OVERLAY_FONTS;
 export const OVERLAY_FONT_IDS = Object.keys(OVERLAY_FONTS) as OverlayFontId[];
+/** Styles proposés dans l'outil Texte, dans l'ordre d'affichage. */
+export const OVERLAY_FONT_CHOICES: readonly OverlayFontId[] = [
+  'classique',
+  'machine',
+  'neon',
+  'manuscrit',
+  'condense',
+  'serif',
+  'arrondi',
+];
 
-export type OverlayBackground = 'none' | 'box';
+/** Interligne propre à chaque police (hampes hautes de Caveat, Oswald, Playfair). */
+const FONT_LINE_HEIGHT: Partial<Record<OverlayFontId, number>> = {
+  manuscrit: 1.3,
+  condense: 1.35,
+  serif: 1.32,
+  neon: 1.3,
+};
+
+/** none : sans fond ; box : pastille pleine ; soft : pastille semi-transparente (V2). */
+export type OverlayBackground = 'none' | 'box' | 'soft';
+export const OVERLAY_BACKGROUNDS: readonly OverlayBackground[] = ['none', 'box', 'soft'];
+
+/** Alignement des lignes du texte (V2). Absent = centré. */
+export type OverlayAlign = 'center' | 'left' | 'right';
+export const OVERLAY_ALIGNS: readonly OverlayAlign[] = ['center', 'left', 'right'];
 
 type OverlayBase = {
   id: string;
@@ -77,6 +117,8 @@ export type TextOverlay = OverlayBase & {
   font: OverlayFontId;
   color: OverlayColorId;
   bg: OverlayBackground;
+  /** V2 ; absent = centré (les anciens APK centrent toujours). */
+  align?: OverlayAlign;
 };
 
 export type StickerOverlay = OverlayBase & {
@@ -161,8 +203,9 @@ function sanitizeOne(raw: unknown): Overlay | null {
     const color = (OVERLAY_COLOR_IDS as string[]).includes(r.color as string)
       ? (r.color as OverlayColorId)
       : 'sable';
-    const bg: OverlayBackground = r.bg === 'box' ? 'box' : 'none';
-    return { ...base, type: 'text', text, font, color, bg };
+    const bg: OverlayBackground = r.bg === 'box' || r.bg === 'soft' ? r.bg : 'none';
+    const align: OverlayAlign = r.align === 'left' || r.align === 'right' ? r.align : 'center';
+    return { ...base, type: 'text', text, font, color, bg, ...(align !== 'center' ? { align } : {}) };
   }
   if (r.type === 'sticker') {
     const emoji = typeof r.emoji === 'string' ? r.emoji.trim() : '';
@@ -285,7 +328,105 @@ export function textOverlayColors(o: Pick<TextOverlay, 'color' | 'bg'>): {
       background: hex,
     };
   }
+  if (o.bg === 'soft') {
+    // Pastille semi-transparente : sombre sous un texte clair, sable sous un texte foncé.
+    return {
+      text: hex,
+      background: LIGHT_COLORS.has(o.color) ? 'rgba(11,11,11,0.55)' : 'rgba(245,230,211,0.62)',
+    };
+  }
   return { text: hex, background: null };
+}
+
+/** Mélange une couleur #RRGGBB avec du blanc (0 = inchangée, 1 = blanc). */
+export function lightenHex(hex: string, amount: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const t = clamp(amount, 0, 1);
+  const ch = (shift: number) => {
+    const c = (n >> shift) & 0xff;
+    return Math.round(c + (255 - c) * t)
+      .toString(16)
+      .padStart(2, '0');
+  };
+  return `#${ch(16)}${ch(8)}${ch(0)}`.toUpperCase();
+}
+
+export type TextOverlayLook = {
+  color: string;
+  background: string | null;
+  fontFamily: string;
+  fontSize: number;
+  lineHeight: number;
+  textAlign: OverlayAlign;
+  /** Ombre portée (lisibilité) ou halo (néon) ; null avec une pastille pleine. */
+  shadow: { color: string; radius: number; dx: number; dy: number } | null;
+  paddingH: number;
+  paddingV: number;
+  borderRadius: number;
+};
+
+/**
+ * Rendu d'un texte pour une taille de police donnée. Toutes les mesures sont
+ * proportionnelles à `fontSize` : l'aperçu et l'image incrustée (capture à
+ * une autre échelle) ont donc exactement la même mise en page.
+ */
+export function textOverlayLook(
+  o: Pick<TextOverlay, 'color' | 'bg' | 'font' | 'align'>,
+  fontSize: number,
+): TextOverlayLook {
+  const c = textOverlayColors(o);
+  const neon = o.font === 'neon';
+  const hex = OVERLAY_COLORS[o.color] ?? OVERLAY_COLORS.sable;
+  let color = c.text;
+  let shadow: TextOverlayLook['shadow'] = null;
+  if (neon && o.bg !== 'box') {
+    // Néon : cœur clair, halo de la couleur choisie.
+    color = lightenHex(hex, 0.65);
+    shadow = { color: hex, radius: fontSize * 0.35, dx: 0, dy: 0 };
+  } else if (!c.background) {
+    shadow = { color: 'rgba(11,11,11,0.75)', radius: fontSize * 0.1, dx: 0, dy: fontSize * 0.03 };
+  }
+  return {
+    color,
+    background: c.background,
+    fontFamily: OVERLAY_FONTS[o.font] ?? OVERLAY_FONTS.classique,
+    fontSize,
+    lineHeight: fontSize * (FONT_LINE_HEIGHT[o.font] ?? 1.25),
+    textAlign: o.align ?? 'center',
+    shadow,
+    paddingH: c.background ? fontSize * 0.35 : 0,
+    paddingV: c.background ? fontSize * 0.12 : 0,
+    borderRadius: c.background ? fontSize * 0.3 : 0,
+  };
+}
+
+/** Taille de police d'un calque dans un cadre de `frameWidth` (px ou dp). */
+export function overlayFontSize(o: Pick<Overlay, 'size'>, frameWidth: number): number {
+  return Math.max(6, o.size * frameWidth);
+}
+
+/**
+ * Marge transparente autour d'un calque, proportionnelle au cadre : le halo
+ * du néon et les ombres tiennent dans l'image capturée.
+ */
+export function overlayPadding(o: Pick<Overlay, 'type'> & { font?: OverlayFontId }, fontSize: number): number {
+  if (o.type === 'text' && o.font === 'neon') return fontSize * 0.45;
+  return fontSize * 0.16;
+}
+
+/** Largeur maximale d'un texte (retour à la ligne), en fraction du cadre. */
+export const TEXT_MAX_WIDTH_RATIO = 0.86;
+
+/** Textes posés sur la vidéo (filtre de mots avant l'incrustation), un par ligne. */
+export function overlayTexts(doc: OverlayDoc | null | undefined): string {
+  if (!doc) return '';
+  return doc.items
+    .filter((o): o is TextOverlay => o.type === 'text')
+    .map((o) => o.text.trim())
+    .filter(Boolean)
+    .join('\n');
 }
 
 /** Stickers proposés (grille). */

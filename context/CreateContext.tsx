@@ -234,7 +234,8 @@ type CreateContextValue = {
   setPublishOptions: (patch: Partial<PublishOptions>) => void;
   /** Réglages d'édition à publier (edit_meta, 016) ; null si tout est par défaut. */
   /** `baked` : le fichier publié sort de l'export NiaComposer (éditeur P0). */
-  buildPublishEditMeta: (options?: { baked?: boolean }) => EditMeta | null;
+  /** `bakedLooks` (V2) : calques et filtre incrustés par l'export Android. */
+  buildPublishEditMeta: (options?: { baked?: boolean; bakedLooks?: boolean }) => EditMeta | null;
   /** Hashtags dérivés de la légende, recalculés à la frappe. */
   hashtags: string[];
   /**
@@ -949,7 +950,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const buildPublishEditMeta = useCallback(
-    (options?: { baked?: boolean }) =>
+    (options?: { baked?: boolean; bakedLooks?: boolean }) =>
       buildEditMeta({
         // Montage : découpes et vitesses sont dans le fichier exporté, les
         // calques déjà en temps de sortie.
@@ -963,6 +964,8 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
         overlays,
         isVideo: media?.type === 'video',
         baked: options?.baked === true,
+        bakedLooks: options?.bakedLooks === true,
+        filterId: filter?.id ?? null,
       }),
     [
       timeline,
@@ -975,6 +978,7 @@ export function CreateProvider({ children }: { children: React.ReactNode }) {
       originalVolume,
       overlays,
       media?.type,
+      filter?.id,
     ],
   );
 

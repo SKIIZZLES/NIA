@@ -3,15 +3,78 @@
  *
  * Même rendu dans l'éditeur, l'aperçu et les lecteurs : positions et tailles
  * sont relatives au cadre (lib/overlays), converties ici en pixels.
+ *
+ * Éditeur V2 : `OverlayContent` est aussi ce que capture l'incrustation
+ * (components/OverlayBakeStage). Toutes ses mesures sont proportionnelles à
+ * la largeur du cadre : l'image capturée, remise à l'échelle de la vidéo,
+ * tombe exactement sur l'aperçu. La rotation n'est pas dans la capture :
+ * Media3 l'applique autour du centre, comme ici.
  */
 import React from 'react';
 import { StyleSheet, Text, View, type ViewProps } from 'react-native';
 import {
-  OVERLAY_FONTS,
-  textOverlayColors,
+  TEXT_MAX_WIDTH_RATIO,
+  overlayFontSize,
+  overlayPadding,
+  textOverlayLook,
   type FrameRect,
   type Overlay,
 } from '@/lib/overlays';
+
+type ContentProps = {
+  overlay: Overlay;
+  /** Largeur du cadre (dp) : toutes les mesures en découlent. */
+  frameWidth: number;
+};
+
+/** Le calque seul, sans position ni rotation (aperçu et capture). */
+export const OverlayContent = React.forwardRef<View, ContentProps>(function OverlayContent(
+  { overlay: o, frameWidth },
+  ref,
+) {
+  const fontSize = overlayFontSize(o, frameWidth);
+  const pad = overlayPadding(o, fontSize);
+  if (o.type === 'sticker') {
+    return (
+      <View ref={ref} collapsable={false} style={{ padding: pad }}>
+        <Text style={{ fontSize, lineHeight: fontSize * 1.2, textAlign: 'center' }}>{o.emoji}</Text>
+      </View>
+    );
+  }
+  const look = textOverlayLook(o, fontSize);
+  return (
+    <View ref={ref} collapsable={false} style={{ padding: pad }}>
+      <View
+        style={{
+          maxWidth: frameWidth * TEXT_MAX_WIDTH_RATIO,
+          backgroundColor: look.background ?? undefined,
+          paddingHorizontal: look.paddingH,
+          paddingVertical: look.paddingV,
+          borderRadius: look.borderRadius,
+        }}
+      >
+        <Text
+          style={{
+            color: look.color,
+            fontSize: look.fontSize,
+            lineHeight: look.lineHeight,
+            fontFamily: look.fontFamily,
+            textAlign: look.textAlign,
+            ...(look.shadow
+              ? {
+                  textShadowColor: look.shadow.color,
+                  textShadowOffset: { width: look.shadow.dx, height: look.shadow.dy },
+                  textShadowRadius: look.shadow.radius,
+                }
+              : null),
+          }}
+        >
+          {o.text}
+        </Text>
+      </View>
+    </View>
+  );
+});
 
 type Props = {
   overlay: Overlay;
@@ -33,50 +96,12 @@ export function OverlayItemView({
   accessibilityLabel,
 }: Props) {
   if (!(frame.width > 0) || !(frame.height > 0)) return null;
-  const fontSize = Math.max(6, o.size * frame.width);
   const cx = frame.left + o.x * frame.width;
   const cy = frame.top + o.y * frame.height;
-  // Boîte d'accueil centrée sur le calque : le texte y revient à la ligne à
-  // 90 % de la largeur du cadre, comme dans tous les lecteurs.
-  const boxW = o.type === 'text' ? frame.width * 0.9 : fontSize * 2.4;
-  const boxH = o.type === 'text' ? frame.height : fontSize * 2.4;
-
-  let content: React.ReactNode;
-  if (o.type === 'text') {
-    const c = textOverlayColors(o);
-    content = (
-      <View
-        style={[
-          styles.textBox,
-          c.background
-            ? {
-                backgroundColor: c.background,
-                paddingHorizontal: fontSize * 0.35,
-                paddingVertical: fontSize * 0.12,
-                borderRadius: fontSize * 0.3,
-              }
-            : null,
-        ]}
-      >
-        <Text
-          style={[
-            styles.text,
-            {
-              color: c.text,
-              fontSize,
-              lineHeight: fontSize * 1.25,
-              fontFamily: OVERLAY_FONTS[o.font],
-            },
-            c.background ? null : styles.shadow,
-          ]}
-        >
-          {o.text}
-        </Text>
-      </View>
-    );
-  } else {
-    content = <Text style={{ fontSize, lineHeight: fontSize * 1.2 }}>{o.emoji}</Text>;
-  }
+  // Boîte d'accueil large, centrée sur le calque : elle ne contraint rien (le
+  // retour à la ligne vient de OverlayContent, comme dans la capture).
+  const boxW = frame.width * 3;
+  const boxH = frame.height;
 
   return (
     <View
@@ -91,13 +116,12 @@ export function OverlayItemView({
         accessible={!!accessibilityLabel}
         accessibilityLabel={accessibilityLabel}
         style={[
+          styles.frame,
           { transform: [{ rotate: `${o.rotation}deg` }] },
-          selected
-            ? { borderWidth: 1.5, borderStyle: 'dashed', borderColor: selectionColor, borderRadius: 6, padding: 3 }
-            : { padding: 4.5 },
+          selected ? { borderStyle: 'dashed', borderColor: selectionColor } : null,
         ]}
       >
-        {content}
+        <OverlayContent overlay={o} frameWidth={frame.width} />
       </View>
     </View>
   );
@@ -105,11 +129,7 @@ export function OverlayItemView({
 
 const styles = StyleSheet.create({
   anchor: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  textBox: { maxWidth: '100%' },
-  text: { textAlign: 'center' },
-  shadow: {
-    textShadowColor: 'rgba(11,11,11,0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
+  // Bordure toujours présente (transparente hors sélection) : sélectionner un
+  // calque ne déplace rien.
+  frame: { borderWidth: 1.5, borderColor: 'transparent', borderRadius: 6 },
 });

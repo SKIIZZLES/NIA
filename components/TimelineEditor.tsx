@@ -351,7 +351,7 @@ export function TimelineEditScreen() {
     (id: string) => {
       const o = overlays.items.find((it) => it.id === id);
       if (!o || o.type !== 'text') return;
-      setComposer({ id, initial: { text: o.text, font: o.font, color: o.color, bg: o.bg } });
+      setComposer({ id, initial: { text: o.text, font: o.font, color: o.color, bg: o.bg, align: o.align ?? 'center' } });
     },
     [overlays.items],
   );

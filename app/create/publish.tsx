@@ -43,13 +43,21 @@ import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { listSoundsByUser, type SoundItem } from '@/lib/sounds';
 import { importSoundFromDevice } from '@/lib/soundImport';
 import { applyMention, DEFAULT_PUBLISH_OPTIONS } from '@/lib/publishOptions';
-import { checkTexts } from '@/lib/textFilter';
+import { checkBurnedText, checkTexts } from '@/lib/textFilter';
 import { probePublishOptionsSupport } from '@/lib/videos';
 import { deleteDraft, isDraftStorageAvailable } from '@/lib/drafts';
 import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 import { useComposerJob } from '@/hooks/useComposerJob';
 import { composeForPublish, isComposerAvailable, type ComposeResult } from '@/lib/composer';
-import { composedDurationMs, exceedsComposedMax, MAX_COMPOSED_DURATION_MS } from '@/lib/composition';
+import {
+  composedDurationMs,
+  exceedsComposedMax,
+  MAX_COMPOSED_DURATION_MS,
+  usesFixedCanvas,
+} from '@/lib/composition';
+import { composerFilter, composerOverlays, overlayBakePlan } from '@/lib/overlayBake';
+import { overlayTexts } from '@/lib/overlays';
+import { releaseBakedFiles, useOverlayBaker } from '@/components/OverlayBakeStage';
 import { deleteCachedFile, localFileSize } from '@/lib/upload';
 import { timelineComposerClips, timelineDurationMs, timelineKey } from '@/lib/timeline';
 
@@ -89,6 +97,7 @@ export default function CreatePublishStep() {
     saveDraft,
     releaseLeaveGuard,
     timeline,
+    overlays,
   } = useCreateDraft();
   /** Éditeur V1 : montage multi-clips (Android), exporté par NiaComposer. */
   const montage = timeline && timeline.length > 0 ? timeline : null;
@@ -150,6 +159,8 @@ export default function CreatePublishStep() {
   // d'abord) ni pendant l'enregistrement du brouillon.
   // Éditeur P0 : export au premier plan (NiaComposer), avant l'envoi.
   const composer = useComposerJob();
+  /** Éditeur V2 : capture des calques à incruster (scène hors écran). */
+  const baker = useOverlayBaker();
   useBlockBackWhile(busy || savingDraft || composer.running);
   const composerOn = media?.type === 'video' && isComposerAvailable();
   /** Dernier MP4 composé : réutilisé tel quel si l'envoi est relancé sans changement. */
@@ -237,8 +248,21 @@ export default function CreatePublishStep() {
   const composeOnce = async (): Promise<ComposeResult | null> => {
     const src = sourceMedia ?? media;
     if (!src?.uri) return null;
+    const montageClips = montage ? timelineComposerClips(montage) : null;
+    const expectedMs = montage
+      ? timelineDurationMs(montage)
+      : composedDurationMs({ sourceDurationMs: src.durationMs, trim: trimRange, speed: playbackSpeed });
+    // V2 : calques et filtre incrustés, à l'horaire de la vidéo exportée.
+    const plan = overlayBakePlan(overlays, {
+      speed: montage ? 1 : playbackSpeed,
+      durationMs: expectedMs,
+      fixedCanvas: usesFixedCanvas(montageClips),
+    });
+    const bakedFilter = composerFilter(filter);
     const key = JSON.stringify([
       montage ? timelineKey(montage) : src.uri,
+      overlays,
+      bakedFilter?.id ?? null,
       montage ? null : trimRange,
       montage ? 1 : playbackSpeed,
       sound?.publicUrl ?? null,
@@ -252,22 +276,39 @@ export default function CreatePublishStep() {
       if (!isMockFeed) deleteCachedFile(last.result.uri);
       composedRef.current = null;
     }
-    const outcome = await composer.run((onProgress) =>
-      composeForPublish(
-        {
-          sourceUri: montage ? montage[0].uri : src.uri,
-          sourceDurationMs: montage ? null : src.durationMs,
-          trim: montage ? null : trimRange,
-          speed: montage ? 1 : playbackSpeed,
-          clips: montage ? timelineComposerClips(montage) : null,
-          soundUrl: sound?.publicUrl ?? null,
-          soundOffsetMs,
-          soundVolume,
-          originalVolume,
-        },
-        onProgress,
-      ),
-    );
+    const outcome = await composer.run(async (onProgress, isStopped) => {
+      let captures: Map<string, string> | null = null;
+      try {
+        if (plan) {
+          try {
+            captures = await baker.bake(plan);
+          } catch {
+            throw Object.assign(new Error('Overlay capture failed'), { code: 'ERR_OVERLAYS' });
+          }
+        }
+        if (isStopped()) throw Object.assign(new Error('Cancelled'), { code: 'ERR_CANCELLED' });
+        return await composeForPublish(
+          {
+            sourceUri: montage ? montage[0].uri : src.uri,
+            sourceDurationMs: montage ? null : src.durationMs,
+            trim: montage ? null : trimRange,
+            speed: montage ? 1 : playbackSpeed,
+            clips: montageClips,
+            soundUrl: sound?.publicUrl ?? null,
+            soundOffsetMs,
+            soundVolume,
+            originalVolume,
+            overlays: plan && captures ? composerOverlays(plan, captures) : null,
+            overlayFrameWidth: plan?.frameWidthPx ?? null,
+            filter: bakedFilter,
+          },
+          onProgress,
+        );
+      } finally {
+        // Les PNG ne servent qu'à cet export.
+        releaseBakedFiles(captures);
+      }
+    });
     if (outcome.status === 'done') {
       composedRef.current = { key, result: outcome.value };
       return outcome.value;
@@ -286,7 +327,9 @@ export default function CreatePublishStep() {
         ? t('composer.tooLargeBody', { mb: String(maxMb) })
         : outcome.code === 'ERR_SOUND'
           ? t('composer.soundFailed')
-          : t('composer.failedBody');
+          : outcome.code === 'ERR_OVERLAYS'
+            ? t('habillage.prepareFailed')
+            : t('composer.failedBody');
     setUploadError(msg);
     Alert.alert(t('composer.failedTitle'), msg);
     return null;
@@ -345,6 +388,21 @@ export default function CreatePublishStep() {
       if (verdict === 'held' && !(await confirmSendAnyway())) return;
     }
 
+    // Éditeur V2 : un texte incrusté ne peut plus être masqué ni retenu par
+    // le serveur une fois dans l'image. Même verdict que la légende (018),
+    // mais tout texte signalé bloque l'export, et un contrôle impossible aussi.
+    if (composerOn && !isMockFeed) {
+      const burned = await checkBurnedText(overlayTexts(overlays));
+      if (burned === 'blocked') {
+        Alert.alert(t('habillage.textBlockedTitle'), t('habillage.textBlockedBody'));
+        return;
+      }
+      if (burned === 'unverified') {
+        Alert.alert(t('habillage.checkFailedTitle'), t('habillage.checkFailedBody'));
+        return;
+      }
+    }
+
     // Éditeur P0 : le fichier envoyé est le MP4 composé ; sans module natif
     // (iOS en P0, web), c'est le média comme avant.
     let upload = {
@@ -396,7 +454,8 @@ export default function CreatePublishStep() {
         // 016 absente : pas d'options (publication comme avant) ; edit_meta
         // est tenté puis retiré sans bruit par la publication.
         publishOptions: optionsSupported === false ? undefined : publishOptions,
-        editMeta: buildPublishEditMeta({ baked }),
+        // V2 : un fichier composé porte aussi les calques et le filtre.
+        editMeta: buildPublishEditMeta({ baked, bakedLooks: baked }),
         uploadId,
         // Dès la deuxième tentative on écrase l'objet éventuellement partiel
         // laissé par la précédente, au lieu d'échouer sur « already exists ».
@@ -819,6 +878,7 @@ export default function CreatePublishStep() {
           </>
         )}
 
+        {baker.stage}
         <ComposerProgress
           visible={composer.running}
           progress={composer.progress}
