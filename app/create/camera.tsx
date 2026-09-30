@@ -7,7 +7,8 @@
  * - en haut : fermer, choix du son ; le son est joué pendant l'enregistrement
  *   (sprint S2, option « Écoute ») et le micro est alors coupé pour éviter l'écho ;
  * - en bas : durée (3 min / 60 s / 15 s / Photo), déclencheur, galerie
- *   (sélecteur système, aucune permission médias), onglets Vidéo / Photo / Live ;
+ *   (sélecteur système, aucune permission médias), brouillons locaux (S6,
+ *   affichés dès qu'il y en a un), onglets Vidéo / Photo / Live ;
  * - zoom au pincement.
  *
  * Après une capture ou un import, le média entre dans le CreateContext et
@@ -53,6 +54,7 @@ import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { deleteCachedFile } from '@/lib/upload';
 import { SyncedSound } from '@/components/SyncedSound';
 import { fetchSoundById } from '@/lib/sounds';
+import { useDraftCount } from '@/hooks/useDraftCount';
 
 /**
  * 720p : compromis assumé entre lisibilité et budget de 50 Mo. En 1080p le
@@ -108,6 +110,7 @@ export default function CreateCameraScreen() {
     pickMedia,
   } = useCreateDraft();
   const isPhoto = mode === 'photo';
+  const draftCount = useDraftCount();
 
   const [camPermission, requestCamPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
@@ -577,6 +580,32 @@ export default function CreateCameraScreen() {
           justifyContent: 'center',
           backgroundColor: 'rgba(11,11,11,0.45)',
         },
+        draftsBtnWrap: { width: 44, height: 44, alignItems: 'center', overflow: 'visible' },
+        draftsCount: {
+          position: 'absolute',
+          top: -6,
+          right: -8,
+          minWidth: 20,
+          height: 20,
+          paddingHorizontal: 5,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.or,
+        },
+        draftsCountText: { color: colors.noir, fontFamily: Fonts.bold, fontSize: 11 },
+        draftsLabel: {
+          position: 'absolute',
+          top: 48,
+          width: 80,
+          textAlign: 'center',
+          color: chrome,
+          fontFamily: Fonts.medium,
+          fontSize: 10,
+          textShadowColor: 'rgba(0,0,0,0.6)',
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 2,
+        },
         recordOuter: {
           width: 78,
           height: 78,
@@ -1024,8 +1053,30 @@ export default function CreateCameraScreen() {
             )}
           </Pressable>
 
-          {/* Symétrie visuelle : occupe la largeur du bouton galerie. */}
-          <View style={{ width: 44, height: 44 }} pointerEvents="none" />
+          {/* Brouillons locaux (S6) ; sinon, symétrie avec le bouton galerie. */}
+          {draftCount > 0 ? (
+            <Pressable
+              onPress={() => router.push('/create/drafts')}
+              disabled={busy}
+              style={[styles.draftsBtnWrap, sideDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={t('drafts.entryA11y', { count: String(draftCount) })}
+            >
+              <View style={styles.galleryBtn}>
+                <Ionicons name="albums-outline" size={22} color={chrome} />
+              </View>
+              <View style={styles.draftsCount}>
+                <Text style={styles.draftsCountText}>
+                  {draftCount > 99 ? '99+' : String(draftCount)}
+                </Text>
+              </View>
+              <Text style={styles.draftsLabel} numberOfLines={1}>
+                {t('drafts.entry')}
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={{ width: 44, height: 44 }} pointerEvents="none" />
+          )}
         </View>
 
         {!busy ? (
