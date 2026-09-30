@@ -18,6 +18,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { NiaWordmark } from '@/components/NiaWordmark';
+import { ReportSheet } from '@/components/ReportSheet';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -56,6 +57,7 @@ export default function LiveDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!streamId) {
@@ -269,6 +271,7 @@ export default function LiveDetailScreen() {
           marginTop: Spacing.lg,
           gap: Spacing.sm,
         },
+        reportBtn: { marginLeft: 'auto', padding: 4 },
         center: {
           flex: 1,
           alignItems: 'center',
@@ -305,6 +308,17 @@ export default function LiveDetailScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.sable} />
         </Pressable>
         <Text style={styles.topTitle}>{t('live.detailTitle')}</Text>
+        {stream && !isOwner ? (
+          <Pressable
+            onPress={() => setReportOpen(true)}
+            hitSlop={12}
+            style={styles.reportBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('report.reportLive')}
+          >
+            <Ionicons name="flag-outline" size={20} color={colors.sable} />
+          </Pressable>
+        ) : null}
       </View>
 
       {loading ? (
@@ -421,6 +435,16 @@ export default function LiveDetailScreen() {
           </View>
         </ScrollView>
       )}
+      {stream && !isOwner ? (
+        <ReportSheet
+          visible={reportOpen}
+          onClose={() => setReportOpen(false)}
+          reporterId={user?.id}
+          targetType="live"
+          targetId={stream.id}
+          onDone={(message) => Alert.alert(t('feed.report'), message)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }

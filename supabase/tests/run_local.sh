@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exécute les tests SQL de la suppression de compte sur un Postgres LOCAL jetable.
+# Exécute les tests SQL (suppression de compte, 016, 017) sur un Postgres LOCAL jetable.
 #
 #   PGHOST=/tmp PGPORT=55432 PGUSER=postgres supabase/tests/run_local.sh
 #
@@ -42,5 +42,19 @@ run "$ROOT/supabase/migrations/016_publish_options.sql"
 run "$ROOT/supabase/migrations/016_publish_options.sql"   # idempotence : 2e passage
 echo "--- 015 puis 016 (deux fois) appliquées"
 run "$ROOT/supabase/tests/016_publish_options.test.sql"
+run "$ROOT/supabase/tests/017_seed_before.sql"
+run "$ROOT/supabase/migrations/017_safety_reports.sql"
+run "$ROOT/supabase/migrations/017_safety_reports.sql"   # idempotence : 2e passage
+echo "--- 017 appliquée deux fois"
+run "$ROOT/supabase/tests/017_safety_reports.test.sql"
+echo "--- 017_verify_after_apply.sql"
+VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/017_verify_after_apply.sql")"
+echo "$VERIFY"
+if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : une ligne de vérification n'est pas ok" >&2; exit 1; fi
+# Les tests 014 / 016 doivent toujours passer une fois 017 en place.
+run "$ROOT/supabase/tests/_helpers.sql"
+run "$ROOT/supabase/tests/014_account_deletion.test.sql"
+run "$ROOT/supabase/tests/016_publish_options.test.sql"
+echo "--- 014 et 016 rejoués après 017"
 "${PSQL[@]}" -d postgres -c "drop database $DB" >/dev/null
 echo "=== TOUS LES TESTS SQL PASSENT ==="

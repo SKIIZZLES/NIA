@@ -59,4 +59,53 @@ export async function addComment(
   return data as unknown as CommentWithAuthor;
 }
 
+export type DeleteCommentResult =
+  | { ok: true; mock?: boolean }
+  | { ok: false; message: string };
+
+/**
+ * Supprime son propre commentaire.
+ *
+ * La politique `comments_delete_own` (002) autorise exactement cela, et rien de
+ * plus. Le filtre `user_id` ici est redondant avec elle — et c'est voulu : une
+ * politique se modifie dans le tableau de bord Supabase sans que personne ne
+ * relise ce fichier, et la requête resterait alors correcte.
+ *
+ * Les commentaires optimistes (`opt_…`) et ceux du mode démo (`mock_c_…`)
+ * n'existent pas côté serveur : la fonction ne tente rien et l'écran les
+ * retire de la liste, ce qui est le seul effet attendu.
+ */
+export async function deleteOwnComment(
+  userId: string,
+  commentId: string,
+): Promise<DeleteCommentResult> {
+  const sb = getSupabase();
+  const local = commentId.startsWith('opt_') || commentId.startsWith('mock_c_');
+  if (!sb || !isSupabaseConfigured || userId.startsWith('mock_') || local) {
+    return { ok: true, mock: true };
+  }
+  if (!userId || !commentId) {
+    return { ok: false, message: 'missing_ids' };
+  }
+
+  try {
+    const { data, error } = await sb
+      .from('comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', userId)
+      .select('id')
+      .maybeSingle();
+
+    if (error) return { ok: false, message: error.message || 'delete_fail' };
+    if (!data) return { ok: false, message: 'not_owner_or_missing' };
+    return { ok: true, mock: false };
+  } catch (e) {
+    return {
+      ok: false,
+      message: e instanceof Error ? e.message : 'delete_fail',
+    };
+  }
+}
+
 export { isSupabaseConfigured };

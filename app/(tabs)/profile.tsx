@@ -3,6 +3,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -16,12 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { MediaThumb } from '@/components/MediaThumb';
+import { ModerationBanner } from '@/components/ModerationBanner';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import {
   countFollowers,
   countFollowing,
@@ -29,8 +31,15 @@ import {
 } from '@/lib/profiles';
 import * as WebBrowser from 'expo-web-browser';
 import { deleteOwnAccount } from '@/lib/account';
-import { privacyPolicyUrl } from '@/constants/legal';
+import {
+  CONTACT_EMAIL,
+  communityGuidelinesUrl,
+  contactMailto,
+  privacyPolicyUrl,
+  termsOfServiceUrl,
+} from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
+import { fetchOwnModerationStatus, isSuspended } from '@/lib/moderation';
 import { deleteOwnVideoForGood, updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
 import type { VideoItem } from '@/data/mockVideos';
@@ -60,6 +69,21 @@ export default function ProfileScreen() {
   const [seriesList, setSeriesList] = useState<SeriesListItem[]>([]);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  /** 017 : suspension en cours du compte (bannière). */
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setSuspendedUntil(null);
+      return;
+    }
+    void fetchOwnModerationStatus(user.id).then((st) => {
+      if (!cancelled) setSuspendedUntil(st?.suspendedUntil ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
   /** Brouillons locaux (S6) : visibles seulement par soi, sur ce téléphone. */
   const draftCount = useDraftCount();
 
@@ -168,7 +192,10 @@ export default function ProfileScreen() {
           void (async () => {
             const result = await deleteOwnVideoForGood(user.id, item.id);
             if (!result.ok) {
-              Alert.alert(t('common.error'), result.message);
+              Alert.alert(
+                t('common.error'),
+                result.message === 'moderation_hold' ? t('moderation.deleteHeld') : result.message,
+              );
               return;
             }
             setArchived((prev) => prev.filter((v) => v.id !== item.id));
@@ -431,6 +458,25 @@ export default function ProfileScreen() {
     paddingVertical: 2,
     borderRadius: 6,
   },
+  modBadge: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.overlay,
+    borderColor: colors.or,
+    borderWidth: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  modBadgeText: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 9,
+  },
   archiveBadgeText: {
     color: colors.or,
     fontFamily: Fonts.medium,
@@ -529,6 +575,7 @@ export default function ProfileScreen() {
       </Text>
       <Text style={styles.username}>@{user?.username || 'invite'}</Text>
       <Text style={styles.bio}>{user?.bio || t('profile.defaultBio')}</Text>
+      {user && isSuspended(suspendedUntil) ? <ModerationBanner kind="suspended" /> : null}
       <View style={styles.stats}>
         <Stat label={t('profile.posts')} value={String(published.length)} />
         <Stat label={t('profile.followers')} value={formatCount(followerCount)} />
@@ -655,6 +702,68 @@ export default function ProfileScreen() {
           <Ionicons name="shield-checkmark-outline" size={22} color={colors.or} />
           <Text style={styles.menuRowLabel}>{t('profile.privacyPolicy')}</Text>
         </Pressable>
+        {/* Meme raison : les CGU doivent etre lisibles avant de creer un compte. */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.terms')}
+        >
+          <Ionicons name="document-text-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('profile.terms')}</Text>
+        </Pressable>
+        {/*
+          Règles de la communauté et contact : sans compte aussi. Un visiteur
+          doit pouvoir lire ce qui est interdit et signaler un problème par
+          e-mail (DSA art. 16 : le signalement est ouvert à toute personne).
+        */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(communityGuidelinesUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('safety.communityRules')}
+        >
+          <Ionicons name="people-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('safety.communityRules')}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void Linking.openURL(contactMailto(t('safety.contactSubject'))).catch(() => {
+              // Aucune app de messagerie : l'adresse reste lisible et recopiable.
+              Alert.alert(
+                t('safety.contact'),
+                t('safety.contactFallback', { email: CONTACT_EMAIL }),
+              );
+            });
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('safety.contact')}
+        >
+          <Ionicons name="mail-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('safety.contact')}</Text>
+        </Pressable>
+        {user ? (
+          <Pressable
+            style={styles.menuRow}
+            onPress={() => {
+              setMenuOpen(false);
+              router.push('/blocked' as Href);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('safety.blockedAccounts')}
+          >
+            <Ionicons name="ban-outline" size={22} color={colors.or} />
+            <Text style={styles.menuRowLabel}>{t('safety.blockedAccounts')}</Text>
+          </Pressable>
+        ) : null}
         {user ? (
           <Pressable
             style={styles.menuRow}
@@ -815,6 +924,18 @@ export default function ProfileScreen() {
                   overflow: 'hidden',
                 }}
               />
+              {item.moderationState === 'held' || item.moderationState === 'removed' ? (
+                <View style={styles.modBadge} pointerEvents="none">
+                  <Ionicons
+                    name={item.moderationState === 'held' ? 'eye-off' : 'shield'}
+                    size={11}
+                    color={colors.or}
+                  />
+                  <Text style={styles.modBadgeText}>
+                    {t(item.moderationState === 'held' ? 'moderation.badgeHeld' : 'moderation.badgeRemoved')}
+                  </Text>
+                </View>
+              ) : null}
             </Pressable>
           );
         }}

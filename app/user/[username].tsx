@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FollowButton } from '@/components/FollowButton';
 import { ReportSheet } from '@/components/ReportSheet';
 import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
 import { useFeed } from '@/context/FeedContext';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import {
@@ -32,12 +33,14 @@ export default function PublicProfileScreen() {
   const username = (Array.isArray(raw) ? raw[0] : raw || '').replace(/^@/, '');
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useI18n();
   const {
     followingIds,
     toggleFollow,
     videos: feedVideos,
     blockedIds,
     blockUser,
+    unblockUser,
   } = useFeed();
   const { width } = useWindowDimensions();
   const gap = 2;
@@ -94,27 +97,47 @@ export default function PublicProfileScreen() {
   const onBlock = () => {
     if (!profile || isOwn) return;
     Alert.alert(
-      'Bloquer cet utilisateur ?',
-      `Vous ne verrez plus les vidéos de @${profile.username}.`,
+      t('safety.blockTitle'),
+      t('safety.blockBody', { username: profile.username }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Bloquer',
+          text: t('safety.block'),
           style: 'destructive',
           onPress: () => {
             void (async () => {
               const result = await blockUser(profile.id);
               if (!result.ok) {
-                Alert.alert('Erreur', result.message);
+                Alert.alert(t('common.error'), t(result.errorKey));
                 return;
               }
               Alert.alert(
-                'Utilisateur bloqué',
+                t('safety.blockedTitle'),
                 result.mock
-                  ? 'Blocage enregistré (mode démo).'
-                  : `@${profile.username} a été bloqué.`,
+                  ? t('safety.blockedMock')
+                  : t('safety.blockedBody', { username: profile.username }),
               );
               router.back();
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  const onUnblock = () => {
+    if (!profile || isOwn) return;
+    Alert.alert(
+      t('safety.unblockTitle', { username: profile.username }),
+      t('safety.unblockBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('safety.unblock'),
+          onPress: () => {
+            void (async () => {
+              const result = await unblockUser(profile.id);
+              if (!result.ok) Alert.alert(t('common.error'), t(result.errorKey));
             })();
           },
         },
@@ -137,7 +160,7 @@ export default function PublicProfileScreen() {
             onPress={() => setReportOpen(true)}
             hitSlop={12}
             style={styles.backBtn}
-            accessibilityLabel="Signaler le profil"
+            accessibilityLabel={t('safety.reportProfile')}
           >
             <Ionicons name="flag-outline" size={22} color={Colors.sable} />
           </Pressable>
@@ -186,11 +209,11 @@ export default function PublicProfileScreen() {
                   />
                   <Pressable
                     style={[styles.blockBtn, isBlocked && styles.blockBtnDone]}
-                    onPress={onBlock}
-                    disabled={isBlocked}
+                    onPress={isBlocked ? onUnblock : onBlock}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.blockBtnText}>
-                      {isBlocked ? 'Bloqué' : 'Bloquer'}
+                      {isBlocked ? t('safety.unblock') : t('safety.block')}
                     </Text>
                   </Pressable>
                 </View>
@@ -231,7 +254,7 @@ export default function PublicProfileScreen() {
           reporterId={user?.id}
           targetType="user"
           targetId={profile.id}
-          onDone={(message) => Alert.alert('Signalement', message)}
+          onDone={(message) => Alert.alert(t('feed.report'), message)}
         />
       ) : null}
     </SafeAreaView>
