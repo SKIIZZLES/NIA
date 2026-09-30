@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -17,8 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
+import { ReportSheet } from '@/components/ReportSheet';
 import {
   addComment,
+  deleteOwnComment,
   listComments,
   type CommentWithAuthor,
 } from '@/lib/comments';
@@ -57,6 +60,8 @@ export function CommentsSheet({
   const { user } = useAuth();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
+  /** Commentaire en cours de signalement, ou null. */
+  const [reportedId, setReportedId] = useState<string | null>(null);
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -71,12 +76,12 @@ export function CommentsSheet({
       const rows = await listComments(videoId);
       setComments(rows);
     } catch {
-      setError('Impossible de charger les commentaires.');
+      setError(t('comments.loadError'));
       setComments([]);
     } finally {
       setLoading(false);
     }
-  }, [videoId]);
+  }, [videoId, t]);
 
   useEffect(() => {
     if (visible && videoId) {
@@ -132,10 +137,32 @@ export function CommentsSheet({
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       onCommentAdded?.(videoId, -1);
       setDraft(text);
-      setError("Échec de l'envoi. Réessayez.");
+      setError(t('comments.sendError'));
     } finally {
       setSending(false);
     }
+  };
+
+  const onDelete = (item: CommentWithAuthor) => {
+    if (!user) return;
+    Alert.alert(t('comments.deleteConfirmTitle'), t('comments.deleteConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('feed.delete'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            const result = await deleteOwnComment(user.id, item.id);
+            if (!result.ok) {
+              Alert.alert(t('common.error'), t('comments.deleteError'));
+              return;
+            }
+            setComments((prev) => prev.filter((c) => c.id !== item.id));
+            if (videoId) onCommentAdded?.(videoId, -1);
+          })();
+        },
+      },
+    ]);
   };
 
   return (
@@ -153,8 +180,8 @@ export function CommentsSheet({
         >
           <View style={styles.dragHandle} />
           <View style={styles.header}>
-            <Text style={styles.title}>Commentaires</Text>
-            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel="Fermer">
+            <Text style={styles.title}>{t('feed.comments')}</Text>
+            <Pressable onPress={onClose} hitSlop={12} accessibilityLabel={t('common.close')}>
               <Ionicons name="close" size={24} color={Colors.sable} />
             </Pressable>
           </View>
@@ -173,21 +200,45 @@ export function CommentsSheet({
               ListEmptyComponent={
                 <View style={styles.empty}>
                   <Ionicons name="chatbubble-ellipses" size={40} color={Colors.or} />
-                  <Text style={styles.emptyTitle}>Aucun commentaire</Text>
-                  <Text style={styles.emptyBody}>
-                    Soyez le premier à réagir — partagez votre avis avec respect.
-                  </Text>
+                  <Text style={styles.emptyTitle}>{t('comments.empty')}</Text>
+                  <Text style={styles.emptyBody}>{t('comments.emptyBody')}</Text>
                 </View>
               }
-              renderItem={({ item }) => (
-                <View style={styles.row}>
-                  <Image source={{ uri: authorAvatar(item) }} style={styles.avatar} />
-                  <View style={styles.rowBody}>
-                    <Text style={styles.authorHandle}>{authorLabel(item)}</Text>
-                    <Text style={styles.body}>{item.body}</Text>
+              renderItem={({ item }) => {
+                const own = !!user && item.user_id === user.id;
+                return (
+                  <View style={styles.row}>
+                    <Image source={{ uri: authorAvatar(item) }} style={styles.avatar} />
+                    <View style={styles.rowBody}>
+                      <Text style={styles.authorHandle}>{authorLabel(item)}</Text>
+                      <Text style={styles.body}>{item.body}</Text>
+                    </View>
+                    {user ? (
+                      own ? (
+                        <Pressable
+                          onPress={() => onDelete(item)}
+                          hitSlop={10}
+                          style={styles.rowAction}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('comments.deleteAction')}
+                        >
+                          <Ionicons name="trash-outline" size={16} color={Colors.textMuted} />
+                        </Pressable>
+                      ) : (
+                        <Pressable
+                          onPress={() => setReportedId(item.id)}
+                          hitSlop={10}
+                          style={styles.rowAction}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('comments.reportAction')}
+                        >
+                          <Ionicons name="flag-outline" size={16} color={Colors.textMuted} />
+                        </Pressable>
+                      )
+                    ) : null}
                   </View>
-                </View>
-              )}
+                );
+              }}
             />
           )}
 
@@ -217,7 +268,7 @@ export function CommentsSheet({
             <TextInput
               style={styles.input}
               placeholder={
-                user ? 'Ajouter un commentaire…' : 'Connectez-vous pour commenter'
+                user ? t('comments.placeholder') : t('comments.placeholderGuest')
               }
               placeholderTextColor={Colors.textMuted}
               value={draft}
@@ -234,7 +285,7 @@ export function CommentsSheet({
                 (!user || !draft.trim() || sending) && styles.sendDisabled,
                 pressed && styles.pressed,
               ]}
-              accessibilityLabel="Envoyer"
+              accessibilityLabel={t('comments.send')}
             >
               {sending ? (
                 <ActivityIndicator size="small" color={Colors.noir} />
@@ -246,6 +297,22 @@ export function CommentsSheet({
           )}
         </KeyboardAvoidingView>
       </View>
+
+      {/*
+        Signalement d'un commentaire. `reports.target_type` accepte 'comment'
+        depuis la 002 et le type le declare ; aucun ecran ne l'utilisait.
+      */}
+      <ReportSheet
+        visible={!!reportedId}
+        onClose={() => setReportedId(null)}
+        reporterId={user?.id}
+        targetType="comment"
+        targetId={reportedId || ''}
+        onDone={(message) => {
+          setReportedId(null);
+          Alert.alert(t('feed.report'), message);
+        }}
+      />
     </Modal>
   );
 }
@@ -314,6 +381,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 19,
   },
+  rowAction: { paddingHorizontal: 4, paddingVertical: 2, alignSelf: 'flex-start' },
   row: {
     flexDirection: 'row',
     gap: 12,

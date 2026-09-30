@@ -42,3 +42,12 @@ yarn-error.*
 
 .env
 .env.local
+
+# secrets (clé du compte de service Google Play référencée par eas.json, etc.)
+# Ne jamais committer : voir docs/legal/README.md et le plan sécurité S1.
+secrets/
+*.service-account.json
+google-play-service-account*.json
+
+# Supabase CLI : état local (ref du projet lié, version du CLI), propre à chaque machine
+supabase/.temp/

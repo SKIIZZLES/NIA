@@ -3,6 +3,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -29,7 +30,13 @@ import {
 } from '@/lib/profiles';
 import * as WebBrowser from 'expo-web-browser';
 import { deleteOwnAccount } from '@/lib/account';
-import { privacyPolicyUrl } from '@/constants/legal';
+import {
+  CONTACT_EMAIL,
+  communityGuidelinesUrl,
+  contactMailto,
+  privacyPolicyUrl,
+  termsOfServiceUrl,
+} from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
 import { deleteOwnVideoForGood, updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
@@ -654,6 +661,54 @@ export default function ProfileScreen() {
         >
           <Ionicons name="shield-checkmark-outline" size={22} color={colors.or} />
           <Text style={styles.menuRowLabel}>{t('profile.privacyPolicy')}</Text>
+        </Pressable>
+        {/* Meme raison : les CGU doivent etre lisibles avant de creer un compte. */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.terms')}
+        >
+          <Ionicons name="document-text-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('profile.terms')}</Text>
+        </Pressable>
+        {/*
+          Règles de la communauté et contact : sans compte aussi. Un visiteur
+          doit pouvoir lire ce qui est interdit et signaler un problème par
+          e-mail (DSA art. 16 : le signalement est ouvert à toute personne).
+        */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(communityGuidelinesUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('safety.communityRules')}
+        >
+          <Ionicons name="people-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('safety.communityRules')}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void Linking.openURL(contactMailto(t('safety.contactSubject'))).catch(() => {
+              // Aucune app de messagerie : l'adresse reste lisible et recopiable.
+              Alert.alert(
+                t('safety.contact'),
+                t('safety.contactFallback', { email: CONTACT_EMAIL }),
+              );
+            });
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('safety.contact')}
+        >
+          <Ionicons name="mail-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('safety.contact')}</Text>
         </Pressable>
         {user ? (
           <Pressable
