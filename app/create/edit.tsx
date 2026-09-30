@@ -13,6 +13,12 @@
  *
  * La découpe n'est appliquée qu'au moment de « Suivant », depuis le fichier
  * source (sourceMedia) : revenir ici permet de la changer ou de l'annuler.
+ *
+ * Sprint S6 : « Brouillon » enregistre toute la création sur le téléphone
+ * (lib/drafts). Quitter l'éditeur avec des modifications non enregistrées
+ * (flèche, retour Android, geste iOS) demande « Enregistrer le brouillon ? ».
+ * La sélection de découpe vit donc dans le CreateContext (trimSelection) pour
+ * être enregistrée même avant « Suivant ».
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -25,7 +31,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Redirect, useIsFocused, useRouter } from 'expo-router';
+import { Redirect, useIsFocused, useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import type { VideoPlayer } from 'expo-video';
@@ -48,6 +55,8 @@ import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { getFilterOverlayStyle } from '@/constants/filters';
 import { MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { formatSoundTime } from '@/lib/soundSync';
+import { isDraftStorageAvailable } from '@/lib/drafts';
+import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 import { deleteCachedFile } from '@/lib/upload';
 import {
   DEFAULT_STICKER_SIZE,
@@ -108,7 +117,15 @@ export default function CreateEditStep() {
     addOverlay,
     updateOverlay,
     removeOverlay,
+    trimSelection,
+    setTrimSelection,
+    hasUnsavedChanges,
+    saveDraft,
+    discardChanges,
+    isLeaveGuardReleased,
   } = useCreateDraft();
+  const navigation = useNavigation();
+  const draftsAvailable = isDraftStorageAvailable();
 
   // L'édition travaille toujours sur le fichier source, jamais sur la découpe.
   const source = sourceMedia ?? media;
@@ -117,11 +134,11 @@ export default function CreateEditStep() {
   const [tool, setTool] = useState<Tool>(null);
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [durationMs, setDurationMs] = useState<number>(source?.durationMs ?? 0);
-  const [range, setRange] = useState<{ startMs: number; endMs: number } | null>(
-    trimRange,
-  );
+  // Sélection de découpe : dans le contexte (S6), null = sélection par défaut.
+  const range = trimSelection;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composer, setComposer] = useState<{
     id: string | null;
@@ -130,6 +147,8 @@ export default function CreateEditStep() {
   const [stickerOpen, setStickerOpen] = useState(false);
   const [overlayDragging, setOverlayDragging] = useState(false);
   const selected = overlays.items.find((o) => o.id === selectedId) ?? null;
+  // S7 : pas de sortie pendant la découpe ou l'enregistrement du brouillon.
+  useBlockBackWhile(busy || savingDraft);
 
   // Repère des calques : format réel du média (orientation corrigée).
   const sourceUri = source?.uri ?? null;
@@ -176,21 +195,25 @@ export default function CreateEditStep() {
   }, [isVideo, player]);
 
   // Sélection par défaut : toute la vidéo, bornée au plafond de publication.
+  // Elle reste implicite (null) tant que l'utilisateur n'y touche pas : un
+  // brouillon rouvert sans découpe n'apparaît donc pas comme modifié.
   const maxRangeMs = MAX_VIDEO_DURATION_SEC * 1000;
   useEffect(() => {
-    if (!(durationMs > 0)) return;
-    setRange((prev) => {
-      const base = prev ?? { startMs: 0, endMs: Math.min(durationMs, maxRangeMs) };
-      return clampTrimRange(base.startMs, base.endMs, durationMs);
-    });
-  }, [durationMs, maxRangeMs]);
+    if (!(durationMs > 0) || !range) return;
+    const c = clampTrimRange(range.startMs, range.endMs, durationMs);
+    if (c.startMs !== range.startMs || c.endMs !== range.endMs) setTrimSelection(c);
+  }, [durationMs, range, setTrimSelection]);
 
-  const sel = range ?? { startMs: 0, endMs: durationMs };
+  const sel =
+    range ??
+    (durationMs > 0
+      ? clampTrimRange(0, Math.min(durationMs, maxRangeMs), durationMs)
+      : { startMs: 0, endMs: durationMs });
   const selRef = useRef(sel);
   selRef.current = sel;
 
   // Lecture : focus, pas de glissé ni de découpe en cours.
-  const shouldPlay = isVideo && isFocused && !dragging && !busy && !composer;
+  const shouldPlay = isVideo && isFocused && !dragging && !busy && !savingDraft && !composer;
   useEffect(() => {
     if (!isVideo) return;
     try {
@@ -281,6 +304,62 @@ export default function CreateEditStep() {
       setBusy(false);
     }
   }, [busy, isVideo, source, durationMs, trimRange, clearTrim, applyTrimmedVideo, router, t]);
+
+  // --- Brouillons (S6) -------------------------------------------------
+
+  const doSaveDraft = useCallback(async (): Promise<boolean> => {
+    if (savingDraft) return false;
+    setSavingDraft(true);
+    try {
+      await saveDraft();
+      return true;
+    } catch {
+      Alert.alert(t('common.error'), t('drafts.saveFailed'));
+      return false;
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [savingDraft, saveDraft, t]);
+
+  const onSaveDraftPress = useCallback(async () => {
+    if (await doSaveDraft()) {
+      Alert.alert(t('drafts.savedTitle'), t('drafts.savedBody'));
+    }
+  }, [doSaveDraft, t]);
+
+  // Sortie de l'éditeur (flèche, retour Android, geste iOS) avec des
+  // modifications non enregistrées. Après une publication réussie, la garde
+  // est levée : la sortie du parcours se fait sans question.
+  usePreventRemove(draftsAvailable && hasUnsavedChanges, ({ data }) => {
+    if (isLeaveGuardReleased()) {
+      navigation.dispatch(data.action);
+      return;
+    }
+    Alert.alert(
+      t('drafts.leaveTitle'),
+      t('drafts.leaveBody'),
+      [
+        { text: t('drafts.leaveCancel'), style: 'cancel' },
+        {
+          text: t('drafts.leaveDiscard'),
+          style: 'destructive',
+          onPress: () => {
+            discardChanges();
+            navigation.dispatch(data.action);
+          },
+        },
+        {
+          text: t('drafts.leaveSave'),
+          onPress: () => {
+            void (async () => {
+              if (await doSaveDraft()) navigation.dispatch(data.action);
+            })();
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  });
 
   const limitReached = useCallback(() => {
     Alert.alert(t('create.layersTitle'), t('create.layerLimit', { max: String(MAX_OVERLAYS) }));
@@ -408,6 +487,19 @@ export default function CreateEditStep() {
           backgroundColor: colors.or,
         },
         nextText: { color: colors.noir, fontFamily: Fonts.bold, fontSize: 15 },
+        topRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+        draftBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          paddingHorizontal: 14,
+          height: 40,
+          borderRadius: Radii.pill,
+          borderWidth: 1,
+          borderColor: colors.sable + '66',
+          backgroundColor: colors.noir + '99',
+        },
+        draftText: { color: colors.sable, fontFamily: Fonts.medium, fontSize: 14 },
         bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
         panel: {
           marginHorizontal: Spacing.sm,
@@ -541,21 +633,36 @@ export default function CreateEditStep() {
         <View style={[styles.topBar, { top: insets.top + Spacing.sm }]}>
           <Pressable
             onPress={() => router.back()}
-            style={styles.iconBtn}
+            disabled={busy || savingDraft}
+            style={[styles.iconBtn, (busy || savingDraft) && { opacity: 0.6 }]}
             accessibilityRole="button"
             accessibilityLabel={t('create.editBack')}
           >
             <Ionicons name="chevron-back" size={24} color={colors.onMedia} />
           </Pressable>
-          <Pressable
-            onPress={() => void next()}
-            disabled={busy}
-            style={[styles.nextBtn, busy && { opacity: 0.6 }]}
-            accessibilityRole="button"
-          >
-            <Text style={styles.nextText}>{t('create.editNext')}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.noir} />
-          </Pressable>
+          <View style={styles.topRight}>
+            {draftsAvailable ? (
+              <Pressable
+                onPress={() => void onSaveDraftPress()}
+                disabled={busy || savingDraft}
+                style={[styles.draftBtn, (busy || savingDraft) && { opacity: 0.6 }]}
+                accessibilityRole="button"
+                accessibilityLabel={t('drafts.saveA11y')}
+              >
+                <Ionicons name="bookmark-outline" size={16} color={colors.sable} />
+                <Text style={styles.draftText}>{t('drafts.save')}</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => void next()}
+              disabled={busy || savingDraft}
+              style={[styles.nextBtn, (busy || savingDraft) && { opacity: 0.6 }]}
+              accessibilityRole="button"
+            >
+              <Text style={styles.nextText}>{t('create.editNext')}</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.noir} />
+            </Pressable>
+          </View>
         </View>
       ) : null}
 
@@ -662,7 +769,7 @@ export default function CreateEditStep() {
                   startMs={sel.startMs}
                   endMs={sel.endMs}
                   maxRangeMs={maxRangeMs}
-                  onChange={(s, e) => setRange({ startMs: s, endMs: e })}
+                  onChange={(s, e) => setTrimSelection({ startMs: s, endMs: e })}
                   onDragStart={() => setDragging(true)}
                   onDragEnd={onDragEnd}
                   startLabel={t('create.editTrimStartHandle')}
@@ -681,9 +788,7 @@ export default function CreateEditStep() {
                 </Text>
                 {!isFullRange(sel.startMs, sel.endMs, durationMs) ? (
                   <Pressable
-                    onPress={() =>
-                      setRange(clampTrimRange(0, Math.min(durationMs, maxRangeMs), durationMs))
-                    }
+                    onPress={() => setTrimSelection(null)}
                     hitSlop={8}
                     accessibilityRole="button"
                   >
@@ -773,10 +878,12 @@ export default function CreateEditStep() {
         </View>
       ) : null}
 
-      {busy ? (
+      {busy || savingDraft ? (
         <View style={styles.busyWrap}>
           <ActivityIndicator color={colors.or} size="large" />
-          <Text style={styles.busyText}>{t('create.editTrimming')}</Text>
+          <Text style={styles.busyText}>
+            {savingDraft ? t('drafts.saving') : t('create.editTrimming')}
+          </Text>
         </View>
       ) : null}
 

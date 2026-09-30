@@ -35,6 +35,7 @@ import { deleteOwnVideoForGood, updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
 import type { VideoItem } from '@/data/mockVideos';
 import { formatCount } from '@/data/mockVideos';
+import { useDraftCount } from '@/hooks/useDraftCount';
 
 type ProfileTab = 'publications' | 'archives' | 'saves' | 'series';
 
@@ -59,6 +60,8 @@ export default function ProfileScreen() {
   const [seriesList, setSeriesList] = useState<SeriesListItem[]>([]);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  /** Brouillons locaux (S6) : visibles seulement par soi, sur ce téléphone. */
+  const draftCount = useDraftCount();
 
   const myFeedVideos = useMemo(
     () =>
@@ -537,6 +540,13 @@ export default function ProfileScreen() {
         style={styles.chipsScroll}
         contentContainerStyle={styles.chipsContent}
       >
+        {user && draftCount > 0 ? (
+          <Chip
+            icon="albums-outline"
+            label={t('drafts.profileChip', { count: String(draftCount) })}
+            onPress={() => router.push('/create/drafts')}
+          />
+        ) : null}
         {user ? (
           <Chip
             icon="create-outline"
