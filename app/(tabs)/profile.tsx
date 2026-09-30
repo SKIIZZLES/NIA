@@ -29,7 +29,7 @@ import {
 } from '@/lib/profiles';
 import * as WebBrowser from 'expo-web-browser';
 import { deleteOwnAccount } from '@/lib/account';
-import { privacyPolicyUrl } from '@/constants/legal';
+import { privacyPolicyUrl, termsOfServiceUrl } from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
 import { deleteOwnVideoForGood, updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
@@ -654,6 +654,19 @@ export default function ProfileScreen() {
         >
           <Ionicons name="shield-checkmark-outline" size={22} color={colors.or} />
           <Text style={styles.menuRowLabel}>{t('profile.privacyPolicy')}</Text>
+        </Pressable>
+        {/* Meme raison : les CGU doivent etre lisibles avant de creer un compte. */}
+        <Pressable
+          style={styles.menuRow}
+          onPress={() => {
+            setMenuOpen(false);
+            void WebBrowser.openBrowserAsync(termsOfServiceUrl(locale));
+          }}
+          accessibilityRole="link"
+          accessibilityLabel={t('profile.terms')}
+        >
+          <Ionicons name="document-text-outline" size={22} color={colors.or} />
+          <Text style={styles.menuRowLabel}>{t('profile.terms')}</Text>
         </Pressable>
         {user ? (
           <Pressable
