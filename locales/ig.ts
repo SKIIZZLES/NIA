@@ -376,6 +376,7 @@ const ig: TranslationKeys = {
     deleteSuccessBody: 'Ehichapụla vidiyo na faịlụ ya.',
     deleteSuccessMock: 'Ehichapụrụ (ọnọdụ nnyocha).',
     deleteFileKept: 'Vidiyo ahụ apụọla, mana faịlụ ya enweghị ike ihichapụ. Kpọtụrụ anyị ma ọ dịgide.',
+    deleteKeptForRepost: 'Vidiyo ahụ anọghịzi na profaịlụ gị. Edebere faịlụ ya n\'ihi na nzipụghachi ka na-eji ya, nzipụghachi ahụ ga-anọgide na-apụta.',
     archivedBadge: 'Edobere',
     videoNotFound: 'Achọtaghị vidiyo ahụ.',
     aiLabel: 'AI',

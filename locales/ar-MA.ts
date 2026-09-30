@@ -385,6 +385,7 @@ const arMA: TranslationKeys = {
     deleteSuccessBody: 'الفيديو والفيشي تمسحو.',
     deleteSuccessMock: 'تحذف (وضع تجريبي).',
     deleteFileKept: 'الفيديو ما بقى كيبان، ولكن الفيشي ديالو ما تمسحش. تواصل معانا إلا بقى هكا.',
+    deleteKeptForRepost: 'الفيديو ما بقاش كيبان فالبروفيل ديالك. الفيشي ديالو محفوظ حيت شي إعادة نشر مازال كتستعملو، وغادي تبقى باينة.',
     archivedBadge: 'مؤرشفة',
     videoNotFound: 'الفيديو ما تلقاش.',
     aiLabel: 'ذكاء اصطناعي',

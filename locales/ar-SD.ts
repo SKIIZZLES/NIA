@@ -384,6 +384,7 @@ const arSD: TranslationKeys = {
     deleteSuccessBody: 'الفيديو والملف اتمسحوا.',
     deleteSuccessMock: 'اتحذف (وضع تجريبي).',
     deleteFileKept: 'الفيديو ما بقى ظاهر، لكن ملفه ما اتمسح. اتصل بينا لو استمر.',
+    deleteKeptForRepost: 'الفيديو ما بقى ظاهر في ملفك. ملفه محفوظ لأنو في إعادة نشر لسه بتستخدمو، والإعادة دي بتفضل ظاهرة.',
     archivedBadge: 'مؤرشفة',
     videoNotFound: 'الفيديو ما موجود.',
     aiLabel: 'ذكاء اصطناعي',

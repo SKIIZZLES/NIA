@@ -26,6 +26,7 @@ import { ModerationBanner } from '@/components/ModerationBanner';
 import { isKeywordHeld } from '@/lib/textFilter';
 import { shareVideo } from '@/lib/share';
 import { VideoProgressBar } from '@/components/VideoProgressBar';
+import { videoDeleteFeedback } from '@/components/videoDeleteFeedback';
 import { useIsFocused, useRouter } from 'expo-router';
 import { SyncedSound } from '@/components/SyncedSound';
 import { OverlayLayer } from '@/components/OverlayLayer';
@@ -353,20 +354,11 @@ function VideoCardInner({
         onPress: () => {
           void (async () => {
             const result = await deleteOwnVideoInFeed(item.id);
-            if (!result.ok) {
-              Alert.alert(t('common.error'), result.message);
-              return;
-            }
-            // La ligne est partie mais l'objet Storage est reste : le dire,
-            // plutot que d'annoncer une suppression complete qui n'a pas eu lieu.
-            if (result.fileError) {
-              Alert.alert(t('feed.deleteSuccess'), t('feed.deleteFileKept'));
-              return;
-            }
-            Alert.alert(
-              t('feed.deleteSuccess'),
-              result.mock ? t('feed.deleteSuccessMock') : t('feed.deleteSuccessBody'),
-            );
+            // Trois issues : fichier effacé, fichier gardé pour un repost
+            // (qui reste visible), échec. Ne jamais annoncer un effacement
+            // qui n'a pas eu lieu.
+            const { title, body } = videoDeleteFeedback(result, t);
+            Alert.alert(title, body);
           })();
         },
       },

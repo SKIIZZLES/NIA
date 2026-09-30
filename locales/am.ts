@@ -376,6 +376,7 @@ const am: TranslationKeys = {
     deleteSuccessBody: 'ቪዲዮውና ፋይሉ ተጠፍተዋል።',
     deleteSuccessMock: 'ጠፍቷል (የማሳያ ሁኔታ)።',
     deleteFileKept: 'ቪዲዮው አይታይም፣ ፋይሉ ግን አልተጠፋም። ከቀጠለ ያግኙን።',
+    deleteKeptForRepost: 'ቪዲዮው በመገለጫዎ ላይ ከእንግዲህ አይታይም። እንደገና የተለጠፈ ልጥፍ አሁንም ስለሚጠቀምበት ፋይሉ ተይዟል፤ ያ ልጥፍ መታየቱን ይቀጥላል።',
     archivedBadge: 'በማህደር',
     videoNotFound: 'ቪዲዮው አልተገኘም።',
     aiLabel: 'AI',

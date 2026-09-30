@@ -376,6 +376,7 @@ const ln: TranslationKeys = {
     deleteSuccessBody: 'Vidéo et fichier effacés.',
     deleteSuccessMock: 'Deleted (demo mode).',
     deleteFileKept: 'La vidéo n\'apparaît plus, mais son fichier n\'a pas pu être effacé. Écrivez-nous si cela persiste.',
+    deleteKeptForRepost: 'La vidéo n\'apparaît plus sur votre profil. Son fichier est conservé, car un repost l\'utilise encore : ce repost reste visible.',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
     aiLabel: 'IA',

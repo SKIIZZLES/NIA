@@ -382,6 +382,7 @@ const es: TranslationKeys = {
     deleteSuccessBody: 'Vídeo y archivo borrados.',
     deleteSuccessMock: 'Eliminada (modo demo).',
     deleteFileKept: 'El vídeo ya no aparece, pero su archivo no se pudo borrar. Escríbenos si continúa.',
+    deleteKeptForRepost: 'El vídeo ya no aparece en tu perfil. Su archivo se conserva porque un repost aún lo usa: ese repost sigue visible.',
     archivedBadge: 'Archivado',
     videoNotFound: 'Video no encontrado.',
     aiLabel: 'IA',

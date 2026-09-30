@@ -381,6 +381,7 @@ const fr = {
     deleteSuccessBody: 'Vidéo et fichier effacés.',
     deleteSuccessMock: 'Supprimée (mode démo).',
     deleteFileKept: 'La vidéo n\'apparaît plus, mais son fichier n\'a pas pu être effacé. Écrivez-nous si cela persiste.',
+    deleteKeptForRepost: 'La vidéo n\'apparaît plus sur votre profil. Son fichier est conservé, car un repost l\'utilise encore : ce repost reste visible.',
     archivedBadge: 'Archivée',
     videoNotFound: 'Vidéo introuvable.',
     aiLabel: 'IA',

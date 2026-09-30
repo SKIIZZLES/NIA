@@ -15,6 +15,7 @@ import {
 import type { ProfileRow, VideoRow } from '@/types/database';
 import { isLikelyVideoUrl } from '@/lib/mediaThumb';
 import { parseEditMeta, type EditMeta } from '@/lib/editMeta';
+import { isRpcMissing } from '@/lib/textFilter';
 import {
   PUBLISH_OPTION_COLUMNS,
   hasRestrictiveOptions,
@@ -987,7 +988,11 @@ export function ownedVideoFilePaths(userId: string, row: DeletableVideoRow): str
   return [...vus];
 }
 
-/** Une autre ligne que `videoId` désigne-t-elle encore ce chemin ? */
+/**
+ * Une autre ligne que `videoId` désigne-t-elle encore ce chemin ?
+ * Ancien chemin seulement (022 non appliquée) : ce SELECT passe par la RLS et
+ * ne voit pas les lignes cachées à l'appelant (défaut 2, PR #41).
+ */
 async function cheminEncoreReference(
   sb: NonNullable<ReturnType<typeof getSupabase>>,
   videoId: string,
@@ -1006,18 +1011,116 @@ async function cheminEncoreReference(
   return { referenced: false };
 }
 
-export async function deleteOwnVideoForGood(
+/**
+ * 022 appliquée ? Mémorisé pour la session (null = inconnu), comme le
+ * schéma des signalements (S2, `lib/reports.ts`).
+ */
+let rpcSuppression022: boolean | null = null;
+/** Tests uniquement. */
+export function __resetVideoDeleteRpcCache(): void {
+  rpcSuppression022 = null;
+}
+
+type SupabaseClient = NonNullable<ReturnType<typeof getSupabase>>;
+
+/** Réponse de `delete_own_video_for_good` (022), lue sans lui faire confiance. */
+type Rpc022Reponse =
+  | { ok: true; removable: string[]; kept: string[] }
+  | { ok: false; reason: string };
+
+function cheminsDuDossier(userId: string, valeur: unknown): string[] {
+  if (!Array.isArray(valeur)) return [];
+  const prefixe = `${userId}/`;
+  return [
+    ...new Set(
+      valeur.filter((c): c is string => typeof c === 'string' && c.startsWith(prefixe)),
+    ),
+  ];
+}
+
+/** Exporté pour les tests. */
+export function parseDeleteRpcResponse(userId: string, data: unknown): Rpc022Reponse | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const d = data as Record<string, unknown>;
+  if (d.ok === true) {
+    // Le serveur ne rend que des chemins du dossier de l'appelant ; le filtre
+    // est refait ici pour la même raison que `ownedVideoFilePaths`.
+    return {
+      ok: true,
+      removable: cheminsDuDossier(userId, d.removable),
+      kept: cheminsDuDossier(userId, d.kept),
+    };
+  }
+  if (d.ok === false) {
+    return { ok: false, reason: typeof d.reason === 'string' && d.reason ? d.reason : 'delete_fail' };
+  }
+  return null;
+}
+
+/** La ligne est partie : effacer les fichiers qui ne servent plus à personne. */
+async function effacerFichiers(
+  sb: SupabaseClient,
+  aEffacer: string[],
+  aGarder: string[],
+): Promise<DeleteOwnVideoResult> {
+  if (aEffacer.length === 0) {
+    return { ok: true, removedFiles: [], keptFiles: aGarder };
+  }
+  const { error: storageErr } = await sb.storage.from('videos').remove(aEffacer);
+  if (storageErr) {
+    // La ligne est partie : la vidéo a bien disparu de l'application. Mais le
+    // fichier est resté. On le dit au lieu de prétendre le contraire.
+    return {
+      ok: true,
+      removedFiles: [],
+      keptFiles: aGarder,
+      fileError: storageErr.message || 'storage_remove_fail',
+    };
+  }
+  return { ok: true, removedFiles: aEffacer, keptFiles: aGarder };
+}
+
+/**
+ * Chemin 022 : une seule RPC (`delete_own_video_for_good`, security definer)
+ * vérifie le propriétaire, supprime la ligne et classe les fichiers. Le
+ * comptage des références y est fait SANS filtre de visibilité : un repost
+ * archivé, « followers », « private », masqué par la modération ou d'un compte
+ * bloqué garde son fichier (défaut 2, PR #41). Décision du fondateur : les
+ * reposts des autres comptes restent visibles.
+ *
+ * Renvoie `null` si la RPC n'existe pas encore (022 non appliquée) : l'appelant
+ * reprend alors l'ancien chemin.
+ */
+async function supprimerViaRpc022(
+  sb: SupabaseClient,
+  userId: string,
+  videoId: string,
+): Promise<DeleteOwnVideoResult | null> {
+  const { data, error } = await sb.rpc('delete_own_video_for_good', { p_video_id: videoId });
+  if (error) {
+    if (isRpcMissing(error)) {
+      rpcSuppression022 = false;
+      return null;
+    }
+    return { ok: false, message: error.message || 'delete_fail' };
+  }
+  rpcSuppression022 = true;
+  const reponse = parseDeleteRpcResponse(userId, data);
+  if (!reponse) return { ok: false, message: 'delete_fail' };
+  if (!reponse.ok) return { ok: false, message: reponse.reason };
+  return effacerFichiers(sb, reponse.removable, reponse.kept);
+}
+
+/**
+ * Ancien chemin (avant 022), gardé pour une base où 022 n'est pas encore
+ * appliquée. Limite connue : le comptage passe par la RLS et ne voit pas les
+ * reposts invisibles à l'auteur — c'est précisément ce que 022 corrige.
+ */
+async function supprimerCheminClient(
+  sb: SupabaseClient,
   userId: string,
   videoId: string,
 ): Promise<DeleteOwnVideoResult> {
-  const sb = getSupabase();
-  if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
-    return { ok: true, mock: true, removedFiles: [], keptFiles: [] };
-  }
-  if (!userId || !videoId) {
-    return { ok: false, message: 'missing_ids' };
-  }
-
   // L'objet que l'écran a en main n'est pas une source de vérité. Ce sont ces
   // chemins-là, lus côté serveur, et eux seuls, qui pourront être effacés.
   const { data: ligne, error: lectureErr } = await sb
@@ -1071,20 +1174,45 @@ export async function deleteOwnVideoForGood(
     return { ok: false, message: 'not_owner_or_missing' };
   }
 
-  if (aEffacer.length === 0) {
-    return { ok: true, removedFiles: [], keptFiles: aGarder };
+  return effacerFichiers(sb, aEffacer, aGarder);
+}
+
+export async function deleteOwnVideoForGood(
+  userId: string,
+  videoId: string,
+): Promise<DeleteOwnVideoResult> {
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
+    return { ok: true, mock: true, removedFiles: [], keptFiles: [] };
+  }
+  if (!userId || !videoId) {
+    return { ok: false, message: 'missing_ids' };
   }
 
-  const { error: storageErr } = await sb.storage.from('videos').remove(aEffacer);
-  if (storageErr) {
-    // La ligne est partie : la vidéo a bien disparu de l'application. Mais le
-    // fichier est resté. On le dit au lieu de prétendre le contraire.
-    return {
-      ok: true,
-      removedFiles: [],
-      keptFiles: aGarder,
-      fileError: storageErr.message || 'storage_remove_fail',
-    };
+  if (rpcSuppression022 !== false) {
+    const viaRpc = await supprimerViaRpc022(sb, userId, videoId);
+    if (viaRpc) return viaRpc;
   }
-  return { ok: true, removedFiles: aEffacer, keptFiles: aGarder };
+  return supprimerCheminClient(sb, userId, videoId);
+}
+
+/**
+ * Les trois issues d'une suppression définitive, pour l'écran (défaut 1,
+ * PR #41) :
+ * - `removed` : ligne et fichiers de l'auteur effacés (ou aucun fichier à lui,
+ *   cas d'un repost de la vidéo de quelqu'un d'autre) ;
+ * - `kept_for_repost` : la vidéo a disparu mais son fichier est gardé, parce
+ *   qu'un repost s'en sert encore — ce repost reste visible ;
+ * - `file_error` : la ligne est partie mais le fichier n'a pas pu être effacé ;
+ * - `failed` : rien n'a été supprimé.
+ * `mock` : mode démo, rien n'a été tenté.
+ */
+export type VideoDeleteOutcome = 'mock' | 'removed' | 'kept_for_repost' | 'file_error' | 'failed';
+
+export function videoDeleteOutcome(result: DeleteOwnVideoResult): VideoDeleteOutcome {
+  if (!result.ok) return 'failed';
+  if (result.mock) return 'mock';
+  if (result.fileError) return 'file_error';
+  if (result.keptFiles.length > 0) return 'kept_for_repost';
+  return 'removed';
 }

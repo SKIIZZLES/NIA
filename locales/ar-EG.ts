@@ -376,6 +376,7 @@ const arEG: TranslationKeys = {
     deleteSuccessBody: 'الفيديو والملف اتمسحوا.',
     deleteSuccessMock: 'اتحذف (وضع تجريبي).',
     deleteFileKept: 'الفيديو مابقاش ظاهر، بس ملفه مااتمسحش. كلمنا لو الحاجة دي كملت.',
+    deleteKeptForRepost: 'الفيديو مابقاش ظاهر في بروفايلك. ملفه متحفظ عشان في إعادة نشر لسه بتستخدمه، وهتفضل ظاهرة.',
     archivedBadge: 'مؤرشفة',
     videoNotFound: 'الفيديو مش موجود.',
     aiLabel: 'ذكاء اصطناعي',
