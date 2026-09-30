@@ -33,6 +33,7 @@ import {
 } from '@/lib/follows';
 import {
   blockUser as persistBlockUser,
+  unblockUser as persistUnblockUser,
   fetchBlockedIds,
   type BlockResult,
 } from '@/lib/blocks';
@@ -92,6 +93,7 @@ type FeedContextValue = {
   toggleFollow: (targetUserId: string) => void;
   blockedIds: Set<string>;
   blockUser: (targetUserId: string) => Promise<BlockResult>;
+  unblockUser: (targetUserId: string) => Promise<BlockResult>;
   bumpCommentCount: (videoId: string, delta?: number) => void;
   repostVideo: (item: VideoItem) => Promise<RepostResult>;
   archiveOwnVideoInFeed: (videoId: string) => Promise<OwnerVideoActionResult>;
@@ -434,7 +436,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
   const blockUser = useCallback(
     async (targetUserId: string): Promise<BlockResult> => {
       if (!targetUserId || (user && targetUserId === user.id)) {
-        return { ok: false, message: 'Impossible de vous bloquer vous-même.' };
+        return { ok: false, errorKey: 'safety.blockSelf' };
       }
       if (!user) {
         setBlockedIds((prev) => new Set(prev).add(targetUserId));
@@ -445,6 +447,30 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       if (result.ok) {
         setBlockedIds((prev) => new Set(prev).add(targetUserId));
         setFollowingIds((prev) => {
+          if (!prev.has(targetUserId)) return prev;
+          const next = new Set(prev);
+          next.delete(targetUserId);
+          return next;
+        });
+      }
+      return result;
+    },
+    [user],
+  );
+
+  const unblockUser = useCallback(
+    async (targetUserId: string): Promise<BlockResult> => {
+      if (!user) {
+        setBlockedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(targetUserId);
+          return next;
+        });
+        return { ok: true, mock: true, blocked: false };
+      }
+      const result = await persistUnblockUser(user.id, targetUserId);
+      if (result.ok) {
+        setBlockedIds((prev) => {
           if (!prev.has(targetUserId)) return prev;
           const next = new Set(prev);
           next.delete(targetUserId);
@@ -532,6 +558,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       toggleFollow,
       blockedIds,
       blockUser,
+      unblockUser,
       bumpCommentCount,
       repostVideo,
       archiveOwnVideoInFeed,
@@ -553,6 +580,7 @@ export function FeedProvider({ children }: { children: React.ReactNode }) {
       toggleFollow,
       blockedIds,
       blockUser,
+      unblockUser,
       bumpCommentCount,
       repostVideo,
       archiveOwnVideoInFeed,

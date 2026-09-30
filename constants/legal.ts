@@ -51,6 +51,15 @@ export function childSafetyUrl(locale: string): string {
 /** Contact unique : questions, signalements hors application, recours. */
 export const CONTACT_EMAIL = 'niaapp@outlook.com';
 
+/**
+ * Signalement aux autorités (France) — affiché pour la pédocriminalité (P0).
+ * PHAROS : plateforme officielle de signalement des contenus illicites.
+ * 119 : Allô Enfance en Danger (gratuit, 24 h/24). 17 : police / gendarmerie.
+ */
+export const PHAROS_URL = 'https://www.internet-signalement.gouv.fr';
+export const CHILD_HELPLINE = '119';
+export const POLICE_NUMBER = '17';
+
 /** Lien `mailto:` vers le contact, avec un objet optionnel (encodé). */
 export function contactMailto(subject?: string): string {
   const base = `mailto:${CONTACT_EMAIL}`;
@@ -62,7 +71,8 @@ export function contactMailto(subject?: string): string {
  * (`snapchat_{id}@users.nia.app`, voir supabase/functions/snapchat-auth).
  * Une inscription e-mail sur ce domaine pourrait pré-créer le compte qu'un
  * utilisateur Snap recevrait ensuite : l'écran d'inscription la refuse.
- * Contrôle client seulement ; le blocage serveur est prévu au sprint 2.
+ * Refus aussi côté serveur une fois la migration 017 appliquée (trigger sur
+ * auth.users ; seule l'Edge Function snapchat-auth peut créer ces comptes).
  */
 const RESERVED_SIGNUP_DOMAINS = ['users.nia.app'];
 

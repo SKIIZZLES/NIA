@@ -17,12 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { MediaThumb } from '@/components/MediaThumb';
+import { ModerationBanner } from '@/components/ModerationBanner';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import {
   countFollowers,
   countFollowing,
@@ -38,6 +39,7 @@ import {
   termsOfServiceUrl,
 } from '@/constants/legal';
 import { fetchSavedVideos } from '@/lib/saves';
+import { fetchOwnModerationStatus, isSuspended } from '@/lib/moderation';
 import { deleteOwnVideoForGood, updateVideoStatus } from '@/lib/videos';
 import { listSeriesByUser, type SeriesListItem } from '@/lib/series';
 import type { VideoItem } from '@/data/mockVideos';
@@ -67,6 +69,21 @@ export default function ProfileScreen() {
   const [seriesList, setSeriesList] = useState<SeriesListItem[]>([]);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  /** 017 : suspension en cours du compte (bannière). */
+  const [suspendedUntil, setSuspendedUntil] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setSuspendedUntil(null);
+      return;
+    }
+    void fetchOwnModerationStatus(user.id).then((st) => {
+      if (!cancelled) setSuspendedUntil(st?.suspendedUntil ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
   /** Brouillons locaux (S6) : visibles seulement par soi, sur ce téléphone. */
   const draftCount = useDraftCount();
 
@@ -175,7 +192,10 @@ export default function ProfileScreen() {
           void (async () => {
             const result = await deleteOwnVideoForGood(user.id, item.id);
             if (!result.ok) {
-              Alert.alert(t('common.error'), result.message);
+              Alert.alert(
+                t('common.error'),
+                result.message === 'moderation_hold' ? t('moderation.deleteHeld') : result.message,
+              );
               return;
             }
             setArchived((prev) => prev.filter((v) => v.id !== item.id));
@@ -438,6 +458,25 @@ export default function ProfileScreen() {
     paddingVertical: 2,
     borderRadius: 6,
   },
+  modBadge: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.overlay,
+    borderColor: colors.or,
+    borderWidth: 1,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  modBadgeText: {
+    color: colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 9,
+  },
   archiveBadgeText: {
     color: colors.or,
     fontFamily: Fonts.medium,
@@ -536,6 +575,7 @@ export default function ProfileScreen() {
       </Text>
       <Text style={styles.username}>@{user?.username || 'invite'}</Text>
       <Text style={styles.bio}>{user?.bio || t('profile.defaultBio')}</Text>
+      {user && isSuspended(suspendedUntil) ? <ModerationBanner kind="suspended" /> : null}
       <View style={styles.stats}>
         <Stat label={t('profile.posts')} value={String(published.length)} />
         <Stat label={t('profile.followers')} value={formatCount(followerCount)} />
@@ -713,6 +753,20 @@ export default function ProfileScreen() {
         {user ? (
           <Pressable
             style={styles.menuRow}
+            onPress={() => {
+              setMenuOpen(false);
+              router.push('/blocked' as Href);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('safety.blockedAccounts')}
+          >
+            <Ionicons name="ban-outline" size={22} color={colors.or} />
+            <Text style={styles.menuRowLabel}>{t('safety.blockedAccounts')}</Text>
+          </Pressable>
+        ) : null}
+        {user ? (
+          <Pressable
+            style={styles.menuRow}
             // Feuille laissee ouverte : l'Alert de confirmation s'affiche
             // par-dessus (iOS ne l'affiche pas pendant la fermeture d'une Modal).
             onPress={onDeleteAccount}
@@ -870,6 +924,18 @@ export default function ProfileScreen() {
                   overflow: 'hidden',
                 }}
               />
+              {item.moderationState === 'held' || item.moderationState === 'removed' ? (
+                <View style={styles.modBadge} pointerEvents="none">
+                  <Ionicons
+                    name={item.moderationState === 'held' ? 'eye-off' : 'shield'}
+                    size={11}
+                    color={colors.or}
+                  />
+                  <Text style={styles.modBadgeText}>
+                    {t(item.moderationState === 'held' ? 'moderation.badgeHeld' : 'moderation.badgeRemoved')}
+                  </Text>
+                </View>
+              ) : null}
             </Pressable>
           );
         }}

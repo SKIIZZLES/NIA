@@ -288,6 +288,7 @@ begin
   rid := (select id from public.reports where target_id = cm limit 1);
   r := nia_test.exec_as('authenticated', m, format('select public.mod_resolve_report(%L, ''no_violation'') as x', rid));
   perform nia_test.eq((select moderation_state from public.comments where id = cm), 'visible', 'S5 rétabli si pas de violation');
+  perform nia_test.eq(nia_test.n(format('select 1 from public.notifications where user_id = %L and type = ''moderation_notice'' and meta->>''code'' = ''restored''', a)), 1::bigint, 'S5 l''auteur est prévenu du rétablissement');
   perform nia_test.eq(nia_test.n(format('select 1 from public.reports where target_id = %L and status = ''dismissed''', cm)), 4::bigint, 'S5 tous les signalements de la cible clos');
   perform nia_test.eq(nia_test.n(format('select 1 from public.notifications where type = ''report_decision'' and meta->>''code'' = ''dismissed'' and user_id in (%L, %L, %L, %L)', b, c, d, e)), 4::bigint, 'S5 chaque signaleur reçoit la décision une fois');
   -- SQL Editor (aucun claim) : autorisé ; suspension

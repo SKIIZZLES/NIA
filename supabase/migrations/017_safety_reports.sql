@@ -1047,7 +1047,7 @@ create policy "evidence_storage_select_mod"
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'moderation-hold', 'moderation-hold', false, 52428800, -- 50 Mo, comme videos
-  array['video/mp4', 'video/quicktime', 'video/webm', 'image/jpeg', 'image/png', 'image/webp']
+  null  -- tout type accepté par videos (vidéo, image, audio) ; écrit par service_role seul
 )
 on conflict (id) do update set
   public = false,
@@ -1320,6 +1320,7 @@ declare
   v_status text;
   v_legal boolean;
   v_ref text := nullif(pg_catalog.btrim(coalesce(p_legal_ref, '')), '');
+  v_changed boolean := false;
   x record;
 begin
   if not public.nia_mod_context() then
@@ -1349,7 +1350,7 @@ begin
     when 'no_violation' then 'visible'
     else null end;
   if v_state is not null then
-    perform public.nia_apply_moderation_state(r.target_type, r.target_id, v_state,
+    v_changed := public.nia_apply_moderation_state(r.target_type, r.target_id, v_state,
       'report:' || r.category);
   end if;
   if v_state = 'removed' and r.target_type = 'video' then
@@ -1396,6 +1397,11 @@ begin
                           where x3.target_type = r.target_type and x3.target_id = r.target_id);
 
   -- Motif et voie de contestation envoyés à la personne visée (DSA art. 17).
+  -- « Pas de violation » sur un contenu masqué par 3 signalements : l'auteur,
+  -- prévenu du masquage, est prévenu du rétablissement (jamais pour un P0).
+  if p_resolution = 'no_violation' and v_changed and r.category <> 'pedocriminalite' then
+    p_resolution := 'content_restored';
+  end if;
   if p_resolution in ('content_removed', 'reported_to_authorities', 'content_restored',
                       'user_warned', 'user_suspended')
      and r.target_owner_id is not null then

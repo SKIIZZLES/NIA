@@ -170,7 +170,14 @@ export function mapRowToVideoItem(row: VideoWithProfile, publicUrl: string): Vid
       ? `@${row.sounds.profiles.username}`
       : undefined,
     filterId: (row as { filter_id?: string | null }).filter_id || undefined,
+    moderationState: moderationStateFromRow(row),
   };
+}
+
+/** 017 : `moderation_state` lu via `*` ; undefined si la migration manque. */
+export function moderationStateFromRow(row: unknown): VideoItem['moderationState'] {
+  const v = (row as { moderation_state?: unknown } | null)?.moderation_state;
+  return v === 'visible' || v === 'held' || v === 'removed' ? v : undefined;
 }
 
 export async function fetchVideosFromSupabase(options?: {
@@ -1008,7 +1015,8 @@ export async function deleteOwnVideoForGood(
   // chemins-là, lus côté serveur, et eux seuls, qui pourront être effacés.
   const { data: ligne, error: lectureErr } = await sb
     .from('videos')
-    .select('user_id, storage_path, cover_path')
+    // `*` : moderation_state n'existe qu'après la migration 017.
+    .select('*')
     .eq('id', videoId)
     .maybeSingle();
 
@@ -1021,6 +1029,12 @@ export async function deleteOwnVideoForGood(
   const row = ligne as unknown as DeletableVideoRow;
   if (row.user_id !== userId) {
     return { ok: false, message: 'not_owner' };
+  }
+  // 017 : une vidéo masquée ou retirée par la modération reste conservée
+  // (preuve, recours) ; le serveur refuse sa suppression définitive.
+  const etat = (ligne as { moderation_state?: string | null }).moderation_state;
+  if (etat && etat !== 'visible') {
+    return { ok: false, message: 'moderation_hold' };
   }
 
   const aEffacer: string[] = [];

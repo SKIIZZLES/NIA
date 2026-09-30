@@ -22,6 +22,7 @@ import { useI18n } from '@/context/I18nContext';
 import { FollowButton } from '@/components/FollowButton';
 import { VideoMenuSheet } from '@/components/VideoMenuSheet';
 import { ReportSheet } from '@/components/ReportSheet';
+import { ModerationBanner } from '@/components/ModerationBanner';
 import { shareVideo } from '@/lib/share';
 import { VideoProgressBar } from '@/components/VideoProgressBar';
 import { useIsFocused, useRouter } from 'expo-router';
@@ -378,32 +379,27 @@ function VideoCardInner({
 
   const onBlock = () => {
     if (!authorId || isOwn) return;
-    Alert.alert(
-      'Bloquer cet utilisateur ?',
-      `Vous ne verrez plus les vidéos de ${item.handle}.`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Bloquer',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              const result = await blockUser(authorId);
-              if (!result.ok) {
-                Alert.alert('Erreur', result.message);
-                return;
-              }
-              Alert.alert(
-                'Utilisateur bloqué',
-                result.mock
-                  ? 'Blocage enregistré (mode démo).'
-                  : `${item.handle} a été bloqué.`,
-              );
-            })();
-          },
+    const username = item.handle.replace(/^@/, '');
+    Alert.alert(t('safety.blockTitle'), t('safety.blockBody', { username }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('safety.block'),
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            const result = await blockUser(authorId);
+            if (!result.ok) {
+              Alert.alert(t('common.error'), t(result.errorKey));
+              return;
+            }
+            Alert.alert(
+              t('safety.blockedTitle'),
+              result.mock ? t('safety.blockedMock') : t('safety.blockedBody', { username }),
+            );
+          })();
         },
-      ],
-    );
+      },
+    ]);
   };
 
   const isRepost = !!item.repostOf;
@@ -581,6 +577,9 @@ function VideoCardInner({
             </View>
           ) : null}
         </View>
+        {isOwn && (item.moderationState === 'held' || item.moderationState === 'removed') ? (
+          <ModerationBanner kind={item.moderationState} />
+        ) : null}
         <Text style={styles.caption} numberOfLines={3}>
           {item.caption}
         </Text>
@@ -655,7 +654,7 @@ function VideoCardInner({
         reporterId={user?.id}
         targetType="video"
         targetId={item.id}
-        onDone={(message) => Alert.alert('Signalement', message)}
+        onDone={(message) => Alert.alert(t('feed.report'), message)}
       />
     </View>
   );

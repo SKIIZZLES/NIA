@@ -19,6 +19,7 @@ import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { ReportSheet } from '@/components/ReportSheet';
+import { writeErrorKey } from '@/lib/moderation';
 import {
   addComment,
   deleteOwnComment,
@@ -133,11 +134,13 @@ export function CommentsSheet({
           ),
         );
       }
-    } catch {
+    } catch (e) {
       setComments((prev) => prev.filter((c) => c.id !== optimistic.id));
       onCommentAdded?.(videoId, -1);
       setDraft(text);
-      setError(t('comments.sendError'));
+      // 017 : limite de débit (54000) ou action refusée (blocage, 42501).
+      const key = writeErrorKey(e);
+      setError(t(key ?? 'comments.sendError'));
     } finally {
       setSending(false);
     }
@@ -212,6 +215,11 @@ export function CommentsSheet({
                     <View style={styles.rowBody}>
                       <Text style={styles.authorHandle}>{authorLabel(item)}</Text>
                       <Text style={styles.body}>{item.body}</Text>
+                      {own && item.moderation_state && item.moderation_state !== 'visible' ? (
+                        <Text style={styles.heldNote}>
+                          {t(item.moderation_state === 'held' ? 'moderation.commentHeld' : 'moderation.commentRemoved')}
+                        </Text>
+                      ) : null}
                     </View>
                     {user ? (
                       own ? (
@@ -408,6 +416,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     fontSize: 14,
     lineHeight: 20,
+  },
+  heldNote: {
+    color: Colors.or,
+    fontFamily: Fonts.medium,
+    fontSize: 11,
+    marginTop: 3,
   },
   disabledNote: {
     color: Colors.textMuted,
