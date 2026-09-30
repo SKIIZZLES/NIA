@@ -1,4 +1,4 @@
-# Tests SQL — suppression de compte (013 / 014), 015 → 018
+# Tests SQL — suppression de compte (013 / 014), 015 → 018, 022
 
 **Uniquement sur un Postgres local et jetable.** `local_stubs.sql` recrée des
 doubles minimaux des schémas `auth` et `storage` de Supabase (`auth.users`,
@@ -62,3 +62,26 @@ première assertion fausse (`not ok - …`).
 14. `018_verify_after_apply.sql` (17 lignes) puis `017_verify_after_apply.sql` :
     toutes les lignes doivent être `t` ;
 15. 014, 016 et 017 rejoués après 018 (non-régression).
+
+## Suite : 022 (suppression définitive de vidéo, reposts conservés)
+
+Jouée après 018, et après 019 si `019_live_l2.sql` est dans le dépôt (022 n'en
+dépend pas ; 020 et 021 sont réservées).
+
+- 022, appliquée **deux fois** (idempotence) ;
+- `022_video_delete_refs.test.sql` (D1 → D12, Z1) : droits (anon et
+  service_role refusés, JWT sans `sub` refusé), cas courant (réponse, cascade,
+  `storage.objects` jamais touché), vidéo d'autrui = vidéo absente
+  (`not_found`, aucune fuite), garde de modération, repost public conservé et
+  toujours visible, **reposts invisibles à l'auteur comptés** (archivé,
+  followers, private, retenu, retiré, supprimé, blocage dans les deux sens —
+  avec témoin : l'ancien comptage client ne les voit pas), repost de sa
+  propre vidéo, suppression de son repost, préfixe du dossier, `cover_path`,
+  015 / 017 / ancien chemin inchangés, **014 inchangée** (la suppression de
+  compte efface toujours les reposts des autres), triggers de 017 joués,
+  concurrence (dblink : un repost ne peut pas se glisser entre le comptage et
+  la suppression) ;
+- `022_verify_after_apply.sql` (11 lignes, lecture seule) : toutes `t` ;
+- `017_verify_after_apply.sql`, `018_verify_after_apply.sql` (et
+  `019_verify_after_apply.sql` si présent) relancés après 022, puis 014, 016,
+  017, 018 (et 019) rejoués.
