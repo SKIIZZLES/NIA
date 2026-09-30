@@ -74,7 +74,7 @@
 | **022** | **suppression définitive de vidéo, reposts conservés** — appliquée (#43) |
 
 **Écrite, en PR, NON appliquée en prod** : **020** âge déclaré et contenus 18+
-(`020_age_mature.sql`, branche `haby/safety-age18`), testée sur un Postgres
+(`020_age_mature.sql`, #45, branche `haby/safety-age18`), testée sur un Postgres
 local jetable uniquement. **À appliquer seulement après l'accord du fondateur**,
 après 019 et 022 ; ordre et vérifications dans la description de la PR.
 **Réservée, non écrite** : 021 enregistrements de lives.
@@ -103,7 +103,7 @@ Détails : `supabase/functions/<fn>/README.md`.
 **PR** : #37 (sécurité S1 hygiène + CGU), #38 (sécurité S2 signalements) et
 #36 (live L1 LiveKit) ont été **mergées le 30/09/2026 dans cet ordre**, puis
 #39 (ce fichier), #40 (S3 filtre de mots, 018), #41 (docs, défauts connus de la
-suppression de vidéo), #42 (Live L2, 019) et #43 (022). **Ouverte** : Âge /
+suppression de vidéo), #42 (Live L2, 019) et #43 (022). **Ouverte** : #45 Âge /
 18+ (migration 020, en attente de l'accord du fondateur ; pas d'APK avant
 l'application de 020).
 
@@ -189,4 +189,4 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |
 | 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
 | 30/09/2026 | Haby | Correctif 022 : suppression définitive de vidéo par RPC `delete_own_video_for_good` (reposts des autres conservés quelle que soit leur visibilité), trois issues à l'écran ; défauts connus de #41 corrigés, 014 inchangée. |
-| 30/09/2026 | Haby | Âge / 18+ en PR : migration 020 (date de naissance privée, 13 ans minimum, marquage 18+ vidéo et live, choix d'affichage, outils modération) écrite et testée sur un Postgres local jetable, **non appliquée en prod** ; modale de date, réglage « Âge et contenus 18+ », CGU et confidentialité à jour. État actuel : 019 et 022 appliquées, `livekit-webhook` vérifiée, `niapp@outlook.com` modérateur. |
+| 30/09/2026 | Haby | Âge / 18+ en PR (#45) : migration 020 (date de naissance privée, 13 ans minimum, marquage 18+ vidéo et live, choix d'affichage, outils modération) écrite et testée sur un Postgres local jetable, **non appliquée en prod** ; modale de date, réglage « Âge et contenus 18+ », CGU et confidentialité à jour. État actuel : 019 et 022 appliquées, `livekit-webhook` vérifiée, `niapp@outlook.com` modérateur. |
