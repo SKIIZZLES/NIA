@@ -7,8 +7,19 @@
  * - en haut : fermer, choix du son ; le son est joué pendant l'enregistrement
  *   (sprint S2, option « Écoute ») et le micro est alors coupé pour éviter l'écho ;
  * - en bas : durée (3 min / 60 s / 15 s / Photo), déclencheur, galerie
- *   (sélecteur système, aucune permission médias), onglets Vidéo / Photo / Live ;
+ *   (sélecteur système, aucune permission médias), brouillons locaux (S6,
+ *   affichés dès qu'il y en a un), onglets Vidéo / Photo / Live ;
  * - zoom au pincement.
+ *
+ * Sprint S7 — multi-segments façon TikTok : chaque appui (ou maintien) du
+ * déclencheur ajoute un segment. La barre du haut montre les segments et
+ * leurs séparateurs sur la durée max ; « supprimer le dernier segment » et
+ * « Suivant » apparaissent dès le premier segment. À la durée max,
+ * l'enregistrement s'arrête seul et passe à l'édition. Le son reprend, à
+ * chaque segment, là où le précédent l'a laissé. « Suivant » assemble les
+ * segments en une seule vidéo (react-native-media-toolkit, sans ré-encodage)
+ * qui entre dans /create/edit comme une prise unique. Quitter la caméra avec
+ * des segments demande confirmation.
  *
  * Après une capture ou un import, le média entre dans le CreateContext et
  * l'écran pousse /create/edit (sprint S3), puis aperçu et publication.
@@ -33,7 +44,9 @@ import {
   type GestureResponderEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
+import { File, Paths } from 'expo-file-system';
 import {
   CameraView,
   useCameraPermissions,
@@ -50,9 +63,26 @@ import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { getFilterOverlayStyle } from '@/constants/filters';
 import { MAX_UPLOAD_BYTES, MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
-import { deleteCachedFile } from '@/lib/upload';
+import { deleteCachedFile, localFileSize } from '@/lib/upload';
+import { concatVideoFiles, isConcatAvailable, videoFileDurationMs } from '@/lib/videoTrim';
+import {
+  addSegment,
+  fileUriToPath,
+  isFull,
+  nextSegmentLimits,
+  progressParts,
+  remainingMs,
+  removeLastSegment,
+  resolveSegmentDurationMs,
+  segmentsKey,
+  soundOffsetForSegment,
+  stopDelayMs,
+  totalDurationMs,
+  type Segment,
+} from '@/lib/segments';
 import { SyncedSound } from '@/components/SyncedSound';
 import { fetchSoundById } from '@/lib/sounds';
+import { useDraftCount } from '@/hooks/useDraftCount';
 
 /**
  * 720p : compromis assumé entre lisibilité et budget de 50 Mo. En 1080p le
@@ -84,17 +114,28 @@ function formatDuration(totalSeconds: number): string {
 
 type Phase = 'idle' | 'countdown' | 'recording' | 'processing';
 
+/** Maintien du déclencheur au-delà duquel on filme « tant que le doigt reste ». */
+const HOLD_DELAY_MS = 250;
+
+let segmentSeq = 0;
+function makeSegmentId(): string {
+  segmentSeq += 1;
+  return `seg-${Date.now().toString(36)}-${segmentSeq}`;
+}
+
 export default function CreateCameraScreen() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
+  const navigation = useNavigation();
   const params = useLocalSearchParams<{ soundId?: string; mode?: string }>();
   const {
     mode,
     setMode,
     media,
+    sourceMedia,
     filter,
     setFilter,
     sound,
@@ -106,8 +147,10 @@ export default function CreateCameraScreen() {
     applyCapturedPhoto,
     captureMedia,
     pickMedia,
+    isLeaveGuardReleased,
   } = useCreateDraft();
   const isPhoto = mode === 'photo';
+  const draftCount = useDraftCount();
 
   const [camPermission, requestCamPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
@@ -128,6 +171,25 @@ export default function CreateCameraScreen() {
   const [soundSheetOpen, setSoundSheetOpen] = useState(false);
   /** Jouer le son choisi pendant l'enregistrement (micro coupé, anti-écho). */
   const [hearSound, setHearSound] = useState(true);
+  /** Segments filmés (S7), dans l'ordre. */
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const segmentsRef = useRef<Segment[]>(segments);
+  segmentsRef.current = segments;
+  /** Durée du segment en cours, pour la barre (ms). */
+  const [currentMs, setCurrentMs] = useState(0);
+  /** Assemblage des segments en cours (« Suivant »). */
+  const [assembling, setAssembling] = useState(false);
+  /** Dernier assemblage : réutilisé si les segments n'ont pas changé. */
+  const lastConcatRef = useRef<{ key: string; uri: string } | null>(null);
+  /** Arrêt automatique à la durée max, et arrêt différé d'un segment trop court. */
+  const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const delayedStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Le segment en cours a été lancé par un maintien du déclencheur. */
+  const holdRef = useRef(false);
+  /** Fermer après l'arrêt du segment en cours (confirmation ensuite). */
+  const askLeaveAfterStopRef = useRef(false);
+  const mediaUriRef = useRef<string | null>(null);
+  mediaUriRef.current = (sourceMedia ?? media)?.uri ?? null;
 
   /** Marque un enregistrement dont le résultat doit être jeté (abandon). */
   const abandonRef = useRef(false);
@@ -145,8 +207,42 @@ export default function CreateCameraScreen() {
   const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
 
   const micGranted = micPermission?.granted === true;
-  const busy = phase !== 'idle';
+  const busy = phase !== 'idle' || assembling;
   const playSoundWhileRecording = !!sound?.publicUrl && hearSound;
+  const maxMs = maxSec * 1000;
+  const hasSegments = segments.length > 0;
+  const recordedMs = totalDurationMs(segments);
+  const full = hasSegments && isFull(segments, maxMs);
+  // Le son reprend, à chaque segment, là où le précédent l'a laissé.
+  const segmentSoundOffsetMs = soundOffsetForSegment(
+    soundOffsetMs,
+    recordedMs,
+    sound?.durationMs ?? null,
+  );
+
+  /** Supprime un fichier de segment, sauf s'il est devenu le média du brouillon. */
+  const dropSegmentFile = useCallback((uri: string) => {
+    if (uri && uri !== mediaUriRef.current) deleteCachedFile(uri);
+  }, []);
+
+  const clearStopTimers = useCallback(() => {
+    if (autoStopRef.current) clearTimeout(autoStopRef.current);
+    if (delayedStopRef.current) clearTimeout(delayedStopRef.current);
+    autoStopRef.current = null;
+    delayedStopRef.current = null;
+  }, []);
+
+  // Sortie du parcours : les segments (fichiers du cache) partent avec lui.
+  useEffect(
+    () => () => {
+      clearStopTimers();
+      for (const seg of segmentsRef.current) dropSegmentFile(seg.uri);
+      // L'assemblage aussi, sauf s'il est devenu le média du brouillon.
+      const concat = lastConcatRef.current?.uri;
+      if (concat) dropSegmentFile(concat);
+    },
+    [clearStopTimers, dropSegmentFile],
+  );
 
   // Après un retournement ou un changement de mode, la session native est
   // recréée : le déclencheur attend onCameraReady. Filet de sécurité si
@@ -193,22 +289,47 @@ export default function CreateCameraScreen() {
 
   // --- Compteur de durée. Purement visuel : la limite réelle est appliquée
   // nativement par maxDuration / maxFileSize passés à recordAsync.
+  // S7 : le compteur affiche le total (segments précédents + segment en cours).
+  // Pendant la finalisation (« processing »), barre et compteur gardent la
+  // dernière valeur : pas de recul visible avant l'ajout du segment.
   useEffect(() => {
     if (phase !== 'recording') return;
-    setSeconds(0);
+    setSeconds(Math.floor(totalDurationMs(segmentsRef.current) / 1000));
+    setCurrentMs(0);
     const id = setInterval(() => {
-      setSeconds(Math.floor((Date.now() - startedAtRef.current) / 1000));
-    }, 250);
+      const cur = Date.now() - startedAtRef.current;
+      setCurrentMs(cur);
+      setSeconds(Math.floor((totalDurationMs(segmentsRef.current) + cur) / 1000));
+    }, 100);
     return () => clearInterval(id);
   }, [phase]);
 
   const stopRecording = useCallback(() => {
+    clearStopTimers();
     try {
       cameraRef.current?.stopRecording();
     } catch {
       // pas d'enregistrement en cours : rien à arrêter
     }
-  }, []);
+  }, [clearStopTimers]);
+
+  /**
+   * Arrêt demandé par l'utilisateur (toucher, fin de maintien). Un segment de
+   * moins de MIN_SEGMENT_MS n'est pas finalisé par la caméra : l'arrêt est
+   * alors différé de ce qui manque.
+   */
+  const requestStop = useCallback(() => {
+    const wait = stopDelayMs(Date.now() - startedAtRef.current);
+    if (wait <= 0) {
+      stopRecording();
+      return;
+    }
+    if (delayedStopRef.current) return;
+    delayedStopRef.current = setTimeout(() => {
+      delayedStopRef.current = null;
+      stopRecording();
+    }, wait);
+  }, [stopRecording]);
 
   // --- Arrêt propre quand l'application passe en arrière-plan.
   // Le fichier éventuel est jeté : l'utilisateur n'a pas choisi de le garder.
@@ -230,7 +351,14 @@ export default function CreateCameraScreen() {
   useEffect(() => {
     if (Platform.OS !== 'android') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (assembling) return true;
       if (phase === 'recording') {
+        if (segmentsRef.current.length > 0) {
+          // Des segments existent : on garde celui-ci, puis on demande.
+          askLeaveAfterStopRef.current = true;
+          requestStop();
+          return true;
+        }
         abandonRef.current = true;
         leaveAfterAbandonRef.current = true;
         stopRecording();
@@ -240,10 +368,13 @@ export default function CreateCameraScreen() {
         setPhase('idle');
         return true;
       }
+      if (phase === 'processing') return true;
+      // idle : le retour suit son cours ; avec des segments, la garde
+      // ci-dessous demande confirmation.
       return false;
     });
     return () => sub.remove();
-  }, [phase, stopRecording]);
+  }, [phase, assembling, stopRecording, requestStop]);
 
   // --- Perte de focus : arrêter tout enregistrement. Le démontage de
   // CameraView (conditionné par isFocused au rendu) libère la session native.
@@ -265,43 +396,172 @@ export default function CreateCameraScreen() {
   }, [router]);
 
   const close = useCallback(() => {
+    if (assembling || phase === 'processing') return;
     if (phase === 'recording') {
+      if (segmentsRef.current.length > 0) {
+        askLeaveAfterStopRef.current = true;
+        requestStop();
+        return;
+      }
       abandonRef.current = true;
       leaveAfterAbandonRef.current = true;
       stopRecording();
       return;
     }
+    if (phase === 'countdown') setPhase('idle');
     leave();
-  }, [phase, stopRecording, leave]);
+  }, [phase, assembling, stopRecording, requestStop, leave]);
+
+  /** Jette tous les segments (fichiers compris). */
+  const discardSegments = useCallback(() => {
+    for (const seg of segmentsRef.current) dropSegmentFile(seg.uri);
+    const concat = lastConcatRef.current?.uri;
+    if (concat) dropSegmentFile(concat);
+    lastConcatRef.current = null;
+    segmentsRef.current = [];
+    setSegments([]);
+  }, [dropSegmentFile]);
+
+  // Quitter la caméra avec des segments (fermer, retour Android, geste iOS) :
+  // « Abandonner les segments ? ». Après une publication, la garde est levée.
+  usePreventRemove(hasSegments, ({ data }) => {
+    if (isLeaveGuardReleased()) {
+      navigation.dispatch(data.action);
+      return;
+    }
+    Alert.alert(
+      t('camera.discardSegmentsTitle'),
+      t('camera.discardSegmentsBody', { count: String(segmentsRef.current.length) }),
+      [
+        { text: t('camera.discardSegmentsKeep'), style: 'cancel' },
+        {
+          text: t('camera.discardSegmentsConfirm'),
+          style: 'destructive',
+          onPress: () => {
+            discardSegments();
+            navigation.dispatch(data.action);
+          },
+        },
+      ],
+      { cancelable: true },
+    );
+  });
+
+  /**
+   * « Suivant » (S7) : assemble les segments en une vidéo et l'envoie à
+   * l'édition. Un seul segment est utilisé tel quel. Si les segments n'ont
+   * pas changé depuis le dernier assemblage (retour depuis l'édition), la
+   * même vidéo est reprise sans perdre les réglages d'édition.
+   */
+  const finish = useCallback(
+    async (list: Segment[]) => {
+      if (list.length === 0 || assembling) return;
+      const key = segmentsKey(list);
+      const last = lastConcatRef.current;
+      if (last && last.key === key && mediaUriRef.current === last.uri) {
+        router.push('/create/edit');
+        return;
+      }
+      let uri: string;
+      let durationMs: number;
+      const single = list.length === 1;
+      if (single) {
+        uri = list[0].uri;
+        durationMs = list[0].durationMs;
+      } else {
+        if (!isConcatAvailable()) {
+          Alert.alert(t('common.error'), t('camera.concatUnavailable'));
+          return;
+        }
+        setAssembling(true);
+        try {
+          const ext = Platform.OS === 'ios' ? 'mov' : 'mp4';
+          const out = new File(Paths.cache, `nia-segments-${Date.now().toString(36)}.${ext}`);
+          const res = await concatVideoFiles(
+            list.map((sg) => fileUriToPath(sg.uri)),
+            fileUriToPath(out.uri),
+          );
+          uri = res.uri;
+          durationMs = res.durationMs > 0 ? res.durationMs : totalDurationMs(list);
+        } catch {
+          setAssembling(false);
+          Alert.alert(t('camera.concatFailedTitle'), t('camera.concatFailed'));
+          return;
+        }
+      }
+      // Accepté : l'effet sur `media` pousse /create/edit. Refusé (taille,
+      // durée) : l'alerte est déjà affichée, les segments restent.
+      const accepted = applyCapturedVideo({ uri, durationMs });
+      if (accepted) {
+        // L'assemblage précédent (s'il n'est pas un segment) est remplacé.
+        const previous = lastConcatRef.current?.uri;
+        if (previous && previous !== uri && !list.some((sg) => sg.uri === previous)) {
+          deleteCachedFile(previous);
+        }
+        lastConcatRef.current = { key, uri };
+      } else if (!single) {
+        deleteCachedFile(uri);
+      }
+      setAssembling(false);
+    },
+    [assembling, router, applyCapturedVideo, t],
+  );
 
   const record = useCallback(async () => {
     if (!cameraRef.current || !ready) {
       setPhase('idle');
       return;
     }
+    const before = segmentsRef.current;
+    if (isFull(before, maxMs)) {
+      setPhase('idle');
+      return;
+    }
+    const limits = nextSegmentLimits(before, maxMs, MAX_UPLOAD_BYTES);
     abandonRef.current = false;
     leaveAfterAbandonRef.current = false;
     startedAtRef.current = Date.now();
     setPhase('recording');
+    // Arrêt exact à la durée max ; la limite native (en secondes entières)
+    // n'est qu'un filet.
+    clearStopTimers();
+    autoStopRef.current = setTimeout(() => {
+      autoStopRef.current = null;
+      try {
+        cameraRef.current?.stopRecording();
+      } catch {
+        // déjà arrêté
+      }
+    }, limits.autoStopMs);
     let result: { uri: string } | undefined;
     try {
       // maxDuration et maxFileSize existent bien dans CameraRecordingOptions
-      // de expo-camera 57 : c'est la couche native qui coupe, pas un timer JS.
+      // de expo-camera 57 (maxDuration en secondes entières sur Android).
       result = await cameraRef.current.recordAsync({
-        maxDuration: Math.min(maxSec, MAX_VIDEO_DURATION_SEC),
-        maxFileSize: MAX_UPLOAD_BYTES,
+        maxDuration: Math.min(limits.maxDurationSec, MAX_VIDEO_DURATION_SEC),
+        maxFileSize: limits.maxFileSize,
       });
     } catch {
+      clearStopTimers();
+      holdRef.current = false;
+      askLeaveAfterStopRef.current = false;
       setPhase('idle');
-      Alert.alert(t('common.error'), t('camera.recordFailed'));
+      Alert.alert(
+        t('common.error'),
+        before.length > 0 ? t('camera.segmentFailed') : t('camera.recordFailed'),
+      );
       return;
     }
+    clearStopTimers();
+    holdRef.current = false;
+    const measuredMs = Date.now() - startedAtRef.current;
 
     setPhase('processing');
     const uri = result?.uri;
 
     if (abandonRef.current || !uri) {
       if (uri) deleteCachedFile(uri);
+      askLeaveAfterStopRef.current = false;
       setPhase('idle');
       // On ne referme que si l'abandon vient d'un geste explicite. Un abandon
       // provoqué par une perte de focus ou un passage en arrière-plan a déjà
@@ -310,16 +570,52 @@ export default function CreateCameraScreen() {
       return;
     }
 
-    const accepted = applyCapturedVideo({
-      uri,
-      durationMs: Date.now() - startedAtRef.current,
-    });
-    // Refusé par les gardes taille/durée : on ne garde pas le fichier et on
-    // laisse l'utilisateur refilmer. Accepté : l'effet sur `media` pousse
-    // l'étape suivante.
-    if (!accepted) deleteCachedFile(uri);
+    // Durée du fichier (plus juste que l'horloge), bornée au reste disponible.
+    const fileMs = await videoFileDurationMs(uri);
+    const durationMs = resolveSegmentDurationMs(
+      measuredMs,
+      fileMs,
+      remainingMs(segmentsRef.current, maxMs),
+    );
+    const next = addSegment(
+      segmentsRef.current,
+      { id: makeSegmentId(), uri, durationMs, size: localFileSize(uri) },
+      maxMs,
+    );
+    if (next.length === segmentsRef.current.length) {
+      // Segment vide : rien à garder.
+      deleteCachedFile(uri);
+    }
+    segmentsRef.current = next;
+    setSegments(next);
     setPhase('idle');
-  }, [ready, maxSec, applyCapturedVideo, leave, t]);
+
+    if (askLeaveAfterStopRef.current) {
+      askLeaveAfterStopRef.current = false;
+      leave();
+      return;
+    }
+    // Durée max atteinte : on passe à l'édition, comme une prise unique.
+    if (isFull(next, maxMs)) void finish(next);
+  }, [ready, maxMs, clearStopTimers, leave, finish, t]);
+
+  /** « Supprimer le dernier segment ». */
+  const undoLastSegment = useCallback(() => {
+    if (busy) return;
+    const { segments: rest, removed } = removeLastSegment(segmentsRef.current);
+    if (!removed) return;
+    dropSegmentFile(removed.uri);
+    segmentsRef.current = rest;
+    setSegments(rest);
+  }, [busy, dropSegmentFile]);
+
+  const confirmUndo = useCallback(() => {
+    if (busy || !segmentsRef.current.length) return;
+    Alert.alert(t('camera.undoSegmentTitle'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('camera.undoSegmentConfirm'), style: 'destructive', onPress: undoLastSegment },
+    ]);
+  }, [busy, undoLastSegment, t]);
 
   const takePhoto = useCallback(async () => {
     if (!cameraRef.current || !ready) {
@@ -356,14 +652,15 @@ export default function CreateCameraScreen() {
 
   const onShutter = useCallback(() => {
     if (phase === 'recording') {
-      stopRecording();
+      requestStop();
       return;
     }
     if (phase === 'countdown') {
       setPhase('idle');
       return;
     }
-    if (phase !== 'idle' || !ready) return;
+    if (phase !== 'idle' || !ready || assembling) return;
+    if (!isPhoto && full) return;
     setFiltersOpen(false);
     if (timerSetting > 0) {
       setCountdown(timerSetting);
@@ -371,7 +668,25 @@ export default function CreateCameraScreen() {
       return;
     }
     capture();
-  }, [phase, ready, timerSetting, stopRecording, capture]);
+  }, [phase, ready, assembling, isPhoto, full, timerSetting, requestStop, capture]);
+
+  /** Maintien du déclencheur (vidéo, sans minuteur) : filmer tant qu'on tient. */
+  const onShutterLongPress = useCallback(() => {
+    if (isPhoto || timerSetting > 0 || phase !== 'idle') {
+      onShutter();
+      return;
+    }
+    if (!ready || assembling || full) return;
+    holdRef.current = true;
+    setFiltersOpen(false);
+    void record();
+  }, [isPhoto, timerSetting, phase, ready, assembling, full, onShutter, record]);
+
+  const onShutterPressOut = useCallback(() => {
+    if (!holdRef.current) return;
+    holdRef.current = false;
+    requestStop();
+  }, [requestStop]);
 
   /**
    * Repli caméra système, déclenché uniquement si CameraView ne démarre pas.
@@ -406,10 +721,16 @@ export default function CreateCameraScreen() {
 
   const flipCamera = useCallback(() => {
     if (busy) return;
+    // Les segments sont assemblés sans ré-encodage : ils doivent venir de la
+    // même caméra (orientation et format identiques).
+    if (segmentsRef.current.length > 0) {
+      Alert.alert(t('camera.flipLockedTitle'), t('camera.flipLockedBody'));
+      return;
+    }
     setReady(false);
     setZoom(0);
     setFacing((f) => (f === 'back' ? 'front' : 'back'));
-  }, [busy]);
+  }, [busy, t]);
 
   // --- Zoom au pincement : événements tactiles bruts, pas de dépendance.
   const onTouchMove = useCallback(
@@ -496,6 +817,41 @@ export default function CreateCameraScreen() {
           overflow: 'hidden',
         },
         progressFill: { height: '100%', backgroundColor: colors.or },
+        progressRow: { flexDirection: 'row', height: '100%' },
+        progressCurrent: { height: '100%', backgroundColor: colors.sable },
+        progressSep: {
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          width: 2,
+          marginLeft: -1,
+          backgroundColor: colors.noir,
+        },
+        segCtrl: {
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(11,11,11,0.55)',
+        },
+        segCtrlWrap: { width: 44, height: 44, alignItems: 'center', overflow: 'visible' },
+        nextBtn: {
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.or,
+        },
+        assemblingWrap: {
+          ...StyleSheet.absoluteFill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: Spacing.sm,
+          backgroundColor: 'rgba(11,11,11,0.7)',
+        },
+        assemblingText: { color: colors.sable, fontFamily: Fonts.medium, fontSize: 14 },
         topBar: {
           position: 'absolute',
           left: 0,
@@ -576,6 +932,32 @@ export default function CreateCameraScreen() {
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'rgba(11,11,11,0.45)',
+        },
+        draftsBtnWrap: { width: 44, height: 44, alignItems: 'center', overflow: 'visible' },
+        draftsCount: {
+          position: 'absolute',
+          top: -6,
+          right: -8,
+          minWidth: 20,
+          height: 20,
+          paddingHorizontal: 5,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.or,
+        },
+        draftsCountText: { color: colors.noir, fontFamily: Fonts.bold, fontSize: 11 },
+        draftsLabel: {
+          position: 'absolute',
+          top: 48,
+          width: 80,
+          textAlign: 'center',
+          color: chrome,
+          fontFamily: Fonts.medium,
+          fontSize: 10,
+          textShadowColor: 'rgba(0,0,0,0.6)',
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 2,
         },
         recordOuter: {
           width: 78,
@@ -747,6 +1129,13 @@ export default function CreateCameraScreen() {
 
   const bottomBase = Math.max(insets.bottom, 16) + Spacing.sm;
   const sideDisabled = busy ? { opacity: 0.4 } : null;
+  const segmentLive = phase === 'recording' || phase === 'processing';
+  const bar = progressParts(segments, maxMs, segmentLive ? currentMs : 0);
+  const shutterDisabled =
+    phase === 'processing' ||
+    assembling ||
+    (!ready && phase === 'idle') ||
+    (!isPhoto && full && phase === 'idle');
 
   return (
     <View style={styles.root}>
@@ -807,14 +1196,33 @@ export default function CreateCameraScreen() {
         />
       ) : null}
 
-      {phase === 'recording' ? (
-        <View style={[styles.progressTrack, { top: insets.top + 4 }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${Math.min(100, (seconds / maxSec) * 100)}%` },
-            ]}
-          />
+      {!isPhoto && (segmentLive || hasSegments) ? (
+        <View
+          style={[styles.progressTrack, { top: insets.top + 4 }]}
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel={t('camera.segmentsA11y', {
+            count: String(segments.length),
+            total: formatDuration(Math.floor(recordedMs / 1000)),
+            max: formatDuration(maxSec),
+          })}
+        >
+          <View style={styles.progressRow}>
+            {bar.segments.map((frac, i) => (
+              <View
+                key={segments[i]?.id ?? i}
+                style={[styles.progressFill, { width: `${frac * 100}%` }]}
+              />
+            ))}
+            {segmentLive ? (
+              <View style={[styles.progressCurrent, { width: `${bar.current * 100}%` }]} />
+            ) : null}
+          </View>
+          {bar.separators.map((at, i) =>
+            at > 0 && at < 1 ? (
+              <View key={`sep-${i}`} style={[styles.progressSep, { left: `${at * 100}%` }]} />
+            ) : null,
+          )}
         </View>
       ) : null}
 
@@ -829,8 +1237,8 @@ export default function CreateCameraScreen() {
         </Pressable>
         <Pressable
           onPress={() => setSoundSheetOpen(true)}
-          disabled={busy}
-          style={[styles.soundPill, sideDisabled]}
+          disabled={busy || hasSegments}
+          style={[styles.soundPill, (busy || hasSegments) && { opacity: 0.4 }]}
           accessibilityRole="button"
           accessibilityLabel={t('create.pickSound')}
         >
@@ -848,6 +1256,7 @@ export default function CreateCameraScreen() {
           a11y={t('camera.flip')}
           onPress={flipCamera}
           disabled={busy}
+          dimmed={hasSegments}
           styles={styles}
           color={chrome}
         />
@@ -897,7 +1306,7 @@ export default function CreateCameraScreen() {
             label={t('camera.hearSound')}
             a11y={hearSound ? t('camera.hearSoundOn') : t('camera.hearSoundOff')}
             onPress={() => setHearSound((v) => !v)}
-            disabled={busy}
+            disabled={busy || hasSegments}
             active={hearSound}
             styles={styles}
             color={chrome}
@@ -926,10 +1335,12 @@ export default function CreateCameraScreen() {
         </Text>
       ) : null}
 
-      {phase === 'recording' ? (
+      {!isPhoto && (segmentLive || hasSegments) ? (
         <View style={[styles.timerBadge, { bottom: bottomBase + 200 }]}>
           <Text style={styles.timerText}>
-            {`${formatDuration(seconds)} / ${formatDuration(maxSec)}`}
+            {`${formatDuration(
+              segmentLive ? seconds : Math.floor(recordedMs / 1000),
+            )} / ${formatDuration(maxSec)}`}
           </Text>
         </View>
       ) : null}
@@ -943,7 +1354,7 @@ export default function CreateCameraScreen() {
               onSelect={(f) => setFilter(f)}
             />
           </View>
-        ) : !busy ? (
+        ) : !busy && !hasSegments ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -983,31 +1394,52 @@ export default function CreateCameraScreen() {
         ) : null}
 
         <View style={styles.shutterRow}>
-          <Pressable
-            onPress={() => void openGallery()}
-            disabled={busy}
-            style={[styles.galleryBtn, sideDisabled]}
-            accessibilityRole="button"
-            accessibilityLabel={t('camera.gallery')}
-          >
-            <Ionicons name="images-outline" size={22} color={chrome} />
-          </Pressable>
+          {hasSegments && !isPhoto ? (
+            // S7 : « supprimer le dernier segment » remplace la galerie.
+            <Pressable
+              onPress={confirmUndo}
+              disabled={busy}
+              style={[styles.segCtrlWrap, sideDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={t('camera.undoSegment')}
+            >
+              <View style={styles.segCtrl}>
+                <Ionicons name="backspace-outline" size={22} color={chrome} />
+              </View>
+              <Text style={styles.draftsLabel} numberOfLines={1}>
+                {t('camera.undoSegmentShort')}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => void openGallery()}
+              disabled={busy}
+              style={[styles.galleryBtn, sideDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={t('camera.gallery')}
+            >
+              <Ionicons name="images-outline" size={22} color={chrome} />
+            </Pressable>
+          )}
 
           <Pressable
             onPress={onShutter}
-            disabled={phase === 'processing' || (!ready && phase === 'idle')}
-            style={[
-              styles.recordOuter,
-              (phase === 'processing' || (!ready && phase === 'idle')) && { opacity: 0.5 },
-            ]}
+            onLongPress={onShutterLongPress}
+            delayLongPress={HOLD_DELAY_MS}
+            onPressOut={onShutterPressOut}
+            disabled={shutterDisabled}
+            style={[styles.recordOuter, shutterDisabled && { opacity: 0.5 }]}
             accessibilityRole="button"
             accessibilityLabel={
               phase === 'recording'
                 ? t('camera.stop')
                 : isPhoto
                   ? t('create.takePhoto')
-                  : t('camera.record')
+                  : hasSegments
+                    ? t('camera.recordNextSegment')
+                    : t('camera.record')
             }
+            accessibilityHint={!isPhoto && phase === 'idle' ? t('camera.recordHint') : undefined}
           >
             {phase === 'processing' ? (
               <ActivityIndicator color={chrome} />
@@ -1024,11 +1456,49 @@ export default function CreateCameraScreen() {
             )}
           </Pressable>
 
-          {/* Symétrie visuelle : occupe la largeur du bouton galerie. */}
-          <View style={{ width: 44, height: 44 }} pointerEvents="none" />
+          {/* S7 : « Suivant » dès le premier segment ; sinon brouillons locaux
+              (S6) ou symétrie avec le bouton galerie. */}
+          {hasSegments && !isPhoto ? (
+            <Pressable
+              onPress={() => void finish(segmentsRef.current)}
+              disabled={busy}
+              style={[styles.segCtrlWrap, sideDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={t('camera.nextA11y')}
+            >
+              <View style={styles.nextBtn}>
+                <Ionicons name="checkmark" size={26} color={colors.onAccent} />
+              </View>
+              <Text style={styles.draftsLabel} numberOfLines={1}>
+                {t('camera.next')}
+              </Text>
+            </Pressable>
+          ) : draftCount > 0 ? (
+            <Pressable
+              onPress={() => router.push('/create/drafts')}
+              disabled={busy}
+              style={[styles.draftsBtnWrap, sideDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={t('drafts.entryA11y', { count: String(draftCount) })}
+            >
+              <View style={styles.galleryBtn}>
+                <Ionicons name="albums-outline" size={22} color={chrome} />
+              </View>
+              <View style={styles.draftsCount}>
+                <Text style={styles.draftsCountText}>
+                  {draftCount > 99 ? '99+' : String(draftCount)}
+                </Text>
+              </View>
+              <Text style={styles.draftsLabel} numberOfLines={1}>
+                {t('drafts.entry')}
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={{ width: 44, height: 44 }} pointerEvents="none" />
+          )}
         </View>
 
-        {!busy ? (
+        {!busy && !hasSegments ? (
           <View style={styles.modeTabs}>
             <ModeTab
               label={t('create.hubLive')}
@@ -1070,9 +1540,18 @@ export default function CreateCameraScreen() {
         <SyncedSound
           url={sound.publicUrl}
           active={playSoundWhileRecording && phase === 'recording' && isFocused}
-          offsetMs={soundOffsetMs}
+          offsetMs={segmentSoundOffsetMs}
           volume={soundVolume}
         />
+      ) : null}
+
+      {assembling ? (
+        <View style={styles.assemblingWrap} accessibilityLiveRegion="polite">
+          <ActivityIndicator color={colors.or} size="large" />
+          <Text style={styles.assemblingText}>
+            {t('camera.assembling', { count: String(segments.length) })}
+          </Text>
+        </View>
       ) : null}
 
       <CameraSoundSheet
@@ -1103,6 +1582,7 @@ function SideButton({
   a11y,
   onPress,
   disabled,
+  dimmed,
   active,
   styles,
   color,
@@ -1113,6 +1593,8 @@ function SideButton({
   a11y: string;
   onPress: () => void;
   disabled?: boolean;
+  /** Visible mais atténué : le toucher explique pourquoi c'est bloqué. */
+  dimmed?: boolean;
   active?: boolean;
   styles: CameraStyles;
   color: string;
@@ -1122,7 +1604,7 @@ function SideButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.sideItem, disabled && { opacity: 0.4 }]}
+      style={[styles.sideItem, (disabled || dimmed) && { opacity: 0.4 }]}
       accessibilityRole="button"
       accessibilityLabel={a11y}
       accessibilityState={{ disabled: !!disabled, selected: !!active }}

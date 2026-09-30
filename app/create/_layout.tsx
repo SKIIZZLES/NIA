@@ -2,7 +2,8 @@
  * Parcours de publication, hors de la barre d'onglets.
  *
  * Le CreateProvider est monté ici : il couvre les trois étapes et meurt avec
- * la pile. Sortir du parcours jette donc le brouillon, sans reset explicite.
+ * la pile. Sortir du parcours jette donc l'état en mémoire, sans reset
+ * explicite ; les brouillons enregistrés (S6) vivent, eux, sur le disque.
  */
 import React from 'react';
 import { Stack } from 'expo-router';
@@ -25,6 +26,7 @@ export default function CreateLayout() {
         <Stack.Screen name="edit" />
         <Stack.Screen name="preview" />
         <Stack.Screen name="publish" />
+        <Stack.Screen name="drafts" />
       </Stack>
     </CreateProvider>
   );
