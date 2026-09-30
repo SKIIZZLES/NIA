@@ -712,7 +712,7 @@ const am: TranslationKeys = {
   },
   filter: {
     label: 'የNIA ማጣሪያዎች',
-    hint: 'ከቀረጻ በኋላ የቀለም / overlay ቅድመ እይታ። የፊት AR ወይም ተፈጥሯዊ LUT የለም (V3)።',
+    hint: 'ለመሞከር ማጣሪያ ይንኩ።',
     none: 'የለም',
     feedBadge: 'የNIA ማጣሪያ',
     mvpNote: 'የቅድመ እይታ ማጣሪያዎች (overlay / ግምታዊ matrix)። እውነተኛ LUT / AR = V3።',

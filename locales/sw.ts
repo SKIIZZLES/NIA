@@ -718,7 +718,7 @@ const sw: TranslationKeys = {
   },
   filter: {
     label: 'Vichujio vya NIA',
-    hint: 'Onyesho la rangi baada ya kupiga picha. Hakuna AR ya uso wala LUT asilia (V3).',
+    hint: 'Gusa kichujio ili ukijaribu.',
     none: 'Hakuna',
     feedBadge: 'Kichujio NIA',
     mvpNote: 'Vichujio vya preview. LUT / AR halisi = V3.',

@@ -15,8 +15,22 @@ import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
+import { PaletteScope } from '@/context/ThemeContext';
+import { ORIGINAL_COLORS } from '@/constants/themes';
 
+/**
+ * Écran encore dessiné avec les couleurs statiques de NIA Original : ses
+ * composants thémés (Button) suivent la même palette, pas le thème choisi.
+ */
 export default function LoginScreen() {
+  return (
+    <PaletteScope palette={ORIGINAL_COLORS}>
+      <LoginScreenBody />
+    </PaletteScope>
+  );
+}
+
+function LoginScreenBody() {
   const { signIn, isMockAuth } = useAuth();
   const { t } = useI18n();
   const router = useRouter();

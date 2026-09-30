@@ -718,7 +718,7 @@ const ha: TranslationKeys = {
   },
   filter: {
     label: 'Tacen NIA',
-    hint: 'Duban launi / overlay bayan ɗaukar hoto. Babu AR na fuska ko LUT na asali (V3).',
+    hint: 'Taɓa tace don gwada shi.',
     none: 'Babu',
     feedBadge: 'Tacen NIA',
     mvpNote: 'Tacen duba (overlay / kusan matrix). LUT / AR na gaske = V3.',

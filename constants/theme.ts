@@ -6,7 +6,17 @@
  * Prefer `useColors()` / `useTheme()` from ThemeContext for themed chrome.
  */
 export { ORIGINAL_COLORS as Colors } from '@/constants/themes';
+import { MEDIA_TOKENS } from '@/constants/themes';
+
+export { MEDIA_TOKENS, mediaPalette } from '@/constants/themes';
 export type { ThemeColors, ThemeId } from '@/constants/themes';
+
+/** Ombre des libellés posés sur un média (barre d'outils, caméra). */
+export const MediaTextShadow = {
+  textShadowColor: MEDIA_TOKENS.mediaTextShadow,
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 3,
+} as const;
 
 export const Spacing = {
   xs: 4,

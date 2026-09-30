@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Fonts, MEDIA_TOKENS } from '@/constants/theme';
 import { resolveGridThumbUrl } from '@/lib/mediaThumb';
 
 type Props = {
@@ -96,13 +96,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: 'rgba(11,11,11,0.65)',
+    backgroundColor: MEDIA_TOKENS.mediaScrimStrong,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   badgeText: {
-    color: Colors.sable,
+    color: MEDIA_TOKENS.onMedia,
     fontSize: 10,
   },
 });

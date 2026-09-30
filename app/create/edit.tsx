@@ -50,8 +50,8 @@ import { SyncedSound } from '@/components/SyncedSound';
 import { TrimBar } from '@/components/TrimBar';
 import { PLAYBACK_SPEEDS, useCreateDraft } from '@/context/CreateContext';
 import { useI18n } from '@/context/I18nContext';
-import { useColors } from '@/context/ThemeContext';
-import { Fonts, Radii, Spacing } from '@/constants/theme';
+import { MediaChrome, useColors } from '@/context/ThemeContext';
+import { Fonts, MediaTextShadow, Radii, Spacing } from '@/constants/theme';
 import { getFilterOverlayStyle } from '@/constants/filters';
 import { MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { formatSoundTime } from '@/lib/soundSync';
@@ -89,7 +89,19 @@ function LiveOverlayEditor({ player, originMs, ...rest }: LiveEditorProps) {
   return <OverlayEditor {...rest} timeMs={player ? timeMs : null} />;
 }
 
+/**
+ * L'éditeur est posé sur la vidéo : sa palette ne suit pas la surface claire
+ * de Clair (voir `MediaChrome`). Texte sable sur voiles sombres partout.
+ */
 export default function CreateEditStep() {
+  return (
+    <MediaChrome>
+      <CreateEditScreen />
+    </MediaChrome>
+  );
+}
+
+function CreateEditScreen() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
@@ -146,6 +158,9 @@ export default function CreateEditStep() {
   } | null>(null);
   const [stickerOpen, setStickerOpen] = useState(false);
   const [overlayDragging, setOverlayDragging] = useState(false);
+  // Lecture / pause au toucher de la vidéo. Quitter l'écran met aussi en
+  // pause (isFocused) ; le choix de l'utilisateur est gardé au retour.
+  const [userPaused, setUserPaused] = useState(false);
   const selected = overlays.items.find((o) => o.id === selectedId) ?? null;
   // S7 : pas de sortie pendant la découpe ou l'enregistrement du brouillon.
   useBlockBackWhile(busy || savingDraft);
@@ -213,7 +228,8 @@ export default function CreateEditStep() {
   selRef.current = sel;
 
   // Lecture : focus, pas de glissé ni de découpe en cours.
-  const shouldPlay = isVideo && isFocused && !dragging && !busy && !savingDraft && !composer;
+  const shouldPlay =
+    isVideo && isFocused && !userPaused && !dragging && !busy && !savingDraft && !composer;
   useEffect(() => {
     if (!isVideo) return;
     try {
@@ -475,7 +491,7 @@ export default function CreateEditStep() {
           borderRadius: 22,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: colors.noir + '99',
+          backgroundColor: colors.mediaScrim,
         },
         nextBtn: {
           flexDirection: 'row',
@@ -496,10 +512,10 @@ export default function CreateEditStep() {
           height: 40,
           borderRadius: Radii.pill,
           borderWidth: 1,
-          borderColor: colors.sable + '66',
-          backgroundColor: colors.noir + '99',
+          borderColor: colors.onMediaDisabled,
+          backgroundColor: colors.mediaScrimStrong,
         },
-        draftText: { color: colors.sable, fontFamily: Fonts.medium, fontSize: 14 },
+        draftText: { color: colors.onMedia, fontFamily: Fonts.medium, fontSize: 14 },
         bottom: { position: 'absolute', left: 0, right: 0, bottom: 0 },
         panel: {
           marginHorizontal: Spacing.sm,
@@ -525,10 +541,25 @@ export default function CreateEditStep() {
           flexDirection: 'row',
           justifyContent: 'space-around',
           paddingTop: Spacing.sm,
-          backgroundColor: colors.noir + 'E6',
+          // Voile sombre fixe, jamais la surface du thème : lisible sur
+          // n'importe quelle image et dans tous les thèmes.
+          backgroundColor: colors.mediaScrimStrong,
         },
         tool: { alignItems: 'center', minWidth: 58, paddingVertical: 4 },
-        toolLabel: { fontFamily: Fonts.medium, fontSize: 11, marginTop: 4 },
+        toolLabel: { fontFamily: Fonts.medium, fontSize: 12, marginTop: 4, ...MediaTextShadow },
+        playBadge: {
+          ...StyleSheet.absoluteFill,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        playCircle: {
+          width: 72,
+          height: 72,
+          borderRadius: 36,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.mediaScrim,
+        },
         panelHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
         layerName: { flex: 1, color: colors.sable, fontFamily: Fonts.bold, fontSize: 15, marginRight: Spacing.sm },
         busyWrap: {
@@ -589,15 +620,28 @@ export default function CreateEditStep() {
         />
       ) : null}
 
-      {/* Toucher le média : désélectionner le calque. */}
+      {/* Toucher le média : désélectionner le calque, sinon lecture / pause. */}
       <Pressable
         style={styles.media}
         onPress={() => {
-          setSelectedId(null);
-          if (tool === 'layers') setTool(null);
+          if (selectedId || tool === 'layers') {
+            setSelectedId(null);
+            if (tool === 'layers') setTool(null);
+            return;
+          }
+          if (isVideo) setUserPaused((p) => !p);
         }}
-        accessible={false}
+        accessible={isVideo}
+        accessibilityRole={isVideo ? 'button' : undefined}
+        accessibilityLabel={isVideo ? (userPaused ? t('feed.play') : t('feed.pause')) : undefined}
       />
+      {isVideo && userPaused && !composer ? (
+        <View pointerEvents="none" style={styles.playBadge}>
+          <View style={styles.playCircle}>
+            <Ionicons name="play" size={34} color={colors.onMedia} style={{ marginLeft: 4 }} />
+          </View>
+        </View>
+      ) : null}
       <LiveOverlayEditor
         doc={overlays}
         player={isVideo ? player : null}
@@ -621,7 +665,7 @@ export default function CreateEditStep() {
         <SyncedSound
           url={sound.publicUrl}
           video={isVideo ? player : null}
-          active={isFocused && !busy && !dragging && !composer}
+          active={isFocused && !userPaused && !busy && !dragging && !composer}
           offsetMs={soundOffsetMs}
           volume={soundVolume}
           rate={isVideo ? playbackSpeed : 1}
@@ -649,7 +693,7 @@ export default function CreateEditStep() {
                 accessibilityRole="button"
                 accessibilityLabel={t('drafts.saveA11y')}
               >
-                <Ionicons name="bookmark-outline" size={16} color={colors.sable} />
+                <Ionicons name="bookmark-outline" size={16} color={colors.onMedia} />
                 <Text style={styles.draftText}>{t('drafts.save')}</Text>
               </Pressable>
             ) : null}
@@ -859,11 +903,16 @@ export default function CreateEditStep() {
             {tools.map((tl) => {
               const on = tool === tl.id || (tool === 'layers' && tl.id === 'text' && selected?.type === 'text') ||
                 (tool === 'layers' && tl.id === 'stickers' && selected?.type === 'sticker');
-              const color = tl.disabled ? colors.textMuted : on ? colors.or : colors.onMedia;
+              // Désactivé : atténué mais lisible (≥ 3:1), sans opacité en plus.
+              const color = tl.disabled
+                ? colors.onMediaDisabled
+                : on
+                  ? colors.onMediaAccent
+                  : colors.onMedia;
               return (
                 <Pressable
                   key={tl.id}
-                  style={[styles.tool, tl.disabled && { opacity: 0.5 }]}
+                  style={styles.tool}
                   disabled={tl.disabled}
                   onPress={() => onTool(tl.id)}
                   accessibilityRole="button"

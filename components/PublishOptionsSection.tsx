@@ -104,7 +104,7 @@ export function PublishOptionsSection({ value, onChange, supported, disabled = f
     isLocked: boolean,
     icon: React.ComponentProps<typeof Ionicons>['name'],
   ) => (
-    <View style={[styles.row, isLocked && { opacity: 0.55 }]}>
+    <View style={[styles.row, isLocked && { opacity: 0.75 }]}>
       <Ionicons name={icon} size={20} color={colors.or} />
       <View style={styles.rowTexts}>
         <Text style={styles.rowTitle}>{title}</Text>
@@ -140,7 +140,7 @@ export function PublishOptionsSection({ value, onChange, supported, disabled = f
                 {
                   borderColor: on ? colors.or : colors.border,
                   backgroundColor: on ? colors.or + '1A' : colors.noirSoft,
-                  opacity: isLocked ? 0.45 : 1,
+                  opacity: isLocked ? 0.7 : 1,
                 },
               ]}
               accessibilityRole="radio"
@@ -186,7 +186,7 @@ export function PublishOptionsSection({ value, onChange, supported, disabled = f
         {isVideo ? t('create.altTextHintVideo') : t('create.altTextHintPhoto')}
       </Text>
       <TextInput
-        style={[styles.input, { minHeight: 64, textAlignVertical: 'top' }, locked && { opacity: 0.55 }]}
+        style={[styles.input, { minHeight: 64, textAlignVertical: 'top' }, locked && { opacity: 0.75 }]}
         value={value.altText}
         onChangeText={(v) => onChange({ altText: v })}
         editable={!locked}
@@ -200,7 +200,7 @@ export function PublishOptionsSection({ value, onChange, supported, disabled = f
 
       <Text style={styles.label}>{t('create.locationLabel')}</Text>
       <TextInput
-        style={[styles.input, locked && { opacity: 0.55 }]}
+        style={[styles.input, locked && { opacity: 0.75 }]}
         value={value.locationText}
         onChangeText={(v) => onChange({ locationText: v })}
         editable={!locked}
