@@ -382,6 +382,7 @@ const en: TranslationKeys = {
     deleteSuccessBody: 'Video and file erased.',
     deleteSuccessMock: 'Deleted (demo mode).',
     deleteFileKept: 'The video is gone, but its file could not be erased. Contact us if this persists.',
+    deleteKeptForRepost: 'The video no longer appears on your profile. Its file is kept because a repost still uses it, and that repost stays visible.',
     archivedBadge: 'Archived',
     videoNotFound: 'Video not found.',
     aiLabel: 'AI',

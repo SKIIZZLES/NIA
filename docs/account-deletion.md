@@ -96,6 +96,15 @@ le cache CDN).
 | Signalements faits PAR le compte | supprimés (cascade `reporter_id`, 002:175) | Comportement existant, inchangé. |
 | Signalements faits par d'autres SUR le compte, ses vidéos ou ses commentaires (`target_id`, sans FK) | **conservés** | Ils appartiennent au signaleur et servent à la modération (récidive, réinscription, obligations légales). Ils ne contiennent que type, id et raison, sont lisibles seulement par leur auteur (RLS `reports_select_own`) et n'ont pas de FK, donc rien ne casse. |
 
+> **Différence voulue avec la suppression d'UNE vidéo (022).** Supprimer son
+> compte efface aussi les reposts faits par d'autres de ses contenus (tableau
+> ci-dessus, 014 inchangée). Supprimer définitivement une seule vidéo
+> (`delete_own_video_for_good`, migration 022) **laisse** les reposts des
+> autres comptes visibles : leur ligne survit (`repost_of` passe à NULL) et le
+> fichier est conservé tant qu'une autre ligne `videos` le désigne, quelle que
+> soit sa visibilité, son état de modération ou un blocage. Décision du
+> fondateur, 30/09/2026.
+
 ## Carte Storage (code réel)
 
 Un seul bucket : **`videos`**, public (001:116-120), limite de 50 Mo, types MIME

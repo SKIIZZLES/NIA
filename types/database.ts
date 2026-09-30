@@ -755,6 +755,17 @@ export type Database = {
         Args: { p_video_id: string };
         Returns: boolean;
       };
+      /**
+       * 022_video_delete_refs — suppression définitive par l'auteur ; classe
+       * ses chemins {uid}/ en effaçables / gardés (encore désignés par une
+       * autre ligne, sans filtre de visibilité).
+       */
+      delete_own_video_for_good: {
+        Args: { p_video_id: string };
+        Returns:
+          | { ok: true; removable: string[]; kept: string[] }
+          | { ok: false; reason: 'not_found' | 'moderation_hold' };
+      };
       /** 018_keyword_filter — verdict du filtre de mots (jamais la liste). */
       nia_check_text: {
         Args: { p_text: string; p_field?: string };

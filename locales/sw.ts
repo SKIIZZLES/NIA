@@ -382,6 +382,7 @@ const sw: TranslationKeys = {
     deleteSuccessBody: 'Video na faili yamefutwa.',
     deleteSuccessMock: 'Imefutwa (hali ya majaribio).',
     deleteFileKept: 'Video haionekani tena, lakini faili lake halikufutwa. Wasiliana nasi ikiendelea.',
+    deleteKeptForRepost: 'Video haionekani tena kwenye wasifu wako. Faili lake limehifadhiwa kwa sababu chapisho lililochapishwa upya bado linalitumia, na chapisho hilo linaendelea kuonekana.',
     archivedBadge: 'Kwenye kumbukumbu',
     videoNotFound: 'Video haipatikani.',
     aiLabel: 'AI',

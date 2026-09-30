@@ -376,6 +376,7 @@ const zu: TranslationKeys = {
     deleteSuccessBody: 'Ividiyo nefayela layo kususiwe.',
     deleteSuccessMock: 'Icinyiwe (imodi yesibonelo).',
     deleteFileKept: 'Ividiyo ayisaveli, kodwa ifayela layo alisuswanga. Xhumana nathi uma kuqhubeka.',
+    deleteKeptForRepost: 'Ividiyo ayisaveli kuphrofayela yakho. Ifayela layo ligciniwe ngoba okuthunyelwe kabusha kusalisebenzisa, futhi kuzohlala kubonakala.',
     archivedBadge: 'Igciniwe',
     videoNotFound: 'Ividiyo ayitholakali.',
     aiLabel: 'AI',

@@ -10,7 +10,13 @@
  * La confirmation à l'écran n'est pas testable : `Alert.alert` est une
  * fonction vide dans react-native-web.
  */
-import { deleteOwnVideoForGood, ownedVideoFilePaths } from '@/lib/videos';
+import {
+  __resetVideoDeleteRpcCache,
+  deleteOwnVideoForGood,
+  ownedVideoFilePaths,
+  parseDeleteRpcResponse,
+  videoDeleteOutcome,
+} from '@/lib/videos';
 import { getSupabase } from '@/lib/supabase';
 
 jest.mock('@/lib/supabase', () => ({
@@ -26,9 +32,17 @@ const VID = 'c0ffee00-1111-4222-8333-444455556666';
 const MEDIA = `${UID}/upload-1.mp4`;
 const COVER = `${UID}/covers/upload-1.jpg`;
 
-type Reponse = { data: unknown; error: { message: string } | null };
+type Reponse = { data: unknown; error: { message: string; code?: string } | null };
+
+/** Base sans 022 : PostgREST ne trouve pas la fonction. */
+const RPC_ABSENTE: Reponse = {
+  data: null,
+  error: { code: 'PGRST202', message: 'Could not find the function public.delete_own_video_for_good' },
+};
 
 type Script = {
+  /** Réponse de la RPC 022 ; absente par défaut (ancien chemin). */
+  rpc?: Reponse;
   row?: Reponse;
   /** Une réponse par requête de référence, dans l'ordre. */
   refs?: Reponse[];
@@ -38,6 +52,7 @@ type Script = {
 
 type Journal = {
   sequence: string[];
+  rpcs: [string, unknown][];
   removed: string[][];
   refsDemandees: [string, unknown][];
   filtresSuppression: [string, unknown][];
@@ -46,6 +61,7 @@ type Journal = {
 function double(script: Script) {
   const journal: Journal = {
     sequence: [],
+    rpcs: [],
     removed: [],
     refsDemandees: [],
     filtresSuppression: [],
@@ -89,6 +105,11 @@ function double(script: Script) {
 
   const client = {
     from,
+    rpc(nom: string, args: unknown) {
+      journal.sequence.push('rpc');
+      journal.rpcs.push([nom, args]);
+      return Promise.resolve(script.rpc ?? RPC_ABSENTE);
+    },
     storage: {
       from: () => ({
         remove: (chemins: string[]) => {
@@ -116,6 +137,10 @@ function ligne(extra: Record<string, unknown> = {}): Reponse {
     error: null,
   };
 }
+
+beforeEach(() => {
+  __resetVideoDeleteRpcCache();
+});
 
 describe('ownedVideoFilePaths', () => {
   it('rend le média et la couverture du compte', () => {
@@ -172,6 +197,9 @@ describe('ownedVideoFilePaths', () => {
   });
 });
 
+// Les groupes « cas courant », « fichiers épargnés », « refus » et « échec
+// Storage » décrivent l'ANCIEN chemin client : celui que l'app reprend tant
+// que 022 n'est pas appliquée (la RPC répond PGRST202).
 describe('deleteOwnVideoForGood — cas courant', () => {
   it('efface le média, la couverture et la ligne', async () => {
     const j = double({ row: ligne(), refs: [{ data: [], error: null }, { data: [], error: null }] });
@@ -402,5 +430,222 @@ describe('deleteOwnVideoForGood — sans backend', () => {
       keptFiles: [],
     });
     expect(j.sequence).toEqual([]);
+  });
+});
+
+describe('deleteOwnVideoForGood — 022 (RPC delete_own_video_for_good)', () => {
+  it('passe par la RPC seule : ni lecture, ni comptage, ni DELETE côté client', async () => {
+    const j = double({
+      rpc: { data: { ok: true, removable: [MEDIA, COVER], kept: [] }, error: null },
+    });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: true,
+      removedFiles: [MEDIA, COVER],
+      keptFiles: [],
+    });
+    expect(j.rpcs).toEqual([['delete_own_video_for_good', { p_video_id: VID }]]);
+    expect(j.sequence).toEqual(['rpc', 'storage-remove']);
+    expect(j.removed).toEqual([[MEDIA, COVER]]);
+  });
+
+  it('garde le fichier qu’un repost invisible à l’auteur désigne encore', async () => {
+    // Défaut 2 : le serveur compte TOUTES les lignes (archivées, followers,
+    // private, masquées, blocage). L'app n'efface que ce qu'il déclare libre.
+    const j = double({
+      rpc: { data: { ok: true, removable: [COVER], kept: [MEDIA] }, error: null },
+    });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: true,
+      removedFiles: [COVER],
+      keptFiles: [MEDIA],
+    });
+    expect(j.removed).toEqual([[COVER]]);
+  });
+
+  it('n’appelle pas Storage quand tout est gardé', async () => {
+    const j = double({
+      rpc: { data: { ok: true, removable: [], kept: [MEDIA, COVER] }, error: null },
+    });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: true,
+      removedFiles: [],
+      keptFiles: [MEDIA, COVER],
+    });
+    expect(j.sequence).toEqual(['rpc']);
+  });
+
+  it('n’efface jamais un chemin hors du dossier du compte, même rendu par le serveur', async () => {
+    const j = double({
+      rpc: {
+        data: {
+          ok: true,
+          removable: [`${AUTRE}/upload-9.mp4`, MEDIA, MEDIA, 42],
+          kept: [`${UID}-bis/x.jpg`],
+        },
+        error: null,
+      },
+    });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: true,
+      removedFiles: [MEDIA],
+      keptFiles: [],
+    });
+    expect(j.removed).toEqual([[MEDIA]]);
+  });
+
+  it('remonte le refus de modération sans rien effacer', async () => {
+    const j = double({ rpc: { data: { ok: false, reason: 'moderation_hold' }, error: null } });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: false,
+      message: 'moderation_hold',
+    });
+    expect(j.sequence).toEqual(['rpc']);
+  });
+
+  it('remonte « introuvable » (vidéo d’autrui ou absente) sans rien effacer', async () => {
+    const j = double({ rpc: { data: { ok: false, reason: 'not_found' }, error: null } });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: false,
+      message: 'not_found',
+    });
+    expect(j.removed).toEqual([]);
+  });
+
+  it('dit que le fichier est resté si Storage échoue après la RPC', async () => {
+    double({
+      rpc: { data: { ok: true, removable: [MEDIA], kept: [COVER] }, error: null },
+      remove: { error: { message: 'storage offline' } },
+    });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: true,
+      removedFiles: [],
+      keptFiles: [COVER],
+      fileError: 'storage offline',
+    });
+  });
+
+  it('une erreur de la RPC (autre que « fonction absente ») ne bascule PAS sur l’ancien chemin', async () => {
+    // L'ancien chemin compterait mal : on préfère un échec honnête.
+    const j = double({
+      rpc: { data: null, error: { code: '08006', message: 'Network request failed' } },
+      row: ligne(),
+    });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: false,
+      message: 'Network request failed',
+    });
+    expect(j.sequence).toEqual(['rpc']);
+  });
+
+  it('refuse une réponse illisible sans rien effacer', async () => {
+    const j = double({ rpc: { data: 'oui', error: null } });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: false,
+      message: 'delete_fail',
+    });
+    expect(j.removed).toEqual([]);
+  });
+});
+
+describe('deleteOwnVideoForGood — 022 non appliquée (repli, comme S2)', () => {
+  it('reprend l’ancien chemin quand la RPC est absente (PGRST202)', async () => {
+    const j = double({ row: ligne(), refs: [{ data: [], error: null }, { data: [], error: null }] });
+
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toEqual({
+      ok: true,
+      removedFiles: [MEDIA, COVER],
+      keptFiles: [],
+    });
+    expect(j.sequence).toEqual([
+      'rpc',
+      'read-row',
+      'refs',
+      'refs',
+      'refs',
+      'refs',
+      'delete-row',
+      'storage-remove',
+    ]);
+  });
+
+  it('reprend aussi l’ancien chemin sur 42883 (fonction inconnue côté Postgres)', async () => {
+    const j = double({
+      rpc: { data: null, error: { code: '42883', message: 'function does not exist' } },
+      row: ligne(),
+    });
+    await expect(deleteOwnVideoForGood(UID, VID)).resolves.toMatchObject({ ok: true });
+    expect(j.sequence).toContain('delete-row');
+  });
+
+  it('mémorise l’absence pour la session : pas de 2e appel RPC', async () => {
+    let j = double({ row: ligne() });
+    await deleteOwnVideoForGood(UID, VID);
+    expect(j.rpcs).toHaveLength(1);
+
+    j = double({ row: ligne() });
+    await deleteOwnVideoForGood(UID, VID);
+    expect(j.rpcs).toHaveLength(0);
+    expect(j.sequence).toContain('delete-row');
+  });
+});
+
+describe('parseDeleteRpcResponse', () => {
+  it('lit les deux formes de réponse', () => {
+    expect(parseDeleteRpcResponse(UID, { ok: true, removable: [MEDIA], kept: [COVER] })).toEqual({
+      ok: true,
+      removable: [MEDIA],
+      kept: [COVER],
+    });
+    expect(parseDeleteRpcResponse(UID, { ok: false, reason: 'not_found' })).toEqual({
+      ok: false,
+      reason: 'not_found',
+    });
+  });
+
+  it('tolère des listes absentes, rejette le reste', () => {
+    expect(parseDeleteRpcResponse(UID, { ok: true })).toEqual({ ok: true, removable: [], kept: [] });
+    expect(parseDeleteRpcResponse(UID, { ok: false })).toEqual({ ok: false, reason: 'delete_fail' });
+    expect(parseDeleteRpcResponse(UID, null)).toBeNull();
+    expect(parseDeleteRpcResponse(UID, [])).toBeNull();
+    expect(parseDeleteRpcResponse(UID, { removable: [MEDIA] })).toBeNull();
+  });
+});
+
+describe('videoDeleteOutcome — les trois issues (défaut 1)', () => {
+  it('fichier effacé', () => {
+    expect(videoDeleteOutcome({ ok: true, removedFiles: [MEDIA], keptFiles: [] })).toBe('removed');
+    // Repost de la vidéo d'autrui : aucun fichier à soi, rien de gardé.
+    expect(videoDeleteOutcome({ ok: true, removedFiles: [], keptFiles: [] })).toBe('removed');
+  });
+
+  it('fichier gardé pour un repost — même si la couverture, elle, est partie', () => {
+    expect(videoDeleteOutcome({ ok: true, removedFiles: [], keptFiles: [MEDIA] })).toBe(
+      'kept_for_repost',
+    );
+    expect(videoDeleteOutcome({ ok: true, removedFiles: [COVER], keptFiles: [MEDIA] })).toBe(
+      'kept_for_repost',
+    );
+  });
+
+  it('échec : rien supprimé, ou ligne partie mais fichier resté', () => {
+    expect(videoDeleteOutcome({ ok: false, message: 'not_found' })).toBe('failed');
+    expect(
+      videoDeleteOutcome({ ok: true, removedFiles: [], keptFiles: [MEDIA], fileError: 'x' }),
+    ).toBe('file_error');
+  });
+
+  it('mode démo', () => {
+    expect(videoDeleteOutcome({ ok: true, mock: true, removedFiles: [], keptFiles: [] })).toBe(
+      'mock',
+    );
   });
 });

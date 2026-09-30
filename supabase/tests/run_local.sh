@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exécute les tests SQL (suppression de compte, 016, 017, 018, 019) sur un Postgres LOCAL jetable.
+# Exécute les tests SQL (suppression de compte, 016, 017, 018, 019, 022) sur un Postgres LOCAL jetable.
 #
 #   PGHOST=/tmp PGPORT=55432 PGUSER=postgres supabase/tests/run_local.sh
 #
@@ -88,11 +88,32 @@ for V in 017 018; do
   if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : ${V}_verify_after_apply après 019" >&2; echo "$VERIFY"; exit 1; fi
   echo "--- ${V}_verify_after_apply.sql après 019 : $(wc -l <<<"$VERIFY") lignes ok"
 done
+
+# 022 (suppression définitive de vidéo, reposts conservés) : après 018, et
+# après 019 si elle est présente dans le dépôt (022 n'en dépend pas).
+run "$ROOT/supabase/migrations/022_video_delete_refs.sql"
+run "$ROOT/supabase/migrations/022_video_delete_refs.sql"   # idempotence : 2e passage
+echo "--- 022 appliquée deux fois"
+run "$ROOT/supabase/tests/_helpers.sql"
+run "$ROOT/supabase/tests/022_video_delete_refs.test.sql"
+echo "--- 022_verify_after_apply.sql"
+VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/022_verify_after_apply.sql")"
+echo "$VERIFY"
+echo "($(wc -l <<<"$VERIFY") lignes)"
+if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : une ligne de vérification n'est pas ok" >&2; exit 1; fi
+# Les vérifications précédentes doivent toujours passer une fois 022 en place.
+for V in 017 018 019; do
+  [[ -f "$ROOT/supabase/tests/${V}_verify_after_apply.sql" ]] || continue
+  VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/${V}_verify_after_apply.sql")"
+  if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : ${V}_verify_after_apply après 022" >&2; echo "$VERIFY"; exit 1; fi
+  echo "--- ${V}_verify_after_apply.sql après 022 : $(wc -l <<<"$VERIFY") lignes ok"
+done
 run "$ROOT/supabase/tests/_helpers.sql"
 run "$ROOT/supabase/tests/014_account_deletion.test.sql"
 run "$ROOT/supabase/tests/016_publish_options.test.sql"
 run "$ROOT/supabase/tests/017_safety_reports.test.sql"
 run "$ROOT/supabase/tests/018_keyword_filter.test.sql"
-echo "--- 014, 016, 017, 018 rejoués après 019 ; 017_verify et 018_verify toujours ok"
+if [[ -f "$ROOT/supabase/tests/019_live_l2.test.sql" ]]; then run "$ROOT/supabase/tests/019_live_l2.test.sql"; fi
+echo "--- 014, 016, 017, 018 (et 019 si présente) rejoués après 022"
 "${PSQL[@]}" -d postgres -c "drop database $DB" >/dev/null
 echo "=== TOUS LES TESTS SQL PASSENT ==="

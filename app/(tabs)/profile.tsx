@@ -18,6 +18,7 @@ import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { MediaThumb } from '@/components/MediaThumb';
 import { ModerationBanner } from '@/components/ModerationBanner';
+import { videoDeleteFeedback } from '@/components/videoDeleteFeedback';
 import { isKeywordHeld } from '@/lib/textFilter';
 import { useAuth } from '@/context/AuthContext';
 import { useFeed } from '@/context/FeedContext';
@@ -192,17 +193,13 @@ export default function ProfileScreen() {
         onPress: () => {
           void (async () => {
             const result = await deleteOwnVideoForGood(user.id, item.id);
-            if (!result.ok) {
-              Alert.alert(
-                t('common.error'),
-                result.message === 'moderation_hold' ? t('moderation.deleteHeld') : result.message,
-              );
-              return;
+            // Mêmes trois issues que dans le fil (fichier effacé, gardé pour
+            // un repost, échec) : même message.
+            const { title, body } = videoDeleteFeedback(result, t);
+            if (result.ok) {
+              setArchived((prev) => prev.filter((v) => v.id !== item.id));
             }
-            setArchived((prev) => prev.filter((v) => v.id !== item.id));
-            if (result.fileError) {
-              Alert.alert(t('feed.deleteSuccess'), t('feed.deleteFileKept'));
-            }
+            Alert.alert(title, body);
           })();
         },
       },

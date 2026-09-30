@@ -376,6 +376,7 @@ const yo: TranslationKeys = {
     deleteSuccessBody: 'A ti paarẹ́ fídíò àti fáìlì rẹ̀.',
     deleteSuccessMock: 'A ti parẹ́ (ipò àfihàn).',
     deleteFileKept: 'Fídíò náà kò farahàn mọ́, ṣùgbọ́n a kò lè paarẹ́ fáìlì rẹ̀. Kàn sí wa bí ó bá ń tẹ̀síwájú.',
+    deleteKeptForRepost: 'Fídíò náà kò farahàn lórí profaili rẹ mọ́. A pa fáìlì rẹ̀ mọ́ nítorí pé àtúnfiránṣẹ́ kan ṣì ń lò ó, àtúnfiránṣẹ́ náà yóò sì máa hàn.',
     archivedBadge: 'A ti tọ́jú',
     videoNotFound: 'A kò rí fídíò náà.',
     aiLabel: 'AI',

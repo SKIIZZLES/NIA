@@ -382,6 +382,7 @@ const ha: TranslationKeys = {
     deleteSuccessBody: 'An goge bidiyo da fayil ɗinsa.',
     deleteSuccessMock: 'An share (yanayin gwaji).',
     deleteFileKept: 'Bidiyon ba ya sake bayyana, amma ba a iya goge fayil ɗinsa ba. Ka tuntuɓe mu idan ya ci gaba.',
+    deleteKeptForRepost: 'Bidiyon ba ya sake bayyana a bayananka. An adana fayil ɗinsa saboda wani sake wallafawa yana amfani da shi, kuma zai ci gaba da bayyana.',
     archivedBadge: 'A tarihi',
     videoNotFound: 'Ba a sami bidiyon ba.',
     aiLabel: 'AI',
