@@ -11,6 +11,8 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.util.Size
+import android.view.View
+import android.view.ViewGroup
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
@@ -55,8 +57,7 @@ import java.util.concurrent.Executors
  */
 @SuppressLint("ViewConstructor")
 class NiaCameraView(context: Context, appContext: AppContext) :
-  ExpoView(context, appContext),
-  FaceAnalyzer.Listener {
+  ExpoView(context, appContext) {
 
   private val onCameraReady by EventDispatcher<Unit>()
   private val onMountError by EventDispatcher<Map<String, Any>>()
@@ -77,9 +78,23 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     elevation = 0f
   }
 
+  /**
+   * React Native ne relaie pas les requestLayout() des vues natives : sans
+   * ceci, la SurfaceView que PreviewView ajoute quand la caméra démarre
+   * reste en 0 × 0 et l'aperçu est NOIR (alors que tout le reste tourne).
+   */
+  override val shouldUseAndroidLayout: Boolean
+    get() = true
+
   private val store = FaceStore()
   private val stats = NiaCameraStats()
-  private val renderer = FaceMaskRenderer(store, stats)
+  /** Un par OverlayEffect (recréé à chaque liaison). */
+  @Volatile
+  private var renderer = FaceMaskRenderer(store, stats)
+  @Volatile
+  private var effectMode = FaceMaskRenderer.Effect.BLUR
+  @Volatile
+  private var detectorFailed = false
   private var analyzer: FaceAnalyzer? = null
 
   private var provider: ProcessCameraProvider? = null
@@ -93,6 +108,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   private var needsBind = true
   private var boundFacing: String? = null
   private var cameraStateObserver: Observer<CameraState>? = null
+  private var previewStateObserver: Observer<PreviewView.StreamState>? = null
 
   // Props
   var facing: String = "back"
@@ -111,14 +127,39 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   private var faceReported: Boolean? = null
 
   init {
-    addView(previewView)
+    // Comme expo-camera : quand PreviewView ajoute sa SurfaceView /
+    // TextureView, on la mesure et la pose tout de suite.
+    previewView.setOnHierarchyChangeListener(object : ViewGroup.OnHierarchyChangeListener {
+      override fun onChildViewAdded(parent: View?, child: View?) {
+        layoutPreviewNow()
+      }
+
+      override fun onChildViewRemoved(parent: View?, child: View?) = Unit
+    })
+    addView(
+      previewView,
+      ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+    )
     scheduleStats()
+  }
+
+  private fun layoutPreviewNow() {
+    val w = if (width > 0) width else measuredWidth
+    val h = if (height > 0) height else measuredHeight
+    if (w <= 0 || h <= 0) return
+    previewView.measure(
+      MeasureSpec.makeMeasureSpec(w, MeasureSpec.EXACTLY),
+      MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY),
+    )
+    previewView.layout(0, 0, w, h)
+    stats.previewViewSize = "${w}x$h"
   }
 
   // --- Props -----------------------------------------------------------------
 
   fun setEffectMode(value: String) {
-    renderer.effect = if (value == "pixelate") FaceMaskRenderer.Effect.PIXELATE else FaceMaskRenderer.Effect.BLUR
+    effectMode = if (value == "pixelate") FaceMaskRenderer.Effect.PIXELATE else FaceMaskRenderer.Effect.BLUR
+    renderer.effect = effectMode
   }
 
   fun setSyncMode(value: String) {
@@ -157,7 +198,10 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   }
 
   override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-    previewView.layout(0, 0, right - left, bottom - top)
+    val w = right - left
+    val h = bottom - top
+    previewView.layout(0, 0, w, h)
+    stats.previewViewSize = "${w}x$h"
   }
 
   override fun onAttachedToWindow() {
@@ -199,8 +243,17 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     val selector = if (facing == "front") CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
     val ratio = AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
 
+    // 720p comme la vidéo : le calque d'OverlayEffect est un canevas
+    // logiciel de la taille de l'image, 1080p+ saturait le fil GL.
     val preview = Preview.Builder()
-      .setResolutionSelector(ResolutionSelector.Builder().setAspectRatioStrategy(ratio).build())
+      .setResolutionSelector(
+        ResolutionSelector.Builder()
+          .setAspectRatioStrategy(ratio)
+          .setResolutionStrategy(
+            ResolutionStrategy(Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER),
+          )
+          .build(),
+      )
       .build()
       .also { it.surfaceProvider = previewView.surfaceProvider }
 
@@ -225,8 +278,10 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
       .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
       .build()
-    renderer.detectorFailed = false
-    val a = FaceAnalyzer(context, store, this)
+    detectorFailed = false
+    val r = FaceMaskRenderer(store, stats).also { it.effect = effectMode }
+    renderer = r
+    val a = FaceAnalyzer(context, store, analyzerListener)
     analyzer = a
     analysis.setAnalyzer(analysisExecutor, a)
 
@@ -235,7 +290,11 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       QUEUE_DEPTH,
       glHandler,
     ) { t -> Log.e(TAG, "OverlayEffect en erreur", t) }
-    overlay.setOnDrawListener { frame -> renderer.onDraw(frame) }
+    overlay.setOnDrawListener { frame ->
+      r.detectorFailed = detectorFailed
+      r.effect = effectMode
+      r.onDraw(frame)
+    }
     effect = overlay
 
     val group = UseCaseGroup.Builder()
@@ -258,17 +317,36 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     }
     cameraStateObserver = obs
     cam.cameraInfo.cameraState.observe(owner, obs)
-    Log.i(TAG, "caméra liée facing=$facing queue=$QUEUE_DEPTH")
+    if (previewStateObserver == null) {
+      val pso = Observer<PreviewView.StreamState> { st ->
+        stats.previewState = if (st == PreviewView.StreamState.STREAMING) "streaming" else "idle"
+      }
+      previewStateObserver = pso
+      previewView.previewStreamState.observe(owner, pso)
+    }
+    Log.i(
+      TAG,
+      "caméra liée facing=$facing queue=$QUEUE_DEPTH vue=${width}x$height " +
+        "mode=${previewView.implementationMode}",
+    )
   }
 
   // --- FaceAnalyzer.Listener (fil d'analyse) ----------------------------------
 
-  override fun onAnalyzed(timestampNs: Long, faceCount: Int, detectMs: Float, totalMs: Float) {
-    stats.onAnalyzed(faceCount, detectMs, totalMs)
+  private val analyzerListener = object : FaceAnalyzer.Listener {
+    override fun onAnalyzed(info: FaceAnalyzer.Info) = handleAnalyzed(info)
+    override fun onDetectorError(message: String) = handleDetectorError(message)
+  }
+
+  private fun handleAnalyzed(info: FaceAnalyzer.Info) {
+    stats.onAnalyzed(info)
+    val faceCount = info.faceCount
     val fx = effect
     if (exactSync && fx != null) {
-      val future = fx.drawFrameAsync(timestampNs)
+      val asked = SystemClock.elapsedRealtimeNanos()
+      val future = fx.drawFrameAsync(info.timestampNs)
       future.addListener({
+        stats.onGlWait((SystemClock.elapsedRealtimeNanos() - asked) / 1e6)
         val ok = try {
           future.get() == OverlayEffect.RESULT_SUCCESS
         } catch (_: Throwable) {
@@ -288,7 +366,8 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     mainHandler.post { updateFacePresence(faceCount > 0) }
   }
 
-  override fun onDetectorError(message: String) {
+  private fun handleDetectorError(message: String) {
+    detectorFailed = true
     renderer.detectorFailed = true
     mainHandler.post {
       onMountError(mapOf("code" to "ERR_DETECTOR", "message" to message))
@@ -319,7 +398,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       override fun run() {
         if (released) return
         val mode = if (exactSync) "exact" else "queue"
-        val effectName = if (renderer.effect == FaceMaskRenderer.Effect.PIXELATE) "pixelate" else "blur"
+        val effectName = if (effectMode == FaceMaskRenderer.Effect.PIXELATE) "pixelate" else "blur"
         stats.flush(SystemClock.elapsedRealtime(), mode, effectName)?.let { onStats(it) }
         mainHandler.postDelayed(this, 1000)
       }
@@ -401,6 +480,8 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     mainHandler.removeCallbacksAndMessages(null)
     stopRecordingInternal()
     cameraStateObserver?.let { obs -> camera?.cameraInfo?.cameraState?.removeObserver(obs) }
+    previewStateObserver?.let { obs -> previewView.previewStreamState.removeObserver(obs) }
+    previewStateObserver = null
     // Nos cas d'usage seulement : ne pas couper une autre caméra montée ensuite.
     try {
       if (boundCases.isNotEmpty()) provider?.unbind(*boundCases.toTypedArray())

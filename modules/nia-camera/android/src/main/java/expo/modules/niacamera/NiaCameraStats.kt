@@ -26,6 +26,30 @@ internal class NiaCameraStats {
   private var syncOk = 0
   private var syncMissed = 0
 
+  // Diagnostic (test sur téléphone).
+  private var rawDetections = 0
+  private var bestScore = 0f
+  private var lumaSum = 0L
+  private var lumaRangeSum = 0L
+  private var lastInfo: FaceAnalyzer.Info? = null
+  private var drawSumMs = 0.0
+  private var drawMaxMs = 0.0
+  private var drawCount = 0
+  private var redrawSkipped = 0
+  private var glWaitSumMs = 0.0
+  private var glWaitCount = 0
+  private var frameWidth = 0
+  private var frameHeight = 0
+  private var frameRotation = 0
+
+  /** État du flux d'aperçu (PreviewView) : "streaming", "idle"… */
+  @Volatile
+  var previewState: String = "idle"
+
+  /** Taille réelle de la vue d'aperçu (px), 0 si pas encore posée. */
+  @Volatile
+  var previewViewSize: String = "0x0"
+
   /** Base de temps des horodatages caméra, devinée à la première image. */
   private var clock: Int = CLOCK_UNKNOWN
 
@@ -59,12 +83,39 @@ internal class NiaCameraStats {
   }
 
   @Synchronized
-  fun onAnalyzed(faces: Int, detectMs: Float, totalMs: Float) {
+  fun onAnalyzed(info: FaceAnalyzer.Info) {
     analyzed++
-    if (faces > 0) withFace++
-    detectSumMs += detectMs
-    analysisSumMs += totalMs
-    if (detectMs > detectMaxMs) detectMaxMs = detectMs.toDouble()
+    if (info.faceCount > 0) withFace++
+    detectSumMs += info.detectMs
+    analysisSumMs += info.totalMs
+    if (info.detectMs > detectMaxMs) detectMaxMs = info.detectMs.toDouble()
+    rawDetections += info.rawCount
+    if (info.bestScore > bestScore) bestScore = info.bestScore
+    lumaSum += info.lumaMean
+    lumaRangeSum += info.lumaRange
+    lastInfo = info
+  }
+
+  /** Temps passé à dessiner le masque (fil GL, canevas logiciel). */
+  @Synchronized
+  fun onDrawCost(ms: Double, skipped: Boolean, width: Int, height: Int, rotation: Int) {
+    if (skipped) {
+      redrawSkipped++
+    } else {
+      drawSumMs += ms
+      drawCount++
+      if (ms > drawMaxMs) drawMaxMs = ms
+    }
+    frameWidth = width
+    frameHeight = height
+    frameRotation = rotation
+  }
+
+  /** Délai entre la fin d'une analyse et le dessin de son image. */
+  @Synchronized
+  fun onGlWait(ms: Double) {
+    glWaitSumMs += ms
+    glWaitCount++
   }
 
   @Synchronized
@@ -105,6 +156,23 @@ internal class NiaCameraStats {
       },
       "mode" to mode,
       "effect" to effect,
+      "analysisWidth" to (lastInfo?.width ?: 0),
+      "analysisHeight" to (lastInfo?.height ?: 0),
+      "analysisRotation" to (lastInfo?.rotation ?: 0),
+      "rotationOffset" to (lastInfo?.rotationOffset ?: 0),
+      "lumaMean" to (if (analyzed > 0) (lumaSum / analyzed).toInt() else -1),
+      "lumaRange" to (if (analyzed > 0) (lumaRangeSum / analyzed).toInt() else -1),
+      "rawDetections" to rawDetections,
+      "bestScore" to round2(bestScore.toDouble()),
+      "drawMsAvg" to round1(if (drawCount > 0) drawSumMs / drawCount else 0.0),
+      "drawMsMax" to round1(drawMaxMs),
+      "redrawSkipped" to redrawSkipped,
+      "glWaitMsAvg" to round1(if (glWaitCount > 0) glWaitSumMs / glWaitCount else -1.0),
+      "frameWidth" to frameWidth,
+      "frameHeight" to frameHeight,
+      "frameRotation" to frameRotation,
+      "previewState" to previewState,
+      "previewViewSize" to previewViewSize,
     )
     Log.i(
       TAG,
@@ -112,17 +180,25 @@ internal class NiaCameraStats {
         "detect=${out["detectMsAvg"]}/${out["detectMsMax"]}ms analysis=${out["analysisMsAvg"]}ms " +
         "latency=${out["latencyMsAvg"]}/${out["latencyMsMax"]}ms " +
         "exact=$exact neighbor=$neighbor hold=$hold cover=$cover face=${out["faceRatio"]}% " +
-        "sync=$syncOk/$syncMissed clock=${out["clock"]} mode=$mode effect=$effect",
+        "sync=$syncOk/$syncMissed clock=${out["clock"]} mode=$mode effect=$effect " +
+        "analyse=${out["analysisWidth"]}x${out["analysisHeight"]} rot=${out["analysisRotation"]}+${out["rotationOffset"]} " +
+        "luma=${out["lumaMean"]}±${out["lumaRange"]} brut=$rawDetections score=${out["bestScore"]} " +
+        "dessin=${out["drawMsAvg"]}/${out["drawMsMax"]}ms saut=$redrawSkipped attenteGL=${out["glWaitMsAvg"]}ms " +
+        "cadre=${frameWidth}x$frameHeight apercu=$previewState vue=$previewViewSize",
     )
     windowStartMs = nowMs
     rendered = 0; exact = 0; neighbor = 0; hold = 0; cover = 0
     latencySumMs = 0.0; latencyMaxMs = 0.0; latencyCount = 0
     analyzed = 0; withFace = 0; detectSumMs = 0.0; detectMaxMs = 0.0; analysisSumMs = 0.0
     syncOk = 0; syncMissed = 0
+    rawDetections = 0; bestScore = 0f; lumaSum = 0L; lumaRangeSum = 0L
+    drawSumMs = 0.0; drawMaxMs = 0.0; drawCount = 0; redrawSkipped = 0
+    glWaitSumMs = 0.0; glWaitCount = 0
     return out
   }
 
   private fun round1(v: Double): Double = Math.round(v * 10.0) / 10.0
+  private fun round2(v: Double): Double = Math.round(v * 100.0) / 100.0
 
   companion object {
     const val TAG = "NiaCamera"

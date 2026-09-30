@@ -57,8 +57,8 @@ export function FaceMaskHud({ top, faceDetected, recording, stats, onToggleSync 
       {SHOW_FACE_METRICS && stats ? (
         <Pressable onPress={onToggleSync} style={styles.metrics} accessibilityRole="button">
           <Text style={styles.metricsTitle}>{t('camera.faceMetricsTitle')}</Text>
-          {formatFaceStats(stats).map((line) => (
-            <Text key={line.slice(0, 8)} style={styles.metricsLine}>
+          {formatFaceStats(stats).map((line, i) => (
+            <Text key={i} style={styles.metricsLine}>
               {line}
             </Text>
           ))}

@@ -86,16 +86,62 @@ type StatsLike = {
   syncOk: number;
   syncMissed: number;
   mode: string;
+  analysisWidth?: number;
+  analysisHeight?: number;
+  analysisRotation?: number;
+  rotationOffset?: number;
+  lumaMean?: number;
+  lumaRange?: number;
+  rawDetections?: number;
+  bestScore?: number;
+  drawMsAvg?: number;
+  drawMsMax?: number;
+  glWaitMsAvg?: number;
+  frameWidth?: number;
+  frameHeight?: number;
+  previewState?: string;
+  previewViewSize?: string;
 };
+
+/** En dessous : l'image donnée à MediaPipe est (presque) noire ou plate. */
+export const DARK_FRAME_LUMA = 12;
+export const FLAT_FRAME_RANGE = 6;
+
+/** Image analysée noire ou uniforme (caméra muette, tampon vide…). */
+export function isAnalysisFrameBlank(s: Pick<StatsLike, 'lumaMean' | 'lumaRange'>): boolean {
+  if (s.lumaMean == null || s.lumaMean < 0) return false;
+  return s.lumaMean < DARK_FRAME_LUMA || (s.lumaRange != null && s.lumaRange >= 0 && s.lumaRange < FLAT_FRAME_RANGE);
+}
 
 /** Lignes des mesures de test (valeurs techniques, non traduites). */
 export function formatFaceStats(s: StatsLike): string[] {
   const latency =
     s.latencyMsAvg >= 0 ? `${Math.round(s.latencyMsAvg)} ms (max ${Math.round(s.latencyMsMax)})` : '—';
-  return [
+  const lines = [
     `image ${s.renderFps.toFixed(0)} i/s · analyse ${s.analysisFps.toFixed(0)} i/s`,
     `détection ${s.detectMsAvg.toFixed(0)} ms (max ${s.detectMsMax.toFixed(0)}) · latence ${latency}`,
     `exact ${s.exact} · voisin ${s.neighbor} · maintien ${s.hold} · flou total ${s.cover}`,
     `synchro ${s.mode} ${s.syncOk}/${s.syncOk + s.syncMissed}`,
   ];
+  // Diagnostic (APK récents seulement).
+  if (s.previewState != null) {
+    const frame = s.frameWidth ? ` · cadre ${s.frameWidth}×${s.frameHeight}` : '';
+    const view = s.previewViewSize ? ` · vue ${s.previewViewSize.replace('x', '×')}` : '';
+    lines.push(`aperçu ${s.previewState === 'streaming' ? 'actif' : 'inactif'}${view}${frame}`);
+  }
+  if (s.analysisWidth) {
+    const offset = s.rotationOffset ? ` (+${s.rotationOffset}° auto)` : '';
+    const luma =
+      s.lumaMean != null && s.lumaMean >= 0 ? ` · luminance ${s.lumaMean} (écart ${s.lumaRange ?? 0})` : '';
+    lines.push(`analysé ${s.analysisWidth}×${s.analysisHeight} · rotation ${s.analysisRotation ?? 0}°${offset}${luma}`);
+  }
+  if (s.rawDetections != null) {
+    lines.push(`visages bruts ${s.rawDetections} · meilleur score ${(s.bestScore ?? 0).toFixed(2)}`);
+  }
+  if (s.drawMsAvg != null) {
+    const wait = s.glWaitMsAvg != null && s.glWaitMsAvg >= 0 ? ` · attente GL ${Math.round(s.glWaitMsAvg)} ms` : '';
+    lines.push(`dessin ${Math.round(s.drawMsAvg)} ms (max ${Math.round(s.drawMsMax ?? 0)})${wait}`);
+  }
+  if (isAnalysisFrameBlank(s)) lines.push('alerte : image analysée noire ou uniforme');
+  return lines;
 }

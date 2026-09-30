@@ -10,6 +10,7 @@ import {
   faceEffectShortLabelKey,
   formatFaceStats,
   hasAcceptedFaceNotice,
+  isAnalysisFrameBlank,
   isFaceShutterBlocked,
   nextFaceEffect,
 } from '@/lib/faceEffects';
@@ -106,6 +107,68 @@ describe('formatFaceStats', () => {
       syncOk: 0, syncMissed: 0, mode: 'queue',
     });
     expect(lines[1]).toContain('latence —');
+  });
+
+  const base = {
+    renderFps: 15, analysisFps: 26, detectMsAvg: 13, detectMsMax: 41,
+    latencyMsAvg: 203, latencyMsMax: 229, exact: 0, neighbor: 0, hold: 0, cover: 15,
+    syncOk: 14, syncMissed: 9, mode: 'exact',
+  };
+
+  it('diagnostic : aperçu, image analysée, détections brutes, dessin', () => {
+    const lines = formatFaceStats({
+      ...base,
+      previewState: 'streaming',
+      previewViewSize: '1080x2400',
+      frameWidth: 1280,
+      frameHeight: 720,
+      analysisWidth: 640,
+      analysisHeight: 360,
+      analysisRotation: 270,
+      rotationOffset: 90,
+      lumaMean: 112,
+      lumaRange: 80,
+      rawDetections: 3,
+      bestScore: 0.4234,
+      drawMsAvg: 6.2,
+      drawMsMax: 12.4,
+      glWaitMsAvg: 31.6,
+    });
+    expect(lines).toHaveLength(8);
+    expect(lines[4]).toBe('aperçu actif · vue 1080×2400 · cadre 1280×720');
+    expect(lines[5]).toBe('analysé 640×360 · rotation 270° (+90° auto) · luminance 112 (écart 80)');
+    expect(lines[6]).toBe('visages bruts 3 · meilleur score 0.42');
+    expect(lines[7]).toBe('dessin 6 ms (max 12) · attente GL 32 ms');
+  });
+
+  it('diagnostic : aperçu inactif et image noire signalés', () => {
+    const lines = formatFaceStats({
+      ...base,
+      previewState: 'idle',
+      analysisWidth: 640,
+      analysisHeight: 360,
+      analysisRotation: 90,
+      rotationOffset: 0,
+      lumaMean: 3,
+      lumaRange: 2,
+    });
+    expect(lines).toContain('aperçu inactif');
+    expect(lines).toContain('analysé 640×360 · rotation 90° · luminance 3 (écart 2)');
+    expect(lines[lines.length - 1]).toBe('alerte : image analysée noire ou uniforme');
+  });
+
+  it('ancien APK sans diagnostic : quatre lignes', () => {
+    expect(formatFaceStats(base)).toHaveLength(4);
+  });
+});
+
+describe('isAnalysisFrameBlank', () => {
+  it('noire, plate, normale, inconnue', () => {
+    expect(isAnalysisFrameBlank({ lumaMean: 4, lumaRange: 30 })).toBe(true);
+    expect(isAnalysisFrameBlank({ lumaMean: 120, lumaRange: 2 })).toBe(true);
+    expect(isAnalysisFrameBlank({ lumaMean: 120, lumaRange: 70 })).toBe(false);
+    expect(isAnalysisFrameBlank({ lumaMean: -1, lumaRange: -1 })).toBe(false);
+    expect(isAnalysisFrameBlank({})).toBe(false);
   });
 });
 

@@ -33,6 +33,36 @@ export type NiaCameraStats = {
   clock: string;
   mode: NiaSyncMode;
   effect: NiaFaceEffect;
+  // --- Diagnostic du test sur téléphone (absents sur les anciens APK).
+  /** Tampon donné à MediaPipe (avant rotation). */
+  analysisWidth?: number;
+  analysisHeight?: number;
+  /** Rotation annoncée par CameraX (degrés, sens horaire). */
+  analysisRotation?: number;
+  /** Correction trouvée automatiquement (0 si CameraX a raison). */
+  rotationOffset?: number;
+  /** Luminance moyenne 0–255 de l'image analysée ; -1 si aucune analyse. */
+  lumaMean?: number;
+  /** Écart max − min de luminance (≈ 0 : image plate / noire). */
+  lumaRange?: number;
+  /** Détections MediaPipe tous scores (≥ 0,3) sur la seconde. */
+  rawDetections?: number;
+  /** Meilleur score MediaPipe de la seconde (0–1). */
+  bestScore?: number;
+  /** Temps de dessin du masque sur le fil GL (ms). */
+  drawMsAvg?: number;
+  drawMsMax?: number;
+  redrawSkipped?: number;
+  /** Fin d'analyse → image dessinée (ms) ; -1 si inconnu. */
+  glWaitMsAvg?: number;
+  /** Image caméra reçue par l'effet (px). */
+  frameWidth?: number;
+  frameHeight?: number;
+  frameRotation?: number;
+  /** Flux de PreviewView : 'streaming' quand l'aperçu reçoit des images. */
+  previewState?: string;
+  /** Taille posée de la vue d'aperçu, « LxH ». */
+  previewViewSize?: string;
 };
 
 export type NiaCameraError = { code: 'ERR_CAMERA' | 'ERR_DETECTOR' | string; message: string };
