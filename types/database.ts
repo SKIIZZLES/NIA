@@ -312,6 +312,12 @@ export type Database = {
           provider: string | null;
           provider_stream_id: string | null;
           created_at: string;
+          /** 017 */
+          moderation_state?: 'visible' | 'held' | 'removed';
+          /** 019 (écrits par livekit-webhook, lecture seule pour l'app) */
+          peak_viewer_count?: number;
+          ended_reason?: string | null;
+          host_left_at?: string | null;
         };
         Insert: {
           id?: string;

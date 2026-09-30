@@ -13,6 +13,8 @@ export type LiveTokenErrorCode =
   | 'forbidden'
   | 'not_found'
   | 'not_active'
+  | 'not_started'
+  | 'held'
   | 'not_configured'
   | 'network'
   | 'server'
@@ -43,12 +45,12 @@ export function mapLiveTokenFailure(
 ): LiveTokenErrorCode {
   if (status === undefined || status === 0) return 'network';
   if (status === 401) return 'auth';
-  if (status === 403) return 'forbidden';
+  if (status === 403) return errorCode === 'live_held' ? 'held' : 'forbidden';
   if (status === 404) {
     // 404 sans code = fonction pas (encore) déployée.
     return errorCode === 'not_found' ? 'not_found' : 'not_configured';
   }
-  if (status === 409) return 'not_active';
+  if (status === 409) return errorCode === 'live_not_started' ? 'not_started' : 'not_active';
   if (status === 503) return 'not_configured';
   return 'server';
 }
@@ -123,6 +125,10 @@ export function liveTokenErrorKey(code: LiveTokenErrorCode): string {
       return 'live.rtc.errNotFound';
     case 'not_active':
       return 'live.rtc.errNotActive';
+    case 'not_started':
+      return 'live.rtc.errNotStarted';
+    case 'held':
+      return 'textFilter.heldLive';
     case 'not_configured':
       return 'live.rtc.errNotConfigured';
     case 'network':

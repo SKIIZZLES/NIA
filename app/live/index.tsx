@@ -138,27 +138,6 @@ export default function LiveIndexScreen() {
           marginBottom: Spacing.sm,
           lineHeight: 18,
         },
-        honesty: {
-          marginHorizontal: Spacing.lg,
-          marginBottom: Spacing.md,
-          padding: Spacing.md,
-          borderRadius: Radii.md,
-          borderWidth: 1,
-          borderColor: colors.border,
-          backgroundColor: colors.noirElevated,
-          gap: 6,
-        },
-        honestyTitle: {
-          color: colors.or,
-          fontFamily: Fonts.bold,
-          fontSize: 13,
-        },
-        honestyBody: {
-          color: colors.textMuted,
-          fontFamily: Fonts.regular,
-          fontSize: 12,
-          lineHeight: 17,
-        },
         sectionTitle: {
           color: colors.sable,
           fontFamily: Fonts.bold,
@@ -341,12 +320,7 @@ export default function LiveIndexScreen() {
         </Pressable>
       </View>
 
-      <Text style={styles.subtitle}>{t('live.subtitle')}</Text>
-
-      <View style={styles.honesty}>
-        <Text style={styles.honestyTitle}>{t('live.soonBanner')}</Text>
-        <Text style={styles.honestyBody}>{t('live.soonBannerBody')}</Text>
-      </View>
+      <Text style={styles.subtitle}>{t('live.hubSubtitle')}</Text>
 
       {loading ? (
         <View style={styles.center}>
@@ -403,7 +377,7 @@ export default function LiveIndexScreen() {
             <Button
               title={t('live.startCta')}
               variant="gold"
-              onPress={() => router.push('/live/create')}
+              onPress={() => router.push('/live/go')}
             />
           </View>
         </ScrollView>

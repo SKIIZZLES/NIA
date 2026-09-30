@@ -232,6 +232,14 @@ export default function CreateLiveScreen() {
           fontSize: 12,
           lineHeight: 17,
         },
+        noticeLink: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: Spacing.sm,
+          alignSelf: 'flex-start',
+        },
+        noticeLinkText: { color: colors.or, fontFamily: Fonts.medium, fontSize: 13 },
         label: {
           marginTop: Spacing.md,
           marginBottom: 6,
@@ -321,8 +329,17 @@ export default function CreateLiveScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.notice}>
-          <Text style={styles.noticeTitle}>{t('live.soonBanner')}</Text>
-          <Text style={styles.noticeBody}>{t('live.createNotice')}</Text>
+          <Text style={styles.noticeTitle}>{t('live.go.scheduleNoticeTitle')}</Text>
+          <Text style={styles.noticeBody}>{t('live.go.scheduleNotice')}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.replace('/live/go')}
+            hitSlop={6}
+            style={styles.noticeLink}
+          >
+            <Ionicons name="radio-outline" size={14} color={colors.or} />
+            <Text style={styles.noticeLinkText}>{t('live.go.instantCta')}</Text>
+          </Pressable>
         </View>
 
         <Text style={styles.label}>{t('live.fieldTitle')}</Text>

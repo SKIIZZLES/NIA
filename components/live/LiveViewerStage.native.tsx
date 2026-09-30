@@ -1,9 +1,12 @@
 /**
- * Écran spectateur `/live/watch/[id]` (sprint L1, natif).
+ * Écran spectateur `/live/watch/[id]` (sprint L1, complété en L2).
  *
  * « Rejoindre » → jeton viewer (abonnement seul) via live-token → connexion
  * LiveKit → vidéo plein écran de l'hôte (identité = user_id du live) et son.
- * États : attente de l'hôte, reconnexion, live terminé, erreur avec Réessayer.
+ * États : pas encore commencé (L2 : on revérifie toutes les 10 s, puis on
+ * rejoint seul), attente de l'hôte, hôte parti (fin après 2 min, comme le
+ * serveur), reconnexion, live terminé, erreur avec Réessayer.
+ * L2 : bouton « Signaler » (ReportSheet S2, cible « live »).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -22,12 +25,14 @@ import {
   LiveErrorState,
   OnAirBadge,
   RoundIconButton,
+  ViewerPill,
 } from '@/components/live/LiveStageParts';
 import type { LiveViewerStageProps } from '@/components/live/types';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { fetchLiveStreamById } from '@/lib/live';
+import { hostGoneTooLong } from '@/lib/liveGo';
 import { LiveTokenError, fetchLiveToken, liveTokenErrorKey } from '@/lib/liveToken';
 import {
   VIEWER_ROOM_OPTIONS,
@@ -36,11 +41,14 @@ import {
   stopLiveAudio,
 } from '@/lib/liveRtcNative';
 
-type Phase = 'idle' | 'joining' | 'watching' | 'ended' | 'error';
+type Phase = 'idle' | 'waiting' | 'joining' | 'watching' | 'ended' | 'error';
+
+/** Revérification d'un live pas encore commencé (REST, pas de Realtime). */
+const WAIT_POLL_MS = 10_000;
 
 const KEEP_AWAKE_TAG = 'nia-live-viewer';
 
-export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
+export function LiveViewerStage({ live, onClose, onReport }: LiveViewerStageProps) {
   const { t } = useI18n();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -53,6 +61,8 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
   const [hostPresent, setHostPresent] = useState(false);
   const [viewers, setViewers] = useState(0);
   const [reconnecting, setReconnecting] = useState(false);
+  /** Depuis quand l'hôte n'est plus dans la room (null s'il est là). */
+  const [hostAwaySince, setHostAwaySince] = useState<number | null>(null);
 
   const mountedRef = useRef(true);
   const roomRef = useRef<Room | null>(null);
@@ -97,6 +107,7 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
         if (p.identity.toLowerCase() === hostIdentity) host = p;
       });
       setHostPresent(!!host);
+      setHostAwaySince((prev) => (host ? null : prev ?? Date.now()));
       // Spectateurs = participants sauf l'hôte, soi compris.
       setViewers(room.remoteParticipants.size - (host ? 1 : 0) + 1);
       const pub = host?.getTrackPublication(Track.Source.Camera);
@@ -145,6 +156,11 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
       if (!mountedRef.current) return;
       if (e instanceof LiveTokenError && e.code === 'not_active') {
         setPhase('ended');
+        return;
+      }
+      if (e instanceof LiveTokenError && e.code === 'not_started') {
+        // L2 : l'hôte n'est pas encore à l'antenne ; on revérifie seul.
+        setPhase('waiting');
         return;
       }
       setErrorKey(e instanceof LiveTokenError ? liveTokenErrorKey(e.code) : 'live.rtc.errServer');
@@ -200,6 +216,43 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
     }
   }, [checkEnded, hostIdentity, leaveRoom, live.id, refresh]);
 
+  // Pas encore commencé : on revérifie le statut, puis on rejoint dès qu'il est « live ».
+  useEffect(() => {
+    if (phase !== 'waiting') return undefined;
+    const id = setInterval(() => {
+      void (async () => {
+        try {
+          const fresh = await fetchLiveStreamById(live.id);
+          if (!mountedRef.current) return;
+          if (!fresh || fresh.status === 'ended' || fresh.status === 'cancelled') setPhase('ended');
+          else if (fresh.status === 'live') void join();
+        } catch {
+          // réseau : on réessaiera au prochain tour
+        }
+      })();
+    }, WAIT_POLL_MS);
+    return () => clearInterval(id);
+  }, [join, live.id, phase]);
+
+  // Hôte parti depuis plus que le délai de grâce : le serveur termine le live
+  // (livekit-webhook) ; on quitte la room pour ne pas consommer le quota.
+  useEffect(() => {
+    if (phase !== 'watching' || hostAwaySince === null) return undefined;
+    const id = setInterval(() => {
+      if (!hostGoneTooLong(hostAwaySince, Date.now())) return;
+      void (async () => {
+        await checkEnded();
+        if (!mountedRef.current) return;
+        await leaveRoom();
+        if (mountedRef.current) {
+          setHostTrack(null);
+          setPhase('ended');
+        }
+      })();
+    }, 5_000);
+    return () => clearInterval(id);
+  }, [checkEnded, hostAwaySince, leaveRoom, phase]);
+
   const leave = useCallback(() => {
     void leaveRoom();
     onClose();
@@ -235,13 +288,6 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
           textShadowColor: 'rgba(0,0,0,0.6)',
           textShadowRadius: 4,
         },
-        pill: {
-          paddingHorizontal: 10,
-          paddingVertical: 5,
-          borderRadius: Radii.pill,
-          backgroundColor: 'rgba(11,11,11,0.55)',
-        },
-        pillText: { color: colors.onMedia, fontFamily: Fonts.medium, fontSize: 12 },
         banner: {
           position: 'absolute',
           top: insets.top + 72,
@@ -273,10 +319,24 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
             />
           ) : null}
           {phase === 'joining' ? <LiveCenterMessage busy body={t('live.rtc.joining')} /> : null}
+          {phase === 'waiting' ? (
+            <LiveCenterMessage
+              busy
+              body={t('live.rtc.errNotStarted')}
+              secondaryLabel={t('live.rtc.leave')}
+              onSecondary={leave}
+            />
+          ) : null}
           {phase === 'watching' && !hostTrack ? (
             <LiveCenterMessage
               busy
-              body={hostPresent ? t('live.rtc.hostPaused') : t('live.rtc.waitingHost')}
+              body={
+                hostPresent
+                  ? t('live.rtc.hostPaused')
+                  : hostAwaySince !== null
+                    ? t('live.watch.hostAway')
+                    : t('live.rtc.waitingHost')
+              }
             />
           ) : null}
           {phase === 'ended' ? (
@@ -304,9 +364,10 @@ export function LiveViewerStage({ live, onClose }: LiveViewerStageProps) {
           </Text>
         </View>
         {phase === 'watching' ? (
-          <View style={styles.pill}>
-            <Text style={styles.pillText}>{t('live.rtc.viewersNow', { count: viewers })}</Text>
-          </View>
+          <ViewerPill count={viewers} label={t('live.go.viewersA11y', { count: viewers })} />
+        ) : null}
+        {onReport ? (
+          <RoundIconButton icon="flag-outline" label={t('live.watch.report')} onPress={onReport} />
         ) : null}
         <RoundIconButton icon="close" label={t('live.rtc.leave')} onPress={leave} />
       </View>

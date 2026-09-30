@@ -1503,7 +1503,7 @@ export default function CreateCameraScreen() {
             <ModeTab
               label={t('create.hubLive')}
               on={false}
-              onPress={() => router.push('/live/create')}
+              onPress={() => router.replace('/live/go')}
               styles={styles}
             />
             <ModeTab

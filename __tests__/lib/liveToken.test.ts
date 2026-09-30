@@ -46,6 +46,9 @@ describe('mapLiveTokenFailure', () => {
     [404, 'not_found', 'not_found'],
     [404, null, 'not_configured'],
     [409, 'live_not_active', 'not_active'],
+    [409, 'live_not_started', 'not_started'],
+    [409, null, 'not_active'],
+    [403, 'live_held', 'held'],
     [503, 'not_configured', 'not_configured'],
     [500, 'db_error', 'server'],
     [400, 'bad_request', 'server'],
@@ -114,11 +117,13 @@ describe('fetchLiveToken', () => {
 
 describe('liveTokenErrorKey', () => {
   it('chaque code pointe vers une clé qui existe en français', () => {
-    const rtc = (fr as unknown as { live: { rtc: Record<string, string> } }).live.rtc;
-    for (const code of ['auth', 'forbidden', 'not_found', 'not_active', 'not_configured', 'network', 'server', 'bad_response'] as const) {
+    const resolve = (key: string): unknown =>
+      key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], fr);
+    for (const code of ['auth', 'forbidden', 'not_found', 'not_active', 'not_started', 'held', 'not_configured', 'network', 'server', 'bad_response'] as const) {
       const key = liveTokenErrorKey(code);
-      expect(key.startsWith('live.rtc.')).toBe(true);
-      expect(typeof rtc[key.slice('live.rtc.'.length)]).toBe('string');
+      expect(typeof resolve(key)).toBe('string');
     }
+    expect(liveTokenErrorKey('not_started')).toBe('live.rtc.errNotStarted');
+    expect(liveTokenErrorKey('held')).toBe('textFilter.heldLive');
   });
 });

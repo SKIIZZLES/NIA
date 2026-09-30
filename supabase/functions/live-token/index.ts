@@ -6,13 +6,15 @@
  *   - role "viewer"    : spectateur, abonnement seul, si l'appelant VOIT le
  *     live sous la RLS existante (lecture faite avec SON JWT, pas en
  *     service_role).
- * Aucune écriture en base au L1 (voir core.ts pour la règle L1 → L2).
+ * Aucune écriture en base : le statut 'live' vient de livekit-webhook (L2).
+ * Hôte : la room est créée ici avec ses délais de fermeture (HOST_ROOM_SETTINGS).
  *
  * Entrée  : POST JSON { live_id: uuid, role: "publisher" | "viewer" }
  *           + Authorization: Bearer <JWT Supabase de l'utilisateur>
  * Sortie  : 200 { token, url, room, role, expires_in }
  * Erreurs : 400 bad_request · 401 unauthorized · 403 not_owner ·
- *           404 not_found · 405 · 409 live_not_active · 500 db_error ·
+ *           403 live_held · 404 not_found · 405 · 409 live_not_active ·
+ *           409 live_not_started · 500 db_error ·
  *           503 not_configured
  *
  * Secrets (Dashboard → Edge Functions → Secrets, jamais dans le dépôt) :
@@ -23,12 +25,14 @@
  *   supabase functions deploy live-token --project-ref odlmbiaocdonlovjepxn
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { AccessToken, TrackSource } from 'npm:livekit-server-sdk@2.19.1';
+import { AccessToken, RoomServiceClient, TrackSource } from 'npm:livekit-server-sdk@2.19.1';
 import {
+  HOST_ROOM_SETTINGS,
   bearerToken,
   decideGrant,
   isDenied,
   isLivekitConfigured,
+  livekitHttpUrl,
   parseTokenRequest,
   pickPublicApiKey,
   type LiveRowLite,
@@ -107,7 +111,7 @@ Deno.serve(async (req) => {
 
   const { data: row, error: rowErr } = await sb
     .from('live_streams')
-    .select('id, user_id, status, visibility')
+    .select('id, user_id, status, visibility, moderation_state')
     .eq('id', parsed.liveId)
     .maybeSingle();
   if (rowErr) {
@@ -124,6 +128,18 @@ Deno.serve(async (req) => {
   if (!decision.ok) {
     log('denied', { code: decision.error, role: parsed.role });
     return json(decision.status, { error: decision.error });
+  }
+
+  // Hôte : crée la room avec ses délais de fermeture (fin automatique). Si
+  // elle existe déjà (reconnexion), LiveKit la renvoie telle quelle. En cas
+  // d'échec, la room sera créée à la connexion avec les réglages par défaut.
+  if (decision.role === 'publisher') {
+    try {
+      const rooms = new RoomServiceClient(livekitHttpUrl(lkUrl), lkKey, lkSecret);
+      await rooms.createRoom({ name: decision.room, ...HOST_ROOM_SETTINGS });
+    } catch {
+      log('warn', { code: 'create_room_failed' });
+    }
   }
 
   const at = new AccessToken(lkKey, lkSecret, {

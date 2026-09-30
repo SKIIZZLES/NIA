@@ -273,7 +273,7 @@ export default function CreateMediaStep() {
         <View style={styles.otherRow}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/live/create')}
+            onPress={() => router.push('/live/go')}
             style={styles.otherChip}
           >
             <Ionicons name="radio-outline" size={16} color={colors.or} />

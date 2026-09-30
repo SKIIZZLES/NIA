@@ -5,6 +5,7 @@
  * ou invisible sous la RLS.
  */
 import {
+  HOST_ROOM_SETTINGS,
   ROOM_PREFIX,
   TOKEN_TTL_SECONDS,
   bearerToken,
@@ -127,6 +128,20 @@ describe('decideGrant — publisher', () => {
     expect(d).toEqual({ ok: false, status: 409, error: 'live_not_active' });
   });
 
+  it.each(['held', 'removed'])('L2 : live « %s » par la modération → 403 live_held', (moderation_state) => {
+    const d = decideGrant({ userId: OWNER, role: 'publisher', liveId: LIVE_ID, live: row({ moderation_state }) });
+    expect(d).toEqual({ ok: false, status: 403, error: 'live_held' });
+  });
+
+  it('L2 : moderation_state absent ou visible → accepté', () => {
+    expect(decideGrant({ userId: OWNER, role: 'publisher', liveId: LIVE_ID, live: row({ moderation_state: 'visible' }) }).ok).toBe(true);
+    expect(decideGrant({ userId: OWNER, role: 'publisher', liveId: LIVE_ID, live: row({ moderation_state: null }) }).ok).toBe(true);
+  });
+
+  it('L2 : réglages de la room (fermeture 2 min, 60 participants max)', () => {
+    expect(HOST_ROOM_SETTINGS).toEqual({ emptyTimeout: 120, departureTimeout: 120, maxParticipants: 60 });
+  });
+
   it('non-propriétaire sur un live terminé → 403 (le rôle est vérifié avant le statut)', () => {
     const d = decideGrant({ userId: OTHER, role: 'publisher', liveId: LIVE_ID, live: row({ status: 'ended' }) });
     expect(d).toEqual({ ok: false, status: 403, error: 'not_owner' });
@@ -134,8 +149,8 @@ describe('decideGrant — publisher', () => {
 });
 
 describe('decideGrant — viewer', () => {
-  it('live visible (programmé, règle L1) → abonnement seul', () => {
-    const d = decideGrant({ userId: OTHER, role: 'viewer', liveId: LIVE_ID, live: row() });
+  it('live « live » visible → abonnement seul', () => {
+    const d = decideGrant({ userId: OTHER, role: 'viewer', liveId: LIVE_ID, live: row({ status: 'live' }) });
     expect(d.ok).toBe(true);
     if (!d.ok) return;
     expect(d.identity).toBe(OTHER);
@@ -182,8 +197,13 @@ describe('decideGrant — viewer', () => {
     expect(d).toEqual({ ok: false, status: 409, error: 'live_not_active' });
   });
 
+  it('L2 : live encore programmé (hôte pas encore connecté) → 409 live_not_started', () => {
+    const d = decideGrant({ userId: OTHER, role: 'viewer', liveId: LIVE_ID, live: row({ status: 'scheduled' }) });
+    expect(d).toEqual({ ok: false, status: 409, error: 'live_not_started' });
+  });
+
   it('le créateur peut aussi demander un jeton spectateur', () => {
-    const d = decideGrant({ userId: OWNER, role: 'viewer', liveId: LIVE_ID, live: row() });
+    const d = decideGrant({ userId: OWNER, role: 'viewer', liveId: LIVE_ID, live: row({ status: 'live' }) });
     expect(d.ok && d.grant.canPublish).toBe(false);
   });
 });
