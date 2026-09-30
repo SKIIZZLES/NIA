@@ -1,7 +1,8 @@
 /**
- * Détail live — placeholder NIA honnête (pas de faux player).
+ * Détail live. L1 : « Passer en direct » (créateur) et « Regarder le live »
+ * (spectateur) ouvrent les écrans LiveKit /live/host/[id] et /live/watch/[id].
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { NiaWordmark } from '@/components/NiaWordmark';
@@ -88,6 +89,18 @@ export default function LiveDetailScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Retour depuis l'écran hôte ou spectateur : statut à jour.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      void load();
+    }, [load]),
+  );
 
   const onEnd = async () => {
     if (!user?.id || !stream) return;
@@ -308,9 +321,11 @@ export default function LiveDetailScreen() {
             <View style={styles.placeholder} accessibilityRole="text">
               <NiaWordmark size={40} />
               <Ionicons name="radio-outline" size={40} color={colors.or} />
-              <Text style={styles.placeholderTitle}>{t('live.soonBanner')}</Text>
+              <Text style={styles.placeholderTitle}>
+                {isOwner ? t('live.rtc.goLive') : t('live.rtc.watch')}
+              </Text>
               <Text style={styles.placeholderBody}>
-                {t('live.placeholderBody')}
+                {isOwner ? t('live.rtc.detailHintOwner') : t('live.rtc.detailHintViewer')}
               </Text>
             </View>
           ) : (
@@ -375,9 +390,26 @@ export default function LiveDetailScreen() {
               <Text style={styles.desc}>{stream.description}</Text>
             ) : null}
 
+            {!isOwner &&
+            (stream.status === 'live' || stream.status === 'scheduled') ? (
+              <View style={styles.actions}>
+                <Button
+                  title={t('live.rtc.watch')}
+                  variant="gold"
+                  onPress={() => router.push(`/live/watch/${stream.id}` as Href)}
+                />
+              </View>
+            ) : null}
+
             {isOwner &&
             (stream.status === 'live' || stream.status === 'scheduled') ? (
               <View style={styles.actions}>
+                <Button
+                  title={t('live.rtc.goLive')}
+                  variant="gold"
+                  disabled={busy}
+                  onPress={() => router.push(`/live/host/${stream.id}` as Href)}
+                />
                 <Button
                   title={t('live.endStream')}
                   variant="outline"

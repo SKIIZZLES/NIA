@@ -31,7 +31,8 @@
         "READ_MEDIA_VIDEO"
       ],
       "blockedPermissions": [
-        "android.permission.SYSTEM_ALERT_WINDOW"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.FOREGROUND_SERVICE"
       ]
     },
     "web": {
@@ -93,7 +94,8 @@
           }
         }
       ],
-      "@config-plugins/react-native-webrtc"
+      "@config-plugins/react-native-webrtc",
+      "./plugins/withoutWebrtcScreenShare"
     ],
     "experiments": {
       "typedRoutes": true
