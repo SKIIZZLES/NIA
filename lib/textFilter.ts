@@ -102,3 +102,37 @@ export function profileFieldOutcome(submitted: string, stored: string | null | u
   }
   return 'pending';
 }
+
+/** Issue du contrôle d'un texte incrusté dans l'image (éditeur V2). */
+export type BurnedTextVerdict = 'ok' | 'blocked' | 'unverified';
+
+/**
+ * Texte posé sur la vidéo et incrusté dans l'image (éditeur V2) : une fois
+ * dans les pixels, ni le masquage ni la retenue de 018 ne peuvent plus
+ * s'appliquer. Même verdict serveur que la légende (`nia_check_text`, champ
+ * `caption`, la liste reste sur le serveur), mais plus strict :
+ * - masked, held ou refused → `blocked` (pas d'export) ;
+ * - erreur réseau ou réponse illisible → `unverified` (pas d'export non plus :
+ *   la publication a de toute façon besoin du réseau) ;
+ * - mode démo, Supabase absent ou 018 non appliquée → `ok` (comme checkText).
+ */
+export async function checkBurnedText(text: string | null | undefined): Promise<BurnedTextVerdict> {
+  const value = (text ?? '').trim();
+  if (!value) return 'ok';
+  const sb = getSupabase();
+  if (!sb || !isSupabaseConfigured) return 'ok';
+  try {
+    const { data, error } = await sb.rpc('nia_check_text', { p_text: value.slice(0, 5000), p_field: 'caption' });
+    if (error) return isRpcMissing(error) ? 'ok' : 'unverified';
+    return burnedVerdictFrom(data);
+  } catch {
+    return 'unverified';
+  }
+}
+
+/** Réponse de `nia_check_text` → issue pour un texte incrusté. */
+export function burnedVerdictFrom(data: unknown): BurnedTextVerdict {
+  if (data === 'ok') return 'ok';
+  if (data === 'masked' || data === 'held' || data === 'refused') return 'blocked';
+  return 'unverified';
+}

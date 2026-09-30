@@ -3,6 +3,8 @@
  * masqués / en attente, vidéos retenues.
  */
 import {
+  burnedVerdictFrom,
+  checkBurnedText,
   checkText,
   checkTexts,
   isKeywordHeld,
@@ -134,5 +136,41 @@ describe('isKeywordHeld', () => {
     expect(isKeywordHeld({ moderationState: 'held' })).toBe(false);
     expect(isKeywordHeld({ moderationState: 'removed', moderationReason: 'auto:keywords' })).toBe(false);
     expect(isKeywordHeld({})).toBe(false);
+  });
+});
+
+describe('texte incrusté dans la vidéo (éditeur V2)', () => {
+  it('tout verdict autre que ok bloque', () => {
+    expect(burnedVerdictFrom('ok')).toBe('ok');
+    expect(burnedVerdictFrom('masked')).toBe('blocked');
+    expect(burnedVerdictFrom('held')).toBe('blocked');
+    expect(burnedVerdictFrom('refused')).toBe('blocked');
+    expect(burnedVerdictFrom(null)).toBe('unverified');
+  });
+
+  it('interroge nia_check_text comme une légende', async () => {
+    const rpc = rpcReturning(() => ({ data: 'held', error: null }));
+    await expect(checkBurnedText('un texte')).resolves.toBe('blocked');
+    expect(rpc).toHaveBeenCalledWith('nia_check_text', { p_text: 'un texte', p_field: 'caption' });
+  });
+
+  it('texte vide : rien à vérifier', async () => {
+    const rpc = rpcReturning(() => ({ data: 'held', error: null }));
+    await expect(checkBurnedText('  ')).resolves.toBe('ok');
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('réseau en panne ou erreur : non vérifié (pas d’export)', async () => {
+    rpcReturning(() => {
+      throw new Error('offline');
+    });
+    await expect(checkBurnedText('texte')).resolves.toBe('unverified');
+    rpcReturning(() => ({ data: null, error: { code: '500', message: 'boom' } }));
+    await expect(checkBurnedText('texte')).resolves.toBe('unverified');
+  });
+
+  it('018 absente : même repli que checkText', async () => {
+    rpcReturning(() => ({ data: null, error: { code: 'PGRST202', message: 'missing' } }));
+    await expect(checkBurnedText('texte')).resolves.toBe('ok');
   });
 });

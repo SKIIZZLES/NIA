@@ -1,6 +1,8 @@
 package expo.modules.niacomposer
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Handler
@@ -9,13 +11,19 @@ import androidx.media3.common.C
 import androidx.media3.common.Effect
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.OverlaySettings
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.ChannelMixingAudioProcessor
 import androidx.media3.common.audio.ChannelMixingMatrix
 import androidx.media3.common.audio.SpeedProvider
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.BitmapOverlay
 import androidx.media3.effect.FrameDropEffect
+import androidx.media3.effect.OverlayEffect
 import androidx.media3.effect.Presentation
+import androidx.media3.effect.RgbMatrix
+import androidx.media3.effect.StaticOverlaySettings
+import androidx.media3.effect.TextureOverlay
 import androidx.media3.transformer.AudioEncoderSettings
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.DefaultEncoderFactory
@@ -41,7 +49,7 @@ import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /**
- * NIA — export vidéo sur l'appareil (éditeur P0, montage V1).
+ * NIA — export vidéo sur l'appareil (éditeur P0, montage V1, habillage V2).
  *
  * Reçoit une composition JSON (clips vidéo avec début / fin / vitesse,
  * photos fixes en V1, son ajouté, volumes) et produit UN fichier MP4 : H.264
@@ -50,6 +58,10 @@ import kotlin.math.roundToLong
  * Media3 Transformer 1.9 ; le muxer Media3 (InAppMp4Muxer) place le moov en
  * tête quand il tient dans l'espace réservé (400 Ko, soit bien plus que ce
  * que demandent 3 min) : le résultat « faststart » est vérifié et renvoyé.
+ *
+ * V2 : calques texte / stickers (PNG capturés par l'app) et filtre NIA
+ * (matrice couleur) sont appliqués à la composition entière, après le cadrage
+ * de chaque clip : les horaires des calques sont donc en temps de sortie.
  *
  * Un seul export à la fois. Tout ce qui touche au Transformer se fait sur le
  * thread principal (il exige un Looper) ; les promesses sont réglées une
@@ -241,6 +253,16 @@ class NiaComposerModule : Module() {
 
   private data class Audio(val uri: String, val offsetMs: Long, val volume: Float)
 
+  /** V2 : calque PNG, centre (x, y) 0..1, rotation horaire, fenêtre en temps de sortie. */
+  private data class OverlaySpec(
+    val path: String,
+    val x: Float,
+    val y: Float,
+    val rotation: Float,
+    val startMs: Long,
+    val endMs: Long?,
+  )
+
   private data class Request(
     val clips: List<Clip>,
     val audio: Audio?,
@@ -253,6 +275,9 @@ class NiaComposerModule : Module() {
     val fixedCanvas: Boolean,
     val videoBitrate: Int,
     val audioBitrate: Int,
+    val overlays: List<OverlaySpec>,
+    val overlayFrameWidth: Int,
+    val filterMatrix: FloatArray?,
   )
 
   private class Built(val composition: Composition, val width: Int, val height: Int)
@@ -281,6 +306,34 @@ class NiaComposerModule : Module() {
         a.optDouble("volume", 1.0).toFloat().coerceIn(0f, 1f),
       )
     }
+    val overlays = if (!o.has("overlays") || o.isNull("overlays")) emptyList() else {
+      val list = o.getJSONArray("overlays")
+      require(list.length() <= MAX_OVERLAYS) { "overlays: at most $MAX_OVERLAYS" }
+      (0 until list.length()).map { i ->
+        val v = list.getJSONObject(i)
+        val path = v.getString("uri").removePrefix("file://")
+        require(path.startsWith("/")) { "overlay uri must be a local file" }
+        val start = max(0L, v.optLong("startMs", 0L))
+        val end = if (v.isNull("endMs")) null else v.optLong("endMs", -1L).takeIf { it > start }
+        OverlaySpec(
+          path = path,
+          x = v.optDouble("x", 0.5).toFloat().coerceIn(0f, 1f),
+          y = v.optDouble("y", 0.5).toFloat().coerceIn(0f, 1f),
+          rotation = v.optDouble("rotation", 0.0).toFloat().takeIf { it.isFinite() } ?: 0f,
+          startMs = start,
+          endMs = end,
+        )
+      }
+    }
+    val filterMatrix = if (!o.has("filter") || o.isNull("filter")) null else {
+      val m = o.getJSONObject("filter").getJSONArray("matrix")
+      require(m.length() == 16) { "filter.matrix: 16 values expected" }
+      FloatArray(16) { i ->
+        val v = m.getDouble(i).toFloat()
+        require(v.isFinite() && abs(v) <= 4f) { "filter.matrix: invalid value" }
+        v
+      }
+    }
     val out = o.getJSONObject("output")
     val path = out.getString("path").removePrefix("file://")
     require(path.startsWith("/")) { "output.path must be absolute" }
@@ -297,6 +350,9 @@ class NiaComposerModule : Module() {
       fixedCanvas = out.optBoolean("fixedCanvas", false) || clips[0].image,
       videoBitrate = out.optInt("videoBitrate", 2_000_000).coerceIn(200_000, 20_000_000),
       audioBitrate = out.optInt("audioBitrate", 128_000).coerceIn(32_000, 320_000),
+      overlays = overlays,
+      overlayFrameWidth = o.optInt("overlayFrameWidth", 0),
+      filterMatrix = filterMatrix,
     )
   }
 
@@ -405,7 +461,58 @@ class NiaComposerModule : Module() {
       }
     }
 
-    return Built(Composition.Builder(sequences).build(), outW, outH)
+    // V2 : habillage cuit sur la composition entière (après le cadrage de
+    // chaque clip, donc dans le cadre de sortie, horaires en temps de sortie).
+    // Ordre de l'aperçu : filtre d'abord, calques par-dessus.
+    // Les images des calques ne sont pas recyclées à la main : le fil GL du
+    // Transformer peut encore les lire juste après une annulation ; le GC les
+    // libère avec la composition.
+    val compositionEffects = mutableListOf<Effect>()
+    r.filterMatrix?.let { compositionEffects += FixedRgbMatrix(it) }
+    if (r.overlays.isNotEmpty()) {
+      require(r.overlayFrameWidth > 0) { "overlayFrameWidth expected" }
+      // Capture faite dans un cadre de overlayFrameWidth px : même échelle pour tous.
+      val scale = outW.toFloat() / r.overlayFrameWidth
+      val textures = r.overlays.map { spec ->
+        val bmp = BitmapFactory.decodeFile(spec.path)
+          ?: throw IllegalArgumentException("Unreadable overlay image")
+        TimedBitmapOverlay(
+          bmp,
+          startUs = spec.startMs * 1000L,
+          endUs = spec.endMs?.let { it * 1000L } ?: Long.MAX_VALUE,
+          shown = StaticOverlaySettings.Builder()
+            // Repère Media3 : NDC, y vers le haut ; rotation antihoraire.
+            .setBackgroundFrameAnchor(2f * spec.x - 1f, 1f - 2f * spec.y)
+            .setScale(scale, scale)
+            .setRotationDegrees(-spec.rotation)
+            .build(),
+        )
+      }
+      compositionEffects += OverlayEffect(textures.map { it as TextureOverlay })
+    }
+    val builder = Composition.Builder(sequences)
+    if (compositionEffects.isNotEmpty()) builder.setEffects(Effects(emptyList(), compositionEffects))
+    return Built(builder.build(), outW, outH)
+  }
+
+  /** V2 : matrice couleur fixe (colonnes d'abord), appliquée à chaque image. */
+  private class FixedRgbMatrix(private val matrix: FloatArray) : RgbMatrix {
+    override fun getMatrix(presentationTimeUs: Long, useHdr: Boolean): FloatArray = matrix
+  }
+
+  /** V2 : calque visible de startUs (inclus) à endUs (exclu) ; ailleurs, transparent. */
+  private class TimedBitmapOverlay(
+    private val bitmap: Bitmap,
+    private val startUs: Long,
+    private val endUs: Long,
+    private val shown: StaticOverlaySettings,
+  ) : BitmapOverlay() {
+    private val hidden: StaticOverlaySettings = StaticOverlaySettings.Builder().setAlphaScale(0f).build()
+
+    override fun getBitmap(presentationTimeUs: Long): Bitmap = bitmap
+
+    override fun getOverlaySettings(presentationTimeUs: Long): OverlaySettings =
+      if (presentationTimeUs in startUs until endUs) shown else hidden
   }
 
   private class ConstantSpeed(private val speed: Float) : SpeedProvider {
@@ -491,6 +598,7 @@ class NiaComposerModule : Module() {
     private const val MIN_STILL_MS = 100L
     private const val MAX_STILL_MS = 60_000L
     private const val STILL_DEFAULT_MS = 3_000L
+    private const val MAX_OVERLAYS = 20
 
     /** Dimensions paires, petit côté ≤ shortSide, dans la boîte maxW × maxH orientée comme la source. */
     fun outputSize(srcW: Int, srcH: Int, shortSide: Int, maxW: Int, maxH: Int): Pair<Int, Int> {
