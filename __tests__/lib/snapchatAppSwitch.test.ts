@@ -4,12 +4,14 @@
  */
 import {
   NIA_ANDROID_PACKAGE,
+  SNAP_APP_ONLY_PARAMS,
   SNAP_APP_SWITCH_DEFAULT,
   SNAP_KIT_VERSION,
   SNAP_PENDING_TTL_MS,
   buildSnapAuthUrl,
   buildSnapHttpsAuthUrl,
   buildSnapchatAppAuthUrl,
+  isPlainSnapHttpsAuthUrl,
   isSnapAppSwitchVariant,
   isSnapReturnUrl,
   nextSnapVariant,
@@ -57,11 +59,61 @@ describe('buildSnapHttpsAuthUrl', () => {
     expect(q.has('package_name')).toBe(false);
   });
 
-  it('encode les espaces en %20 et les « : / » du redirect', () => {
+  it('garde la forme exacte du flux web de main (ordre + espaces en « + »)', () => {
     const url = buildSnapHttpsAuthUrl(PARAMS);
-    expect(url).toContain('redirect_uri=nia%3A%2F%2Fsnapchat-auth');
-    expect(url).toContain('user.display_name%20https%3A%2F%2F');
-    expect(url).not.toContain('+');
+    expect(url).toBe(
+      'https://accounts.snapchat.com/accounts/oauth2/auth' +
+        `?code_challenge=${PARAMS.codeChallenge}` +
+        '&code_challenge_method=S256' +
+        '&redirect_uri=nia%3A%2F%2Fsnapchat-auth' +
+        `&client_id=${CLIENT}` +
+        '&response_type=code' +
+        `&state=${PARAMS.state}` +
+        '&scope=https%3A%2F%2Fauth.snapchat.com%2Foauth2%2Fapi%2Fuser.display_name' +
+        '+https%3A%2F%2Fauth.snapchat.com%2Foauth2%2Fapi%2Fuser.external_id',
+    );
+    expect(url).not.toContain('%20');
+  });
+
+  it('octet pour octet l’URL d’expo-auth-session (Custom Tab de main)', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AuthRequest } = require('expo-auth-session') as typeof import('expo-auth-session');
+    const req = new AuthRequest({
+      clientId: CLIENT,
+      redirectUri: PARAMS.redirectUri,
+      scopes: [...SCOPES],
+      state: PARAMS.state,
+      usePKCE: true,
+    });
+    // PKCE figé pour comparer (ensureCodeIsSetupAsync ne régénère pas).
+    req.codeVerifier = 'v'.repeat(43);
+    req.codeChallenge = PARAMS.codeChallenge;
+    const reference = await req.makeAuthUrlAsync({
+      authorizationEndpoint: 'https://accounts.snapchat.com/accounts/oauth2/auth',
+    });
+    expect(buildSnapHttpsAuthUrl(PARAMS)).toBe(reference);
+    expect(isPlainSnapHttpsAuthUrl(reference)).toBe(true);
+  });
+
+  it('aucun paramètre du lien app dans l’URL https', () => {
+    const q = query(buildSnapHttpsAuthUrl(PARAMS));
+    for (const k of SNAP_APP_ONLY_PARAMS) expect(q.has(k)).toBe(false);
+    expect(Array.from(q.keys()).sort()).toEqual(
+      ['client_id', 'code_challenge', 'code_challenge_method', 'redirect_uri', 'response_type', 'scope', 'state'],
+    );
+  });
+
+  it('isPlainSnapHttpsAuthUrl refuse le lien app, un autre hôte ou un PKCE absent', () => {
+    expect(isPlainSnapHttpsAuthUrl(buildSnapHttpsAuthUrl(PARAMS))).toBe(true);
+    expect(isPlainSnapHttpsAuthUrl(buildSnapchatAppAuthUrl(PARAMS))).toBe(false);
+    const https = buildSnapHttpsAuthUrl(PARAMS);
+    expect(isPlainSnapHttpsAuthUrl(`${https}&package_name=app.nia.mobile`)).toBe(false);
+    expect(isPlainSnapHttpsAuthUrl(`${https}&kit_version=3.0.0`)).toBe(false);
+    expect(isPlainSnapHttpsAuthUrl(`${https}&link=${CLIENT}`)).toBe(false);
+    expect(isPlainSnapHttpsAuthUrl(https.replace('accounts.snapchat.com', 'evil.example'))).toBe(false);
+    expect(isPlainSnapHttpsAuthUrl(https.replace('code_challenge_method=S256', 'code_challenge_method=plain'))).toBe(false);
+    expect(isPlainSnapHttpsAuthUrl(null)).toBe(false);
+    expect(isPlainSnapHttpsAuthUrl('')).toBe(false);
   });
 
   it('refuse des paramètres incomplets', () => {

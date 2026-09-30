@@ -19,7 +19,9 @@ import {
   SNAP_ERR,
   SNAP_OPEN_CHECK_MS,
   SNAP_RETURN_GRACE_MS,
-  buildSnapAuthUrl,
+  buildSnapHttpsAuthUrl,
+  buildSnapchatAppAuthUrl,
+  isPlainSnapHttpsAuthUrl,
   isSnapAppSwitchVariant,
   isSnapReturnUrl,
   parsePending,
@@ -152,13 +154,22 @@ export async function startSnapchatAppSwitch(input: StartAppSwitchInput): Promis
     throw snapError(SNAP_ERR.unavailable, 'PKCE indisponible');
   }
 
-  const url = buildSnapAuthUrl(input.variant, {
+  const authParams = {
     clientId: input.clientId,
     redirectUri: input.redirectUri,
     scopes: input.scopes,
     state,
     codeChallenge,
-  });
+  };
+  // 'https' : exactement l'URL du flux web (celle qu'expo-auth-session vient
+  // de construire), sans aucun paramètre du lien app. 'snapchat' : lien app,
+  // construit à part.
+  const url =
+    input.variant === 'snapchat'
+      ? buildSnapchatAppAuthUrl(authParams)
+      : isPlainSnapHttpsAuthUrl(request.url)
+        ? request.url
+        : buildSnapHttpsAuthUrl(authParams);
 
   await savePendingSnapAuth({
     state,

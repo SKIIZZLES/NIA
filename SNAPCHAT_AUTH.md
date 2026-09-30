@@ -106,7 +106,7 @@ Kit est déprécié par Snap), sans changement de base.
 
 | Variante | Lien ouvert | Remarque |
 |---|---|---|
-| `https` (défaut) | `https://accounts.snapchat.com/accounts/oauth2/auth?…` via `Linking.openURL` | Snapchat Android est vérifié pour ce domaine (`assetlinks.json`) : s'il revendique ce chemin, Android l'ouvre ; sinon navigateur par défaut |
+| `https` (défaut) | `https://accounts.snapchat.com/accounts/oauth2/auth?…` via `Linking.openURL`, **même URL octet pour octet que le Custom Tab** | Snapchat Android est vérifié pour ce domaine (`assetlinks.json`) : s'il revendique ce chemin, Android l'ouvre ; sinon navigateur par défaut |
 | `snapchat` | `snapchat://oauth2?…&package_name=app.nia.mobile&kit_version=3.0.0&link=<client_id>` | Lien construit par le SDK Login Kit Android 3.0.0 (lu dans l'AAR, **non documenté**) |
 | `web` | Custom Tab (flux historique) | Toujours utilisé si Snapchat est absent, si le lien ne s'ouvre pas en 4 s, ou sur iOS |
 
@@ -122,6 +122,35 @@ Kit est déprécié par Snap), sans changement de base.
   après 2,5 s ; pas de réponse en 5 min : message de délai dépassé.
 - `plugins/withSnapchatQueries.js` : `<queries>` `com.snapchat.android` +
   scheme `snapchat` (Android 11+), **rebuild nécessaire**.
+
+### « Erreur d'autorisation — Échec du chargement des données d'autorisation » (30/09/2026)
+
+Page `accounts.snapchat.com` : c'est la nouvelle page d'autorisation de Snap
+(Next.js `/v2/oauth2/authorize`). Une fois l'utilisateur connecté, elle envoie
+les paramètres de l'URL à `POST /oauth2/api/auth` ; **toute** réponse d'erreur
+de Snap (hors « allowlist ») affiche ce même texte générique. Avec un compte
+non connecté, on voit la page de connexion, pas cette erreur.
+
+- L'URL de la variante `https` était déjà la même que celle du Custom Tab de
+  `main` (mêmes 7 paramètres et mêmes valeurs, aucun `package_name` /
+  `kit_version` / `link`) ; seuls l'ordre et l'encodage des espaces du scope
+  (`%20` au lieu de `+`) différaient. Depuis ce correctif, elle ouvre
+  **exactement** `request.url` d'expo-auth-session (test Jest octet pour octet).
+  `package_name`, `kit_version` et `link` restent dans le seul lien `snapchat://`.
+- Sans compte connecté, Snap traite les deux URL de la même façon (vérifié
+  avec un navigateur headless) ; `POST /oauth2/api/auth` répond `401` sans session.
+- Le refus vient donc de la configuration de l'app Snap, côté portail. À
+  vérifier sur kit.snapchat.com → app NIA → **Staging** → Login Kit :
+  1. Redirect URI **exactement** `nia://snapchat-auth` (sans `/` final, sans
+     espace, en minuscules) ;
+  2. le compte Snapchat utilisé dans la liste **Demo Users** de Staging ;
+  3. les scopes Display Name, External ID **et** Bitmoji avatar activés (sinon
+     retirer `user.bitmoji.avatar` de `SNAP_SCOPES`) ;
+  4. le Client ID utilisé est bien celui de **Staging** (`7ea8f803-…`), avec
+     la config Staging enregistrée (bouton Save).
+- Pour lire le message exact de Snap : sur ordinateur, se connecter à
+  accounts.snapchat.com dans Chrome, ouvrir l'URL d'autorisation, DevTools →
+  Network → requête `auth` (`/oauth2/api/auth`) → onglet Response.
 
 ### Edge Function v7 — client public
 

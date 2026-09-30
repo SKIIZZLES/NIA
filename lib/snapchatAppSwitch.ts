@@ -75,6 +75,7 @@ function assertParams(p: SnapAuthParams): void {
   }
 }
 
+/** Paramètres OAuth communs, dans l'ordre du SDK Login Kit (lien `snapchat://`). */
 function basePairs(p: SnapAuthParams): Pair[] {
   return [
     ['response_type', 'code'],
@@ -87,10 +88,60 @@ function basePairs(p: SnapAuthParams): Pair[] {
   ];
 }
 
-/** URL OAuth https (variante 'https'). */
+/**
+ * URL OAuth https (variante 'https').
+ *
+ * Forme EXACTE du flux web de `main` (Custom Tab) : même ordre de
+ * paramètres et même encodage que `AuthRequest.makeAuthUrlAsync`
+ * d'expo-auth-session, c'est-à-dire
+ * `URLSearchParams` (espaces du scope en `+`). Aucun paramètre en plus : les
+ * paramètres propres à l'app (`package_name`, `kit_version`, `link`,
+ * `sdk_is_from_react_native_plugin`…) restent dans `buildSnapchatAppAuthUrl`.
+ *
+ * À l'exécution, `startSnapchatAppSwitch` ouvre directement `request.url`
+ * (l'URL qu'expo-auth-session vient de construire) ; cette fonction n'est
+ * que le secours et la référence testée.
+ */
 export function buildSnapHttpsAuthUrl(p: SnapAuthParams): string {
   assertParams(p);
-  return `${SNAP_AUTHORIZE_URL}?${query(basePairs(p))}`;
+  // Même construction qu'expo-auth-session : objet → URLSearchParams.
+  const params: Record<string, string> = {
+    code_challenge: p.codeChallenge,
+    code_challenge_method: 'S256',
+    redirect_uri: p.redirectUri,
+    client_id: p.clientId,
+    response_type: 'code',
+    state: p.state,
+  };
+  if (p.scopes.length) params.scope = p.scopes.join(' ');
+  return `${SNAP_AUTHORIZE_URL}?${new URLSearchParams(params).toString()}`;
+}
+
+/** Paramètres du lien `snapchat://` que la page web d'autorisation ne doit jamais recevoir. */
+export const SNAP_APP_ONLY_PARAMS = [
+  'sdk_is_from_react_native_plugin',
+  'is_for_firebase_authentication',
+  'package_name',
+  'kit_version',
+  'link',
+] as const;
+
+/**
+ * L'URL https d'expo-auth-session est-elle bien celle du flux web (endpoint
+ * Snap, aucun paramètre propre à l'app) ? Sinon on reconstruit.
+ */
+export function isPlainSnapHttpsAuthUrl(url: string | undefined | null): url is string {
+  if (!url || !url.startsWith(`${SNAP_AUTHORIZE_URL}?`)) return false;
+  const q = readQuery(url.slice(url.indexOf('?') + 1).split('#')[0]);
+  return (
+    q.response_type === 'code' &&
+    q.code_challenge_method === 'S256' &&
+    !!q.client_id &&
+    !!q.redirect_uri &&
+    !!q.state &&
+    !!q.code_challenge &&
+    SNAP_APP_ONLY_PARAMS.every((k) => !(k in q))
+  );
 }
 
 /**
@@ -116,6 +167,22 @@ export function buildSnapchatAppAuthUrl(
 
 export function buildSnapAuthUrl(variant: Exclude<SnapAppSwitchVariant, 'web'>, p: SnapAuthParams): string {
   return variant === 'snapchat' ? buildSnapchatAppAuthUrl(p) : buildSnapHttpsAuthUrl(p);
+}
+
+/** Lit une chaîne `a=1&b=2` (`+` = espace) ; la première valeur d'une clé gagne. */
+function readQuery(s: string, into: Record<string, string> = {}): Record<string, string> {
+  for (const part of s.split('&')) {
+    if (!part) continue;
+    const i = part.indexOf('=');
+    try {
+      const k = decodeURIComponent((i < 0 ? part : part.slice(0, i)).replace(/\+/g, ' '));
+      const v = i < 0 ? '' : decodeURIComponent(part.slice(i + 1).replace(/\+/g, ' '));
+      if (!(k in into)) into[k] = v;
+    } catch {
+      // encodage invalide : paramètre ignoré
+    }
+  }
+  return into;
 }
 
 /** Paramètres lus sur `nia://snapchat-auth?…`. */
@@ -146,17 +213,8 @@ export function parseSnapReturnUrl(url: string): SnapReturnParams {
   const q = url.indexOf('?');
   const h = url.indexOf('#');
   const params: Record<string, string> = {};
-  const read = (s: string) => {
-    for (const part of s.split('&')) {
-      if (!part) continue;
-      const i = part.indexOf('=');
-      const k = decodeURIComponent((i < 0 ? part : part.slice(0, i)).replace(/\+/g, ' '));
-      const v = i < 0 ? '' : decodeURIComponent(part.slice(i + 1).replace(/\+/g, ' '));
-      if (!(k in params)) params[k] = v;
-    }
-  };
-  if (q >= 0) read(url.slice(q + 1, h > q ? h : undefined));
-  if (h >= 0) read(url.slice(h + 1));
+  if (q >= 0) readQuery(url.slice(q + 1, h > q ? h : undefined), params);
+  if (h >= 0) readQuery(url.slice(h + 1), params);
   return snapReturnFromRouteParams(params);
 }
 
