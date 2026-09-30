@@ -237,6 +237,9 @@ export default function CreateCameraScreen() {
     () => () => {
       clearStopTimers();
       for (const seg of segmentsRef.current) dropSegmentFile(seg.uri);
+      // L'assemblage aussi, sauf s'il est devenu le média du brouillon.
+      const concat = lastConcatRef.current?.uri;
+      if (concat) dropSegmentFile(concat);
     },
     [clearStopTimers, dropSegmentFile],
   );
@@ -412,6 +415,9 @@ export default function CreateCameraScreen() {
   /** Jette tous les segments (fichiers compris). */
   const discardSegments = useCallback(() => {
     for (const seg of segmentsRef.current) dropSegmentFile(seg.uri);
+    const concat = lastConcatRef.current?.uri;
+    if (concat) dropSegmentFile(concat);
+    lastConcatRef.current = null;
     segmentsRef.current = [];
     setSegments([]);
   }, [dropSegmentFile]);
