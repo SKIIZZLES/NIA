@@ -19,9 +19,11 @@ type Props = {
   /** Rang de l'étape, de 1 à CREATE_STEP_COUNT. */
   step: number;
   title: string;
+  /** Retour bloqué (envoi en cours) : la flèche est atténuée et inactive. */
+  disabled?: boolean;
 };
 
-export function CreateStepHeader({ step, title }: Props) {
+export function CreateStepHeader({ step, title, disabled = false }: Props) {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
@@ -61,9 +63,12 @@ export function CreateStepHeader({ step, title }: Props) {
             // on retombe sur le fil plutôt que de laisser l'écran bloqué.
             router.canGoBack() ? router.back() : router.replace('/(tabs)')
           }
+          disabled={disabled}
           hitSlop={10}
+          style={disabled ? { opacity: 0.4 } : null}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
+          accessibilityState={{ disabled }}
         >
           <Ionicons name="chevron-back" size={26} color={colors.sable} />
         </Pressable>
