@@ -6,6 +6,10 @@
  * visibles mais verrouillées sur les valeurs d'avant (public, commentaires et
  * republication autorisés) avec une note : rien n'est promis qui ne serait
  * pas enregistré.
+ *
+ * Contenu 18+ (020) : interrupteur actif pour un adulte déclaré, verrouillé
+ * (avec l'explication) pour un mineur ou sans date, absent si la base n'a pas
+ * encore 020.
  */
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
@@ -13,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
+import { canMarkMature, type AgeStatus } from '@/lib/age';
 import {
   MAX_ALT_TEXT,
   MAX_LOCATION_TEXT,
@@ -27,6 +32,8 @@ type Props = {
   supported: boolean | null;
   disabled?: boolean;
   isVideo: boolean;
+  /** État d'âge du compte (020) : décide de l'interrupteur « Contenu 18+ ». */
+  ageStatus?: AgeStatus;
 };
 
 const VISIBILITY: { id: VideoVisibility; icon: React.ComponentProps<typeof Ionicons>['name']; key: string; hint: string }[] = [
@@ -35,11 +42,13 @@ const VISIBILITY: { id: VideoVisibility; icon: React.ComponentProps<typeof Ionic
   { id: 'private', icon: 'lock-closed-outline', key: 'create.visibilityPrivate', hint: 'create.visibilityPrivateHint' },
 ];
 
-export function PublishOptionsSection({ value, onChange, supported, disabled = false, isVideo }: Props) {
+export function PublishOptionsSection({ value, onChange, supported, disabled = false, isVideo, ageStatus }: Props) {
   const colors = useColors();
   const { t } = useI18n();
   const locked = disabled || supported === false;
   const reuseLocked = locked || value.visibility !== 'public';
+  const showMature = !!ageStatus?.supported;
+  const matureAllowed = !!ageStatus && canMarkMature(ageStatus);
 
   const styles = useMemo(
     () =>
@@ -180,6 +189,20 @@ export function PublishOptionsSection({ value, onChange, supported, disabled = f
         locked,
         'sparkles-outline',
       )}
+      {showMature
+        ? toggle(
+            t('age.matureLabel'),
+            matureAllowed
+              ? t('age.matureHint')
+              : ageStatus?.declared
+                ? t('age.matureAdultsOnly')
+                : t('age.matureRequiresAdult'),
+            matureAllowed && value.isMature,
+            (v) => onChange({ isMature: v }),
+            locked || !matureAllowed,
+            'eye-off-outline',
+          )
+        : null}
 
       <Text style={styles.label}>{t('create.altTextLabel')}</Text>
       <Text style={styles.hint}>

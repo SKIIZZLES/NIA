@@ -9,6 +9,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -18,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
+import { useAge } from '@/context/AgeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
@@ -28,6 +30,7 @@ import {
   type LiveCategoryId,
   type LiveVisibility,
 } from '@/constants/liveCategories';
+import { canMarkMature } from '@/lib/age';
 import { createScheduledStream, isSupabaseConfigured } from '@/lib/live';
 import { checkTexts } from '@/lib/textFilter';
 
@@ -79,6 +82,7 @@ function combineLocalIso(date: string, time: string): string | null {
 export default function CreateLiveScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { status: ageStatus } = useAge();
   const { t } = useI18n();
   const colors = useColors();
   const defaults = defaultDateParts();
@@ -88,6 +92,8 @@ export default function CreateLiveScreen() {
   const [time, setTime] = useState(defaults.time);
   const [category, setCategory] = useState<LiveCategoryId | null>(null);
   const [visibility, setVisibility] = useState<LiveVisibility>('public');
+  // 020 : live 18+ (adultes déclarés uniquement ; le serveur revérifie).
+  const [mature, setMature] = useState(false);
   const [thumb, setThumb] = useState<ThumbPick | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -156,6 +162,7 @@ export default function CreateLiveScreen() {
         description: description.trim() || null,
         category,
         visibility,
+        isMature: mature && canMarkMature(ageStatus),
         scheduledAt,
         thumbnailLocalUri: thumb?.uri ?? null,
         thumbnailMimeType: thumb?.mimeType ?? null,
@@ -414,6 +421,23 @@ export default function CreateLiveScreen() {
             );
           })}
         </View>
+
+        {canMarkMature(ageStatus) ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>{t('age.matureLabel')}</Text>
+              <Text style={styles.hint}>{t('age.liveMatureHint')}</Text>
+            </View>
+            <Switch
+              value={mature}
+              onValueChange={setMature}
+              disabled={busy}
+              trackColor={{ false: colors.noirSoft, true: colors.or }}
+              thumbColor={colors.sable}
+              accessibilityLabel={t('age.matureLabel')}
+            />
+          </View>
+        ) : null}
 
         <Text style={styles.label}>{t('live.fieldCategory')}</Text>
         <View style={styles.catRow}>
