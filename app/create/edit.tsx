@@ -56,6 +56,7 @@ import { getFilterOverlayStyle } from '@/constants/filters';
 import { MAX_VIDEO_DURATION_SEC } from '@/constants/publish';
 import { formatSoundTime } from '@/lib/soundSync';
 import { isDraftStorageAvailable } from '@/lib/drafts';
+import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 import { deleteCachedFile } from '@/lib/upload';
 import {
   DEFAULT_STICKER_SIZE,
@@ -146,6 +147,8 @@ export default function CreateEditStep() {
   const [stickerOpen, setStickerOpen] = useState(false);
   const [overlayDragging, setOverlayDragging] = useState(false);
   const selected = overlays.items.find((o) => o.id === selectedId) ?? null;
+  // S7 : pas de sortie pendant la découpe ou l'enregistrement du brouillon.
+  useBlockBackWhile(busy || savingDraft);
 
   // Repère des calques : format réel du média (orientation corrigée).
   const sourceUri = source?.uri ?? null;
@@ -630,7 +633,8 @@ export default function CreateEditStep() {
         <View style={[styles.topBar, { top: insets.top + Spacing.sm }]}>
           <Pressable
             onPress={() => router.back()}
-            style={styles.iconBtn}
+            disabled={busy || savingDraft}
+            style={[styles.iconBtn, (busy || savingDraft) && { opacity: 0.6 }]}
             accessibilityRole="button"
             accessibilityLabel={t('create.editBack')}
           >

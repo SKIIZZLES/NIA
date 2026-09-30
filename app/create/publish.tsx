@@ -22,7 +22,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
@@ -43,6 +43,7 @@ import { importSoundFromDevice } from '@/lib/soundImport';
 import { applyMention, DEFAULT_PUBLISH_OPTIONS } from '@/lib/publishOptions';
 import { probePublishOptionsSupport } from '@/lib/videos';
 import { deleteDraft, isDraftStorageAvailable } from '@/lib/drafts';
+import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 
 export default function CreatePublishStep() {
   const router = useRouter();
@@ -127,6 +128,10 @@ export default function CreatePublishStep() {
   const [forcedSelection, setForcedSelection] = useState<{ start: number; end: number } | undefined>();
 
   const [busy, setBusy] = useState(false);
+  const insets = useSafeAreaInsets();
+  // S7 : le retour Android ne quitte plus l'écran pendant l'envoi (annuler
+  // d'abord) ni pendant l'enregistrement du brouillon.
+  useBlockBackWhile(busy || savingDraft);
   /** Ratio réel d'envoi (0 → 1), null tant qu'aucun octet n'est parti. */
   const [progress, setProgress] = useState<number | null>(null);
   const [progressStage, setProgressStage] = useState<'media' | 'cover'>('media');
@@ -461,11 +466,19 @@ export default function CreatePublishStep() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          // Au-dessus de la barre de navigation Android (bord à bord).
+          { paddingBottom: Spacing.xxl + insets.bottom },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <CreateStepHeader step={3} title={t('create.stepPublishTitle')} />
+        <CreateStepHeader
+          step={3}
+          title={t('create.stepPublishTitle')}
+          disabled={busy || savingDraft}
+        />
 
         <Text style={styles.hint}>
           {isMockFeed ? t('create.subtitleMock') : t('create.subtitleSupabase')}

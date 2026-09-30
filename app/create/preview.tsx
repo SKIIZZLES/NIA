@@ -12,7 +12,7 @@
  */
 import React, { useMemo } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { CreateStepHeader } from '@/components/CreateStepHeader';
@@ -28,6 +28,7 @@ export default function CreateStyleStep() {
   const router = useRouter();
   const colors = useColors();
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const {
     media,
     cover,
@@ -115,7 +116,11 @@ export default function CreateStyleStep() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          // Au-dessus de la barre de navigation Android (bord à bord).
+          { paddingBottom: Spacing.xxl + insets.bottom },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <CreateStepHeader step={2} title={t('create.stepStyleTitle')} />

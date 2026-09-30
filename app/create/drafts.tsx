@@ -19,7 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
@@ -35,6 +35,7 @@ import {
   loadDraft,
   type DraftSummary,
 } from '@/lib/drafts';
+import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 
 function formatDate(ts: number, locale: string): string {
   const d = new Date(ts);
@@ -61,6 +62,9 @@ export default function CreateDraftsScreen() {
   const [items, setItems] = useState<DraftSummary[] | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const available = isDraftStorageAvailable();
+  const insets = useSafeAreaInsets();
+  // S7 : pas de sortie pendant l'ouverture d'un brouillon.
+  useBlockBackWhile(opening != null);
 
   const refresh = useCallback(async () => {
     if (!available) {
@@ -93,6 +97,10 @@ export default function CreateDraftsScreen() {
         }
         restoreDraft(draft);
         router.push('/create/edit');
+      } catch {
+        // S7 : une lecture qui échoue (fichier illisible, stockage plein)
+        // affiche un message au lieu d'un rejet silencieux.
+        Alert.alert(t('drafts.title'), t('drafts.openFailed'));
       } finally {
         setOpening(null);
       }
@@ -252,6 +260,7 @@ export default function CreateDraftsScreen() {
       <View style={styles.header}>
         <Pressable
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
+          disabled={opening != null}
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
@@ -271,7 +280,11 @@ export default function CreateDraftsScreen() {
           data={items}
           keyExtractor={(d) => d.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[
+            styles.list,
+            // Au-dessus de la barre de navigation Android (bord à bord).
+            { paddingBottom: Spacing.xxl + insets.bottom },
+          ]}
           ListEmptyComponent={
             available ? <Text style={styles.empty}>{t('drafts.empty')}</Text> : null
           }
