@@ -15,6 +15,7 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sin
 
 /**
  * Accessoires (A2.0) : objets amusants posés sur le visage, PAS de
@@ -51,9 +52,12 @@ internal object AccessoryCatalog {
     val hinge1X: Float,
     val hinge2X: Float,
     val hingeY: Float,
+    /** Cœur des branches et son épaisseur (unités du viewport). */
     val armColor: Int,
-    /** Épaisseur des branches (unités du viewport). */
     val armWidth: Float,
+    /** Liseré des branches (de chaque côté du cœur). */
+    val armOutline: Int,
+    val armOutlineWidth: Float,
     /** Largeur du dessin tramé une fois pour toutes (px). */
     val rasterW: Int,
   )
@@ -66,8 +70,10 @@ internal object AccessoryCatalog {
       viewportW = 1000f, viewportH = 360f,
       lens1X = 290f, lens2X = 710f, lensY = 175f,
       hinge1X = 40f, hinge2X = 960f, hingeY = 132f,
-      armColor = Color.rgb(0x8B, 0x5A, 0x2B),
-      armWidth = 18f,
+      armColor = Color.rgb(0xE2, 0xC4, 0x9A),
+      armWidth = 22f,
+      armOutline = Color.rgb(0x8B, 0x5A, 0x2B),
+      armOutlineWidth = 6f,
       rasterW = 640,
     ),
   )
@@ -334,17 +340,40 @@ internal class AccessoryPainter {
       ),
     )
     // Branche du côté proche seulement (l'autre passe derrière la tête),
-    // dessinée sous la monture.
+    // dessinée sous la monture. Calée sur la pose (et plus sur le repère
+    // 234 / 454 : point du contour de la joue, trop bas et trop près de la
+    // charnière, la branche y faisait un fil fin qui tombait sur la joue) :
+    // de la charnière vers l'arrière de la tête, longueur = branche réelle
+    // (≈ 1,6 écart des yeux) × sin(lacet), à peine inclinée vers le bas.
     val yawAbs = abs(p.yawDeg)
     if (yawAbs > ARM_MIN_YAW) {
       val near1 = p.yawDeg > 0f
-      pt[0] = if (near1) d.hinge1X else d.hinge2X
+      // Départ un peu en retrait dans le tenon : la jointure reste cachée.
+      pt[0] = if (near1) d.hinge1X + ARM_START_INSET else d.hinge2X - ARM_START_INSET
       pt[1] = d.hingeY
       m.mapPoints(pt, 0, pt, 0, 1)
+      val iod = max(p.iod, 1e-3f)
+      val sgn = if (near1) -1f else 1f
+      var ox = sgn * (p.e2x - p.e1x) / iod + p.downX * ARM_DROOP
+      var oy = sgn * (p.e2y - p.e1y) / iod + p.downY * ARM_DROOP
+      val on = max(hypot(ox, oy), 1e-3f)
+      ox /= on
+      oy /= on
+      val len = ARM_LENGTH_IOD * p.frontalIod * sin(Math.toRadians(yawAbs.toDouble())).toFloat() +
+        ARM_START_INSET * vs
+      pt[2] = pt[0] + ox * len
+      pt[3] = pt[1] + oy * len
+      val alpha = (255 * min(1f, (yawAbs - ARM_MIN_YAW) / ARM_FADE)).toInt()
+      // Liseré bronze puis cœur sable (couleurs de la monture) : visible
+      // sur toutes les carnations, comme le tenon.
+      armPaint.color = d.armOutline
+      armPaint.alpha = alpha
+      armPaint.strokeWidth = (d.armWidth + 2f * d.armOutlineWidth) * vs
+      canvas.drawLine(pt[0], pt[1], pt[2], pt[3], armPaint)
       armPaint.color = d.armColor
-      armPaint.alpha = (255 * min(1f, (yawAbs - ARM_MIN_YAW) / ARM_FADE)).toInt()
+      armPaint.alpha = alpha
       armPaint.strokeWidth = d.armWidth * vs
-      canvas.drawLine(pt[0], pt[1], if (near1) p.ear1x else p.ear2x, if (near1) p.ear1y else p.ear2y, armPaint)
+      canvas.drawLine(pt[0], pt[1], pt[2], pt[3], armPaint)
     }
     canvas.save()
     canvas.concat(m)
@@ -372,9 +401,19 @@ internal class AccessoryPainter {
   companion object {
     /** Au-delà, la monture serait de profil : objet caché. */
     const val MAX_YAW = 55f
-    /** Branche visible à partir de 10° de lacet, pleine à 20°. */
-    const val ARM_MIN_YAW = 10f
-    const val ARM_FADE = 10f
+    /**
+     * Branche visible à partir de 8° de lacet (matrice de pose), pleine à
+     * 14° : la matrice MediaPipe sous-estime le lacet (vidéo de test : 21°
+     * au plus pour une tête tournée « de 30–40° » à l'œil).
+     */
+    const val ARM_MIN_YAW = 8f
+    const val ARM_FADE = 6f
+    /** Longueur d'une branche (charnière → oreille), en écarts des yeux de face (≈ 100 mm / 63 mm). */
+    const val ARM_LENGTH_IOD = 1.6f
+    /** Inclinaison vers le bas (tangente) : la branche descend un peu vers l'oreille. */
+    const val ARM_DROOP = 0.12f
+    /** Départ dans le tenon (unités du viewport) : jointure cachée sous la monture. */
+    const val ARM_START_INSET = 30f
     const val MIN_PITCH_COS = 0.6f
   }
 }
