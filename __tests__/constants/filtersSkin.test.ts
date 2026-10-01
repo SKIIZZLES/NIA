@@ -7,8 +7,8 @@
  * aucune des 10 teintes Monk ne s'éclaircit, quelle que soit l'intensité.
  *
  * Corrigés le 01/10/2026 (approuvés) : Glow Sable, Sable, Doux, Noir & Sable,
- * Éclat. Les autres filtres qui éclaircissent encore sont listés ci-dessous,
- * À DÉCIDER : la liste ne peut que rétrécir.
+ * Éclat. Puis les 17 autres (approuvés le même jour) : AUCUN filtre ne peut
+ * éclaircir une teinte Monk, à aucune intensité (tous vérifiés ci-dessous).
  */
 import { FILTERS, getFilterById, getFilterOverlayStyle } from '@/constants/filters';
 import { applyBakeMatrix, filterBakeMatrix } from '@/lib/overlayBake';
@@ -37,13 +37,6 @@ function monkLift(id: string, intensity?: number): number[] {
 }
 
 const FIXED = ['beaute-glow', 'nia-sable', 'beaute-soft', 'fun-bw', 'beaute-eclat'] as const;
-
-/** Éclaircissent encore les peaux foncées : non approuvés au 01/10/2026, à décider. */
-const PENDING_LIGHTENING = [
-  'lumiere-golden', 'lumiere-softbox', 'lumiere-contre', 'portrait-peau', 'culture-indigo', 'culture-batik',
-  'culture-kente', 'afrique-sahel', 'afrique-baobab', 'afrique-terre', 'diaspora-metro', 'diaspora-neon',
-  'diaspora-bridge', 'fun-pop', 'fun-sunset', 'nia-original', 'nia-ocre',
-];
 
 describe.each(FIXED.map((id) => [id] as const))('%s : jamais d’éclaircissement', (id) => {
   const f = getFilterById(id);
@@ -101,16 +94,34 @@ describe('caractère gardé (gris moyen filtré)', () => {
   });
 });
 
-describe('tous les filtres', () => {
-  it('aucun filtre n’éclaircit une teinte Monk, sauf la liste « à décider »', () => {
-    const lightening = FILTERS.filter((f) => Math.max(...monkLift(f.id)) > 1e-6).map((f) => f.id);
-    expect(lightening.filter((id) => !PENDING_LIGHTENING.includes(id))).toEqual([]);
+describe.each(FILTERS.map((f) => [f.name, f.id] as const))('tous les filtres — %s', (_name, id) => {
+  it('aucune teinte Monk ne s’éclaircit, à toute intensité (0 → 1 et réglage par défaut)', () => {
+    for (const d of monkLift(id)) expect(d).toBeLessThanOrEqual(1e-6);
+    for (const k of [0, 0.25, 0.5, 0.75, 1]) for (const d of monkLift(id, k)) expect(d).toBeLessThanOrEqual(1e-6);
   });
 
-  it('la liste « à décider » ne contient que des filtres existants qui éclaircissent encore (à retirer une fois corrigés)', () => {
-    for (const id of PENDING_LIGHTENING) {
-      expect(getFilterById(id)).toBeTruthy();
-      expect(Math.max(...monkLift(id))).toBeGreaterThan(1e-6);
+  it('voile éventuel plus sombre que MST 10', () => {
+    const wash = getFilterOverlayStyle(getFilterById(id) ?? null);
+    if (wash) expect(luma(rgb(wash.backgroundColor))).toBeLessThan(luma(rgb(MONK[9])));
+  });
+});
+
+describe('teintes distinctes gardées', () => {
+  const tint = (id: string) => {
+    const [r, g, b] = applyBakeMatrix(filterBakeMatrix(getFilterById(id)) as number[], [0.5, 0.5, 0.5]);
+    return { warm: r - b, green: g - (r + b) / 2 };
+  };
+  it('chauds (ocre, sable, rouges) restent chauds ; bleus et violets restent froids ; Baobab reste vert', () => {
+    for (const id of ['fun-pop', 'lumiere-golden', 'nia-ocre', 'nia-original', 'afrique-sahel', 'portrait-peau', 'culture-kente', 'fun-sunset', 'afrique-terre', 'culture-batik', 'lumiere-contre']) {
+      expect(tint(id).warm).toBeGreaterThan(0.015);
     }
+    for (const id of ['culture-indigo', 'diaspora-metro', 'diaspora-bridge', 'diaspora-neon']) expect(tint(id).warm).toBeLessThan(-0.005);
+    expect(tint('afrique-baobab').green).toBeGreaterThan(0.005);
+  });
+  it('famille ocre : même teinte, forces dans le même ordre qu’avant (Pop > Heure dorée > Ocre > NIA Original)', () => {
+    const op = (id: string) => getFilterOverlayStyle(getFilterById(id) ?? null)!.opacity;
+    expect(op('fun-pop')).toBeGreaterThan(op('lumiere-golden'));
+    expect(op('lumiere-golden')).toBeGreaterThan(op('nia-ocre'));
+    expect(op('nia-ocre')).toBeGreaterThan(op('nia-original'));
   });
 });

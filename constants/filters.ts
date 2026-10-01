@@ -180,34 +180,40 @@ export const FILTERS: FilterDefinition[] = [
 
   // —— Lumière ——
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #D17F2A à 31 % (+31,3/255 sur MST 10).
     id: 'lumiere-golden',
     name: 'Heure dorée',
     category: 'lumiere',
     previewColor: '#C9A227',
     intensity: 0.6,
     type: 'overlay',
-    overlayColor: '#D17F2A',
-    overlayOpacity: 0.28,
+    overlayColor: '#391F03',
+    overlayOpacity: 0.204,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #FFF8EE à 18 % (+38,2/255 sur MST 10).
     id: 'lumiere-softbox',
     name: 'Softbox',
     category: 'lumiere',
     previewColor: '#FFF5E6',
     intensity: 0.4,
     type: 'overlay',
-    overlayColor: '#FFF8EE',
+    overlayColor: '#24221F',
     overlayOpacity: 0.2,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #3D2914 à 25 % (+1,7/255 sur MST 10).
     id: 'lumiere-contre',
     name: 'Contre-jour',
     category: 'lumiere',
     previewColor: '#8B6914',
     intensity: 0.5,
     type: 'color-matrix',
-    overlayColor: '#3D2914',
-    overlayOpacity: 0.25,
+    overlayColor: '#32200D',
+    overlayOpacity: 0.239,
     matrix: FILM_MATRIX,
   },
 
@@ -234,134 +240,158 @@ export const FILTERS: FilterDefinition[] = [
     overlayOpacity: 0.32,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #C4875A à 20 % (+21,6/255 sur MST 10).
     id: 'portrait-peau',
     name: 'Teint chaud',
     category: 'portrait',
     previewColor: '#C4875A',
     intensity: 0.5,
     type: 'overlay',
-    overlayColor: '#C4875A',
-    overlayOpacity: 0.2,
+    overlayColor: '#3B1E08',
+    overlayOpacity: 0.187,
   },
 
   // —— Culture ——
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #1E2A4A à 32 % (+1,6/255 sur MST 10).
     id: 'culture-indigo',
     name: 'Indigo',
     category: 'culture',
     previewColor: '#2C3E6B',
     intensity: 0.55,
     type: 'overlay',
-    overlayColor: '#1E2A4A',
-    overlayOpacity: 0.3,
+    overlayColor: '#182340',
+    overlayOpacity: 0.29,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #A33227 à 22 % (+8,0/255 sur MST 10).
     id: 'culture-batik',
     name: 'Batik',
     category: 'culture',
     previewColor: '#8B3A2A',
     intensity: 0.5,
     type: 'overlay',
-    overlayColor: '#A33227',
-    overlayOpacity: 0.22,
+    overlayColor: '#60120B',
+    overlayOpacity: 0.194,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #C9A227 à 17 % (+21,3/255 sur MST 10).
     id: 'culture-kente',
     name: 'Kente',
     category: 'culture',
     previewColor: '#C9A227',
     intensity: 0.45,
     type: 'overlay',
-    overlayColor: '#C9A227',
+    overlayColor: '#2C2303',
     overlayOpacity: 0.18,
   },
 
   // —— Afrique ——
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #C9A066 à 31 % (+39,3/255 sur MST 10).
     id: 'afrique-sahel',
     name: 'Sahel',
     category: 'afrique',
     previewColor: '#D4A574',
     intensity: 0.6,
     type: 'overlay',
-    overlayColor: '#C9A066',
-    overlayOpacity: 0.28,
+    overlayColor: '#322108',
+    overlayOpacity: 0.204,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #1B4D3E à 25 % (+7,1/255 sur MST 10).
     id: 'afrique-baobab',
     name: 'Baobab',
     category: 'afrique',
     previewColor: '#1B4D3E',
     intensity: 0.5,
     type: 'overlay',
-    overlayColor: '#1B4D3E',
-    overlayOpacity: 0.25,
+    overlayColor: '#072B20',
+    overlayOpacity: 0.212,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #A33227 à 25 % (+9,2/255 sur MST 10).
     id: 'afrique-terre',
     name: 'Terre rouge',
     category: 'afrique',
     previewColor: '#A33227',
     intensity: 0.55,
     type: 'overlay',
-    overlayColor: '#A33227',
-    overlayOpacity: 0.24,
+    overlayColor: '#60120B',
+    overlayOpacity: 0.195,
   },
 
   // —— Diaspora ——
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #2D3748 à 22 % (+3,8/255 sur MST 10).
     id: 'diaspora-metro',
     name: 'Métro',
     category: 'diaspora',
     previewColor: '#4A5568',
     intensity: 0.5,
     type: 'color-matrix',
-    overlayColor: '#2D3748',
-    overlayOpacity: 0.22,
+    overlayColor: '#1B2331',
+    overlayOpacity: 0.199,
     matrix: COOL_MATRIX,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #5B3A8C à 27 % (+9,1/255 sur MST 10).
     id: 'diaspora-neon',
     name: 'Néon nuit',
     category: 'diaspora',
     previewColor: '#6B4C9A',
     intensity: 0.45,
     type: 'overlay',
-    overlayColor: '#5B3A8C',
-    overlayOpacity: 0.28,
+    overlayColor: '#301953',
+    overlayOpacity: 0.229,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #4A5568 à 16 % (+7,7/255 sur MST 10).
     id: 'diaspora-bridge',
     name: 'Pont',
     category: 'diaspora',
     previewColor: '#718096',
     intensity: 0.4,
     type: 'color-matrix',
-    overlayColor: '#4A5568',
+    overlayColor: '#1C232F',
     overlayOpacity: 0.18,
     matrix: FILM_MATRIX,
   },
 
   // —— Fun ——
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #D17F2A à 40 % (+40,9/255 sur MST 10).
     id: 'fun-pop',
     name: 'Pop Ocre',
     category: 'fun',
     previewColor: '#FF8C42',
     intensity: 0.65,
     type: 'overlay',
-    overlayColor: '#D17F2A',
-    overlayOpacity: 0.35,
+    overlayColor: '#391F03',
+    overlayOpacity: 0.224,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #E85D4C à 32 % (+26,6/255 sur MST 10).
     id: 'fun-sunset',
     name: 'Sunset',
     category: 'fun',
     previewColor: '#E85D4C',
     intensity: 0.55,
     type: 'overlay',
-    overlayColor: '#E85D4C',
-    overlayOpacity: 0.3,
+    overlayColor: '#5D130A',
+    overlayOpacity: 0.216,
   },
   {
     id: 'fun-bw',
@@ -386,14 +416,16 @@ export const FILTERS: FilterDefinition[] = [
 
   // —— NIA Originals ——
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #D17F2A à 20 % (+20,3/255 sur MST 10).
     id: 'nia-original',
     name: 'NIA Original',
     category: 'nia',
     previewColor: '#D17F2A',
     intensity: 0.5,
     type: 'overlay',
-    overlayColor: '#D17F2A',
-    overlayOpacity: 0.2,
+    overlayColor: '#391F03',
+    overlayOpacity: 0.187,
   },
   {
     id: 'nia-sable',
@@ -419,14 +451,16 @@ export const FILTERS: FilterDefinition[] = [
     overlayOpacity: 0.35,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10, même teinte ;
+    // avant #D17F2A à 24 % (+24,6/255 sur MST 10).
     id: 'nia-ocre',
     name: 'Ocre',
     category: 'nia',
     previewColor: '#D17F2A',
     intensity: 0.6,
     type: 'color-matrix',
-    overlayColor: '#D17F2A',
-    overlayOpacity: 0.22,
+    overlayColor: '#391F03',
+    overlayOpacity: 0.183,
     matrix: WARM_MATRIX,
   },
 ];
