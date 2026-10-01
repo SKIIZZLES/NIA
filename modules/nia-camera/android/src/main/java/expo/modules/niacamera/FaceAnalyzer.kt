@@ -198,6 +198,8 @@ internal class FaceAnalyzer(
     val coreRect: RectF,
     /** Boîte BlazeFace telle quelle (tampon) : contrôle de couverture du masque. */
     val faceBox: RectF,
+    /** Ovale de la tête (jalon 2f, Flou et Pixels). */
+    val head: HeadOval,
   )
 
   /** Visage d'une passe de repères : vitesse propre du maillage à la passe suivante. */
@@ -324,7 +326,7 @@ internal class FaceAnalyzer(
 
         val patches = ArrayList<FacePatch>(pass.faces.size)
         for (d in pass.faces) {
-          makePatch(buffer, d.bufferRect, w, h, d.roll, d.coreRect, d.faceBox)?.let { patches.add(it) }
+          makePatch(buffer, d.bufferRect, w, h, d.roll, d.coreRect, d.faceBox, if (landmarksWanted) null else d.head)?.let { patches.add(it) }
         }
         updateTracks(ts, patches)
         val frameTiny = shrink(buffer, Rect(0, 0, w, h), FRAME_CELLS)
@@ -430,13 +432,20 @@ internal class FaceAnalyzer(
       if (bb.width() <= 1f || bb.height() <= 1f) continue
       // Inclinaison des yeux (points clés 0 et 1 de BlazeFace), dans le tampon.
       var roll = Float.NaN
+      var uprightRoll = Float.NaN
       val kps = d.keypoints().orElse(null)
       if (kps != null && kps.size >= 2) {
         val pts = floatArrayOf(kps[0].x() * uw, kps[0].y() * uh, kps[1].x() * uw, kps[1].y() * uh)
+        uprightRoll = Angles.lineAngle(pts[2] - pts[0], pts[3] - pts[1])
         up.toBuffer.mapPoints(pts)
         roll = Angles.lineAngle(pts[2] - pts[0], pts[3] - pts[1])
       }
-      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score, bb, roll, coreToBuffer(bb, up.toBuffer), RectF(bb).also { up.toBuffer.mapRect(it) }))
+      faces.add(
+        Detection(
+          expandToBuffer(bb, up.toBuffer), score, bb, roll, coreToBuffer(bb, up.toBuffer),
+          RectF(bb).also { up.toBuffer.mapRect(it) }, HeadOval.of(bb, uprightRoll, up.toBuffer),
+        ),
+      )
     }
     return Pass(faces, raw, best, detectMs)
   }
@@ -486,10 +495,41 @@ internal class FaceAnalyzer(
     roll: Float = Float.NaN,
     core: RectF? = null,
     face: RectF? = null,
+    head: HeadOval? = null,
   ): FacePatch? {
     val crop = clampRect(rect, w, h) ?: return null
     val blur = shrink(buffer, crop, BLUR_CELLS)
-    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll, core, face)
+    var headBlur: MaskSprite.Sprite? = null
+    var headPixel: MaskSprite.Sprite? = null
+    var headOutline: FloatArray? = null
+    if (head != null) {
+      // Ovale de la tête (Flou, Pixels) : vignettes de sa zone (dans l'image),
+      // cases de la même taille qu'avant (tirées de la zone `rect`).
+      val outline = head.polygon()
+      val hb = MaskSprite.boundsOf(outline)
+      // Recadrage : la forme ET son fondu (au-dehors), pour que le flou
+      // n'ait aucun bord droit visible dans l'ovale.
+      val pad = HeadOval.HEAD_CROP_PAD * head.faceWidthBuffer
+      val hc = hb?.let { clampRect(RectF(it.left - pad, it.top - pad, it.right + pad, it.bottom + pad), w, h) }
+      if (hb != null && hc != null) {
+        val long = max(hc.width(), hc.height()).toFloat()
+        val patchLong = max(rect.width(), rect.height())
+        val blurCells = max(3, (long / (patchLong / BLUR_CELLS)).roundToInt())
+        val pixelCells = max(4, (long / (patchLong / PIXEL_CELLS)).roundToInt())
+        val tinyBlur = shrink(buffer, hc, blurCells)
+        val tinyPixel = shrink(buffer, hc, pixelCells)
+        headBlur = MaskSprite.headSprite(tinyBlur, hc, head, MaskSprite.HEAD_BLUR_SIDE, false)
+        val pixelSide = (max(hb.width(), hb.height()) / (long / pixelCells) * MaskSprite.HEAD_PIXEL_PER_CELL).roundToInt()
+        headPixel = MaskSprite.headSprite(tinyPixel, hc, head, pixelSide.coerceIn(32, 256), true)
+        tinyBlur.recycle()
+        tinyPixel.recycle()
+        headOutline = outline
+      }
+    }
+    return FacePatch(
+      rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll, core, face,
+      headBlur, headPixel, headOutline,
+    )
   }
 
   /**

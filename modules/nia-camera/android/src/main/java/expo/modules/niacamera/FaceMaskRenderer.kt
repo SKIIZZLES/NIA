@@ -181,7 +181,8 @@ internal class FaceMaskRenderer(
           landmarkAgeSum += item.landmarkAgeNs
           if (item.maskScale > 0f) haloRatioSum += (item.haloScale / item.maskScale).toDouble()
         } else if (pixelate) {
-          canvas.drawBitmap(p.pixel, null, dst, pixelPaint)
+          val head = p.headPixel
+          if (head != null) drawHead(canvas, head, item, pixelPaint, outline) else canvas.drawBitmap(p.pixel, null, dst, pixelPaint)
         } else if (fx.usesLandmarks) {
           // Repli des masques (repères absents / écartés) : toute la zone,
           // en ellipse plumée (plus de grand rectangle flou).
@@ -192,8 +193,9 @@ internal class FaceMaskRenderer(
           canvas.drawBitmap(p.blurOval, null, coreRect, blurPaint)
           if (outline) stroke(canvas, dst, DEBUG_FALLBACK, 1f)
         } else {
-          // Flou.
-          canvas.drawBitmap(p.blur, null, dst, blurPaint)
+          // Flou : ovale de la tête (jalon 2f) ; l'ancien rectangle en repli.
+          val head = p.headBlur
+          if (head != null) drawHead(canvas, head, item, blurPaint, outline) else canvas.drawBitmap(p.blur, null, dst, blurPaint)
         }
       }
       if (lastSrc != null) canvas.restore()
@@ -223,6 +225,21 @@ internal class FaceMaskRenderer(
     src.sensorToBuffer.invert(inverse)
     tmpMatrix.preConcat(inverse)
     return tmpMatrix
+  }
+
+  /**
+   * Ovale de la tête (Flou, Pixels) : sprite déjà découpé (transparent hors
+   * de la forme), déplacé et agrandi comme la zone (prédiction, croissance,
+   * marge de vitesse) autour du centre de la zone.
+   */
+  private fun drawHead(canvas: android.graphics.Canvas, s: MaskSprite.Sprite, item: FaceMaskPolicy.Item, paint: Paint, outline: Boolean) {
+    val p = item.patch
+    canvas.save()
+    canvas.translate(item.dx, item.dy)
+    canvas.scale(item.headScale, item.headScale, p.rect.centerX(), p.rect.centerY())
+    canvas.drawBitmap(s.bitmap, s.src, s.rect, paint)
+    if (outline) strokePoly(canvas, p.headOutline, DEBUG_HALO, item.headScale)
+    canvas.restore()
   }
 
   /** Contrôle : ellipse inscrite dans `r` (trait ~1,5 px du tampon d'analyse). */

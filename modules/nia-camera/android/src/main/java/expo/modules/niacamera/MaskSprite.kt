@@ -39,6 +39,10 @@ internal object MaskSprite {
   const val HALO_SIDE = 72
   /** Cases du flou du halo (comme les vignettes de flou BlazeFace). */
   const val HALO_CELLS = 5
+  /** Ovale de la tête (2f) : plus grand côté du sprite de flou ; px du sprite par case de pixels. */
+  const val HEAD_BLUR_SIDE = 96
+  const val HEAD_PIXEL_PER_CELL = 8
+  const val HEAD_MAX_SIDE = 400
 
   class Sprite(val bitmap: Bitmap, val src: Rect, val rect: RectF)
 
@@ -87,13 +91,13 @@ internal object MaskSprite {
    * droits (vu au téléphone ; vérifié avec Skia : 10 000 px opaques sur
    * 10 000).
    */
-  private fun blurFill(blur: Bitmap, dst: RectF, featherPx: Float): Paint {
+  private fun blurFill(blur: Bitmap, dst: RectF, featherPx: Float, filter: Boolean = true): Paint {
     val m = Matrix().apply {
       setRectToRect(RectF(0f, 0f, blur.width.toFloat(), blur.height.toFloat()), dst, Matrix.ScaleToFit.FILL)
     }
     return Paint().apply {
       isAntiAlias = true
-      isFilterBitmap = true
+      isFilterBitmap = filter
       shader = BitmapShader(blur, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { setLocalMatrix(m) }
       if (featherPx > 0f) maskFilter = BlurMaskFilter(featherPx, BlurMaskFilter.Blur.NORMAL)
     }
@@ -259,7 +263,45 @@ internal object MaskSprite {
     return Sprite(bmp, Rect(0, 0, bw, bh), bounds)
   }
 
-  private fun boundsOf(pts: FloatArray): RectF? {
+  /**
+   * Ovale de la tête (jalon 2f, modes Flou et Pixels) en sprite, sur le fil
+   * d'analyse. `tiny` : vignette de flou ou de pixels de `crop` (tampon).
+   * Le flou est PEINT dans la forme (shader + BlurMaskFilter, comme au 2e ;
+   * jamais un dessin plein découpé ensuite) : hors de la forme, le sprite est
+   * transparent. Le chemin est la forme de sécurité agrandie de 2,33 σ + 1 px :
+   * l'opacité y est ≥ 99 % partout dans la forme de sécurité, et le fondu est
+   * entièrement au-dehors. `side` : plus grand côté de la forme, en px du
+   * sprite ; `nearest` : pixels nets (mode Pixels).
+   */
+  fun headSprite(tiny: Bitmap, crop: Rect, head: HeadOval, side: Int, nearest: Boolean): Sprite? {
+    val b0 = boundsOf(head.polygon()) ?: return null
+    val k = side / max(b0.width(), b0.height())
+    val rS = HeadOval.HEAD_FEATHER * head.faceWidthBuffer * k
+    val sigma = rS * 0.57735f + 0.5f
+    val grow = (2.33f * sigma + 1f) / k
+    val drawn = head.polygon(grow / head.bufferScale)
+    val b = boundsOf(drawn) ?: return null
+    val margin = (3f * sigma + 2f) / k
+    b.inset(-margin, -margin)
+    val bw = max(2, ceil(b.width() * k).toInt())
+    val bh = max(2, ceil(b.height() * k).toInt())
+    if (bw > HEAD_MAX_SIDE || bh > HEAD_MAX_SIDE) return null
+    val pts = FloatArray(drawn.size)
+    for (i in drawn.indices step 2) {
+      pts[i] = (drawn[i] - b.left) * k
+      pts[i + 1] = (drawn[i + 1] - b.top) * k
+    }
+    val path = Path()
+    path.moveTo(pts[0], pts[1])
+    for (i in 2 until pts.size step 2) path.lineTo(pts[i], pts[i + 1])
+    path.close()
+    val dst = RectF((crop.left - b.left) * k, (crop.top - b.top) * k, (crop.right - b.left) * k, (crop.bottom - b.top) * k)
+    val bmp = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+    Canvas(bmp).drawPath(path, blurFill(tiny, dst, rS, !nearest))
+    return Sprite(bmp, Rect(0, 0, bw, bh), RectF(b.left, b.top, b.left + bw / k, b.top + bh / k))
+  }
+
+  fun boundsOf(pts: FloatArray): RectF? {
     if (pts.size < 6) return null
     var x0 = Float.MAX_VALUE
     var y0 = Float.MAX_VALUE

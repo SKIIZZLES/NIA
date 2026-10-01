@@ -60,6 +60,15 @@ internal object FaceMaskPolicy {
   const val MAX_SCALE = 1.8f
   /** Déplacement prédit ≤ 60 % de la largeur du visage. */
   const val MAX_SHIFT = 0.6f
+  /**
+   * Ovale de la tête (jalon 2f) : + 15 % par largeur de visage / s au-delà de
+   * 0,5 (vitesse lissée de la boîte), en plus de la croissance commune. Le
+   * rectangle protégeait les gestes brusques par ses coins ; l'ovale, par
+   * cette marge. Hors ligne, avec une analyse vieille de 120 ms : aucune image
+   * où le maillage du visage sort de l'ovale (2 avec le rectangle de 2e).
+   */
+  const val HEAD_SPEED_GROWTH = 0.15f
+  const val HEAD_SPEED_DEAD = 0.5f
   /** Repères « décrochés » : centre à plus de 30 % de la largeur, taille ±35 %. */
   const val MOVED_FRACTION = 0.3f
   const val SIZE_TOLERANCE = 0.35f
@@ -110,6 +119,8 @@ internal object FaceMaskPolicy {
     val haloScale: Float,
     /** Âge des repères utilisés (ns), -1 sans masque. */
     val landmarkAgeNs: Long,
+    /** Ovale de la tête (Flou, Pixels) : `scale` + marge de vitesse (jalon 2f). */
+    val headScale: Float = scale,
   )
 
   class Plan(
@@ -200,6 +211,9 @@ internal object FaceMaskPolicy {
         }
         val cx = p.rect.centerX() + dx
         val cy = p.rect.centerY() + dy
+        val headFaceSide = p.face?.let { max(it.width(), it.height()) } ?: (w / 1.6f)
+        val headSpeed = hypot(p.vx, p.vy) / max(headFaceSide, 1f)
+        val headScale = min(MAX_SCALE, scale * (1f + HEAD_SPEED_GROWTH * max(0f, headSpeed - HEAD_SPEED_DEAD)))
         var att = if (wantMask) attach(src, p, results, landmarks, effect) else null
         var maskCx = 0f
         var maskCy = 0f
@@ -232,6 +246,7 @@ internal object FaceMaskPolicy {
             att?.rotation ?: 0f,
             haloScale,
             if (att != null) lmAge else -1L,
+            headScale,
           ),
         )
       }
@@ -452,6 +467,14 @@ internal class FacePatch(
   val core: RectF? = null,
   /** Boîte BlazeFace telle quelle (tampon) : le masque posé doit la couvrir. */
   val face: RectF? = null,
+  /**
+   * Ovale de la tête (jalon 2f, modes Flou et Pixels) : sprites (flou peint
+   * dans la forme, pixels nets dans la forme) et contour de sécurité (tampon).
+   * Null : ancien rectangle (repli).
+   */
+  val headBlur: MaskSprite.Sprite? = null,
+  val headPixel: MaskSprite.Sprite? = null,
+  val headOutline: FloatArray? = null,
 ) {
   /** Vitesse lissée du centre et de la largeur (px/s), fixée avant publication. */
   var vx = 0f
