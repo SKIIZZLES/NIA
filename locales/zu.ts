@@ -59,14 +59,6 @@ const zu: TranslationKeys = {
     hintMock: 'Imodi yokulinganisa: iseshini yendawo (Expo Go noma env engekhoyo)',
     hintMissingId: 'Setha EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Qhubeka nge-Snapchat',
-    fail: 'Ukungena nge-Snapchat kuhlulekile',
-    alertTitle: 'Snapchat',
-    hintMock: 'Imodi yokulinganisa: iseshini yendawo (Expo Go noma env engekhoyo)',
-    hintMissingId: 'Setha EXPO_PUBLIC_SNAP_CLIENT_ID (bona SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Lungisa i-Snap Kit + thumela umsebenzi we-snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Ukufinyelela kwikhamera',
     permissionBody: 'I-NIA idinga ikhamera ukuze iqophe ividiyo yakho.',

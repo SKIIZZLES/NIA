@@ -123,7 +123,7 @@ Aucun `createSignedUrl` dans le code ; 16 appels `getPublicUrl`.
 | videos | `{uid}/series/{ts}.{ext}` | image | `series.cover_path` (series.ts:262) | auteur | `.upload` (series.ts:242, 248) | oui |
 | videos | `{uid}/live/{ts}.{ext}` | image | `live_streams.thumbnail_path` (live.ts:288) | auteur | `.upload` (live.ts:269, 275) | oui |
 | (aucun) | — | repost | `videos.storage_path` / `cover_path` **copiés** depuis l'original (reposts.ts:125, 128) | reposteur (ligne), auteur original (fichier) | pas d'upload | fichier sous le `{uid}/` de l'auteur original : purgé seulement si c'est lui qui supprime son compte. La ligne du reposteur est alors supprimée par 014. |
-| (aucun) | — | avatar | `profiles.avatar_url` | — | **aucun upload** : URL externe (photo Google, Snapchat ou `i.pravatar.cc`), posée par `handle_new_user` (001:91-99) et `AuthContext.tsx:145-150, 175-181` | rien à purger ; la ligne `profiles` part par cascade |
+| (aucun) | — | avatar | `profiles.avatar_url` | — | **aucun upload** : URL externe (photo Google, Snapchat pour les anciens comptes, ou `i.pravatar.cc`), posée par `handle_new_user` (001:91-99) et `AuthContext.tsx:145-150, 175-181` | rien à purger ; la ligne `profiles` part par cascade |
 
 ## Ce que supprime `delete_own_account()` (014)
 

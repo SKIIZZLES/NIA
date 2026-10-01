@@ -59,14 +59,6 @@ const ig: TranslationKeys = {
     hintMock: 'Ọnọdụ mock: nnọkọ mpaghara (Expo Go ma ọ bụ env na-efu)',
     hintMissingId: 'Tọọ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Gaa n\'ihu na Snapchat',
-    fail: 'Ịbanye na Snapchat dara',
-    alertTitle: 'Snapchat',
-    hintMock: 'Ọnọdụ mock: nnọkọ mpaghara (Expo Go ma ọ bụ env na-efu)',
-    hintMissingId: 'Tọọ EXPO_PUBLIC_SNAP_CLIENT_ID (lee SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Hazie Snap Kit + bunye ọrụ snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Ohere kamera',
     permissionBody: 'NIA chọrọ kamera iji see vidiyo gị.',

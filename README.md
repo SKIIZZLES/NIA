@@ -12,7 +12,7 @@ Application mobile de vidéos verticales courtes centrée sur les contenus, cult
 
 - EAS preview/production : Supabase **réel** si `EXPO_PUBLIC_SUPABASE_*` sont définies (sauf `EXPO_PUBLIC_USE_MOCK=1`). Voir **SUPABASE.md**.
 - Google Sign-In : `@react-native-google-signin/google-signin` + `signInWithIdToken` — voir **GOOGLE_AUTH.md** (projet Google Cloud **NIA APP**). Nouveau build EAS requis.
-- Snapchat Login : OAuth Login Kit (`expo-auth-session`) + Edge Function `snapchat-auth` — voir **SNAPCHAT_AUTH.md** (kit.snapchat.com). Rebuild EAS en général **non** requis si scheme `nia` déjà présent.
+- Connexion Snapchat : **retirée** (1er octobre 2026). Seuls Google et l’e-mail / mot de passe restent.
 - Video playback uses **`expo-video`** (SDK 57); `expo-av` is not used.
 
 ---

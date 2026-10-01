@@ -35,7 +35,6 @@ import {
 import { checkText, isTextRefusedError } from '@/lib/textFilter';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
-import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
 import { PaletteScope } from '@/context/ThemeContext';
 import { ORIGINAL_COLORS } from '@/constants/themes';
 
@@ -62,7 +61,7 @@ function RegisterScreenBody() {
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async () => {
-    // Domaine réservé aux comptes Snapchat : refusé avant tout appel réseau.
+    // Domaine réservé aux anciens comptes Snapchat : refusé avant tout appel réseau.
     if (isReservedSignupEmail(email)) {
       Alert.alert(t('common.error'), t('safety.reservedEmail'));
       return;
@@ -169,11 +168,10 @@ function RegisterScreenBody() {
         style={{ marginTop: Spacing.lg }}
       />
       <GoogleSignInButton />
-      <SnapchatSignInButton />
 
       {/*
         Les deux textes que l'utilisateur accepte doivent etre lisibles avant
-        la creation du compte, pas seulement apres. Snap comme Google exigent
+        la creation du compte, pas seulement apres. Google Play exige
         que les CGU soient atteignables ; les afficher ici est le seul endroit
         ou la personne les voit au moment ou elle s'engage.
       */}

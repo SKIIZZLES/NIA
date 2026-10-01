@@ -15,12 +15,6 @@ import {
   getGoogleIdToken,
   signInWithGoogleIdToken,
 } from '@/lib/googleAuth';
-import {
-  exchangeSnapchatCodeForSession,
-  isSnapchatAuthConfigured,
-  promptSnapchatOAuth,
-  setSupabaseSessionFromSnapchat,
-} from '@/lib/snapchatAuth';
 
 /** Local auth shapes — no runtime/value import from @supabase/supabase-js. */
 type AuthUser = {
@@ -53,7 +47,6 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, username?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInWithSnapchat: () => Promise<void>;
   signOut: () => Promise<void>;
   /**
    * Met à jour bio / display_name (mock local ou profiles). 018 : le serveur
@@ -334,43 +327,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [persistMock]);
 
-  const signInWithSnapchat = useCallback(async () => {
-    const sb = getSupabase();
-    if (!sb || !isSupabaseConfigured) {
-      // Mock / Expo Go : session locale « Snapchat »
-      if (!isSnapchatAuthConfigured()) {
-        // Toujours permettre la démo UI en mock
-      }
-      const next = mockUserFromEmail(
-        `snapchat_${Date.now()}@users.nia.app`,
-        `snap${Date.now().toString(36).slice(-6)}`,
-      );
-      next.displayName = 'Snapchat User';
-      await persistMock(next);
-      return;
-    }
-
-    if (!isSnapchatAuthConfigured()) {
-      throw new Error(
-        'Configure Snap Kit + deploy function — EXPO_PUBLIC_SNAP_CLIENT_ID manquant (voir SNAPCHAT_AUTH.md).',
-      );
-    }
-
-    const oauth = await promptSnapchatOAuth();
-    const tokens = await exchangeSnapchatCodeForSession(oauth);
-    await setSupabaseSessionFromSnapchat(tokens);
-
-    const { data } = await sb.auth.getSession();
-    const sessionUser = data.session?.user;
-    if (sessionUser) {
-      const profile = await ensureProfileRow(sessionUser, {
-        name: tokens.displayName,
-        photo: tokens.avatarUrl,
-      });
-      setUser(profileToUser(sessionUser, profile));
-    }
-  }, [persistMock]);
-
   const updateProfile = useCallback(
     async (patch: { displayName?: string; bio?: string }) => {
       if (!user) throw new Error('Connectez-vous pour modifier le profil.');
@@ -439,12 +395,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       signInWithGoogle,
-      signInWithSnapchat,
       signOut,
       updateProfile,
       isMockAuth: mockMode,
     }),
-    [user, loading, signIn, signUp, signInWithGoogle, signInWithSnapchat, signOut, updateProfile, mockMode],
+    [user, loading, signIn, signUp, signInWithGoogle, signOut, updateProfile, mockMode],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

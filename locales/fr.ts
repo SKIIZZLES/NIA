@@ -61,14 +61,6 @@ const fr = {
     hintMock: 'Mode mock : session locale (Expo Go ou env manquantes)',
     hintMissingId: 'Définissez EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Continuer avec Snapchat',
-    fail: 'Connexion Snapchat impossible',
-    alertTitle: 'Snapchat',
-    hintMock: 'Mode mock : session locale (Expo Go ou env manquantes)',
-    hintMissingId: 'Définissez EXPO_PUBLIC_SNAP_CLIENT_ID (voir SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Configurez Snap Kit + déployez la fonction snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Accès à la caméra',
     permissionBody: 'NIA a besoin de la caméra pour filmer ta vidéo.',

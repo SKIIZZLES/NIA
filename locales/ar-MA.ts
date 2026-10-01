@@ -66,14 +66,6 @@ const arMA: TranslationKeys = {
     hintMock: 'وضع وهمي: جلسة محلية (Expo Go ولا env ناقصة)',
     hintMissingId: 'حط EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'كمّل مع Snapchat',
-    fail: 'الدخول بـ Snapchat ما نجحش',
-    alertTitle: 'Snapchat',
-    hintMock: 'وضع وهمي: جلسة محلية (Expo Go ولا env ناقصة)',
-    hintMissingId: 'حط EXPO_PUBLIC_SNAP_CLIENT_ID (شوف SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'ضبط Snap Kit + نشر دالة snapchat-auth',
-  },
   camera: {
     permissionTitle: 'الوصول للكاميرا',
     permissionBody: 'NIA محتاجة الكاميرا باش تصوّر الفيديو ديالك.',

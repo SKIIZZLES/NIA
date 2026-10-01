@@ -59,14 +59,6 @@ const ln: TranslationKeys = {
     hintMock: 'Mode mock: session ya local (Expo Go to env eza te)',
     hintMissingId: 'Tya EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Kokoba na Snapchat',
-    fail: 'Kokɔta na Snapchat elongi te',
-    alertTitle: 'Snapchat',
-    hintMock: 'Mode mock: session ya local (Expo Go to env eza te)',
-    hintMissingId: 'Tya EXPO_PUBLIC_SNAP_CLIENT_ID (tala SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Bongisa Snap Kit + deploy function snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Accès à la caméra',
     permissionBody: 'NIA a besoin de la caméra pour filmer ta vidéo.',

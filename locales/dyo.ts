@@ -63,14 +63,6 @@ const dyo: TranslationKeys = {
     hintMock: 'Mode mock: session bu lokal (Expo Go walla env yu ñàkk)',
     hintMissingId: 'Defar EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Kontine ak Snapchat',
-    fail: 'Kaj ak Snapchat lajj na',
-    alertTitle: 'Snapchat',
-    hintMock: 'Mode mock: session bu lokal (Expo Go walla env yu ñàkk)',
-    hintMissingId: 'Defar EXPO_PUBLIC_SNAP_CLIENT_ID (SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Defar Snap Kit + deploy function snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Accès à la caméra',
     permissionBody: 'NIA a besoin de la caméra pour filmer ta vidéo.',

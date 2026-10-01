@@ -22,8 +22,8 @@ export function accountDeletionUrl(locale: string): string {
 }
 
 /**
- * Conditions d'utilisation. Réclamées par le portail développeur Snapchat
- * à côté de la politique, et attendues par la fiche Play dès qu'une app
+ * Conditions d'utilisation. Réclamées par les portails développeur (Google,
+ * ex-Snapchat) à côté de la politique, et attendues par la fiche Play dès qu'une app
  * héberge des contenus publiés par ses utilisateurs.
  */
 export function termsOfServiceUrl(locale: string): string {
@@ -67,7 +67,8 @@ export function contactMailto(subject?: string): string {
 }
 
 /**
- * Domaine réservé aux comptes créés par la connexion Snapchat
+ * Domaine réservé aux comptes créés par l'ancienne connexion Snapchat (retirée
+ * de l'app le 01/10/2026 ; les comptes existants restent)
  * (`snapchat_{id}@users.nia.app`, voir supabase/functions/snapchat-auth).
  * Une inscription e-mail sur ce domaine pourrait pré-créer le compte qu'un
  * utilisateur Snap recevrait ensuite : l'écran d'inscription la refuse.

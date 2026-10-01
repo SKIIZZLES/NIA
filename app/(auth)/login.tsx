@@ -14,7 +14,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
-import { SnapchatSignInButton } from '@/components/SnapchatSignInButton';
 import { PaletteScope } from '@/context/ThemeContext';
 import { ORIGINAL_COLORS } from '@/constants/themes';
 
@@ -99,7 +98,6 @@ function LoginScreenBody() {
         style={{ marginTop: Spacing.lg }}
       />
       <GoogleSignInButton />
-      <SnapchatSignInButton />
     </KeyboardAvoidingView>
   );
 }

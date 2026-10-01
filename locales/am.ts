@@ -59,14 +59,6 @@ const am: TranslationKeys = {
     hintMock: 'የሞክ ሁነታ፡ የአካባቢ ክፍለ ጊዜ (Expo Go ወይም የጎደለ env)',
     hintMissingId: 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS) ያዘጋጁ',
   },
-  snapchat: {
-    continue: 'በSnapchat ቀጥል',
-    fail: 'በSnapchat መግባት አልተሳካም',
-    alertTitle: 'Snapchat',
-    hintMock: 'የሞክ ሁነታ፡ የአካባቢ ክፍለ ጊዜ (Expo Go ወይም የጎደለ env)',
-    hintMissingId: 'EXPO_PUBLIC_SNAP_CLIENT_ID ያዘጋጁ (SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Snap Kit + snapchat-auth function ያሰማሩ',
-  },
   camera: {
     permissionTitle: 'የካሜራ መዳረሻ',
     permissionBody: 'NIA ቪዲዮዎን ለመቅረጽ ካሜራ ያስፈልገዋል።',
