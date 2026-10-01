@@ -121,9 +121,11 @@ internal class FaceMaskRenderer(
         if (m != null) {
           // 1. Filet de sécurité : flou elliptique de la zone du visage.
           canvas.drawBitmap(p.blurOval, null, dst, blurPaint)
-          // 2. Masque pré-dessiné, suivi depuis ses repères.
+          // 2. Masque pré-dessiné, suivi depuis ses repères (déplacé, tourné
+          //    et mis à l'échelle d'après la boîte BlazeFace la plus fraîche).
           canvas.save()
           canvas.translate(item.maskCx, item.maskCy)
+          if (item.maskRotation != 0f) canvas.rotate(item.maskRotation)
           canvas.scale(item.maskScale, item.maskScale)
           canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
           canvas.drawBitmap(m.sprite, m.spriteSrc, m.spriteRect, blurPaint)

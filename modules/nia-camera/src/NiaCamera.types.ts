@@ -99,6 +99,10 @@ export type NiaCameraStats = {
   landmarkSkipped?: number;
   /** 'GPU' | 'CPU' | '—'. */
   landmarkDelegate?: string;
+  /** Maillages écartés (incohérents avec BlazeFace : inclinaison, forme, taille). */
+  landmarkRejected?: number;
+  /** Côté moyen du recadrage donné à Face Landmarker (px). */
+  landmarkRoiAvg?: number;
   /** Âge de l'analyse posée sur l'image au moment du dessin (ms) ; -1 si inconnu. */
   analysisAgeMsAvg?: number;
   /** Âge des repères du masque au moment du dessin (ms) ; -1 sans masque. */

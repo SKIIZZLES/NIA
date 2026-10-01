@@ -134,6 +134,8 @@ type StatsLike = {
   landmarkTotalMsAvg?: number;
   landmarkSkipped?: number;
   landmarkDelegate?: string;
+  landmarkRejected?: number;
+  landmarkRoiAvg?: number;
   analysisAgeMsAvg?: number;
   landmarkAgeMsAvg?: number;
   maskFrames?: number;
@@ -205,7 +207,9 @@ export function formatFaceStats(s: StatsLike): string[] {
       const delegate = s.landmarkDelegate && s.landmarkDelegate !== '—' ? ` (${s.landmarkDelegate})` : '';
       lines.push(
         `repères ${label}${delegate} · ${Math.round(s.landmarkMsAvg ?? 0)} ms (max ${Math.round(s.landmarkMsMax ?? 0)}) · ` +
-          `${s.landmarkFps.toFixed(0)} i/s · sautées ${s.landmarkSkipped ?? 0}`,
+          `${s.landmarkFps.toFixed(0)} i/s · sautées ${s.landmarkSkipped ?? 0}` +
+          (s.landmarkRejected != null ? ` · rejetés ${s.landmarkRejected}` : '') +
+          (s.landmarkRoiAvg ? ` · zone ${s.landmarkRoiAvg} px` : ''),
       );
       lines.push(
         `masques ${s.maskFrames ?? 0} images · repli ${s.fallbackFaces ?? 0} · ` +

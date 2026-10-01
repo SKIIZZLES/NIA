@@ -238,3 +238,65 @@ internal object MaskGeometry {
     out[1] = y / n
   }
 }
+
+/** Angles de droites (degrés, sans sens : modulo 180°). */
+internal object Angles {
+  /** Angle de la droite (dx, dy), ramené dans [-90°, 90°). */
+  fun lineAngle(dx: Float, dy: Float): Float = norm(Math.toDegrees(kotlin.math.atan2(dy, dx).toDouble()).toFloat())
+
+  fun norm(a: Float): Float {
+    var x = a % 180f
+    if (x < -90f) x += 180f
+    if (x >= 90f) x -= 180f
+    return x
+  }
+
+  /** Écart entre deux droites, 0 → 90°. */
+  fun diff(a: Float, b: Float): Float = kotlin.math.abs(norm(a - b))
+
+  /** Écart signé b → a, dans [-90°, 90°). */
+  fun delta(a: Float, b: Float): Float = norm(a - b)
+}
+
+/**
+ * Contrôle d'un maillage Face Landmarker avant d'en faire un masque : un
+ * maillage écrasé, couché ou tordu (suivi accroché à une mauvaise zone,
+ * jalon 2b) est écarté et le visage reste flouté.
+ */
+internal class MeshCheck(
+  /** Inclinaison de la ligne des yeux (degrés, tampon). */
+  val roll: Float,
+  /** Hauteur front → menton / largeur joue → joue. */
+  val aspect: Float,
+  /** |cos| entre l'axe front → menton et la ligne des yeux (0 = perpendiculaires). */
+  val skew: Float,
+) {
+  val shapeOk: Boolean
+    get() = aspect in MIN_ASPECT..MAX_ASPECT && skew <= MAX_SKEW
+
+  companion object {
+    const val MIN_ASPECT = 0.85f
+    const val MAX_ASPECT = 2.3f
+    /** ≈ 35° d'écart à la perpendiculaire. */
+    const val MAX_SKEW = 0.57f
+
+    fun of(lm: List<NormalizedLandmark>, w: Float, h: Float, toBuffer: Matrix): MeshCheck {
+      val idx = intArrayOf(33, 263, MaskGeometry.TOP, MaskGeometry.CHIN, MaskGeometry.CHEEK_A, MaskGeometry.CHEEK_B)
+      val p = FloatArray(idx.size * 2)
+      for ((k, i) in idx.withIndex()) {
+        p[2 * k] = lm[i].x() * w
+        p[2 * k + 1] = lm[i].y() * h
+      }
+      toBuffer.mapPoints(p)
+      val ex = p[2] - p[0]
+      val ey = p[3] - p[1]
+      val ux = p[4] - p[6]
+      val uy = p[5] - p[7]
+      val cw = kotlin.math.hypot(p[10] - p[8], p[11] - p[9])
+      val fh = kotlin.math.hypot(ux, uy)
+      val el = kotlin.math.hypot(ex, ey)
+      val skew = if (el > 0f && fh > 0f) kotlin.math.abs(ex * ux + ey * uy) / (el * fh) else 1f
+      return MeshCheck(Angles.lineAngle(ex, ey), if (cw > 0f) fh / cw else 0f, skew)
+    }
+  }
+}

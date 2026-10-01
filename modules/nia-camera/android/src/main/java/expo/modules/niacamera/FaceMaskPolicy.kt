@@ -37,8 +37,6 @@ internal object FaceMaskPolicy {
   const val LANDMARK_STALE_NS = 100_000_000L
   /** Prolongation maximale du mouvement (LIVE). */
   const val MAX_EXTRAPOLATION_NS = 150_000_000L
-  const val VELOCITY_WINDOW_NS = 150_000_000L
-  const val VELOCITY_SPAN_NS = 100_000_000L
 
   const val SCALE_EXACT = 1.0f
   const val SCALE_NEIGHBOR = 1.15f
@@ -52,6 +50,8 @@ internal object FaceMaskPolicy {
   /** Repères « décrochés » : centre à plus de 30 % de la largeur, taille ±35 %. */
   const val MOVED_FRACTION = 0.3f
   const val SIZE_TOLERANCE = 0.35f
+  /** Masque et visage inclinés différemment de plus de 30° : flou de repli. */
+  const val MAX_ROLL_DIFF = 30f
 
   enum class Kind { EXACT, NEIGHBOR, HOLD, LIVE, COVER }
 
@@ -67,6 +67,8 @@ internal object FaceMaskPolicy {
     val maskCx: Float,
     val maskCy: Float,
     val maskScale: Float,
+    /** Rotation du masque (degrés) : inclinaison BlazeFace actuelle − celle des repères. */
+    val maskRotation: Float,
     /** Âge des repères utilisés (ns), -1 sans masque. */
     val landmarkAgeNs: Long,
   )
@@ -132,39 +134,23 @@ internal object FaceMaskPolicy {
     var kind = picks.firstOrNull()?.kind ?: if (live) Kind.LIVE else Kind.HOLD
     for (pick in picks) {
       val src = pick.res
-      // Vitesse mesurée sur ~100 ms (pas d'une image à l'autre : le
-      // tremblement des boîtes serait amplifié par la prolongation).
-      var prev: FaceResult? = null
-      if (live) {
-        for (r in results) {
-          val span = src.timestampNs - r.timestampNs
-          if (span <= 0 || span > VELOCITY_WINDOW_NS || r.faces.isEmpty()) continue
-          if (prev == null || abs(span - VELOCITY_SPAN_NS) < abs(src.timestampNs - prev.timestampNs - VELOCITY_SPAN_NS)) prev = r
-        }
-      }
       val dt = if (live) min(max(0L, ts - src.timestampNs), MAX_EXTRAPOLATION_NS) else 0L
+      val dtS = dt / 1e9f
       for (p in src.faces) {
         val w = p.rect.width()
-        var dx = 0f
-        var dy = 0f
-        if (prev != null && dt > 0) {
-          val q = nearest(prev.faces, p.rect.centerX(), p.rect.centerY(), w * 0.6f)
-          if (q != null) {
-            val span = (src.timestampNs - prev.timestampNs).toFloat()
-            if (span > 0f) {
-              dx = (p.rect.centerX() - q.rect.centerX()) / span * dt
-              dy = (p.rect.centerY() - q.rect.centerY()) / span * dt
-              val shift = hypot(dx, dy)
-              val maxShift = w * MAX_SHIFT
-              if (shift > maxShift) {
-                dx *= maxShift / shift
-                dy *= maxShift / shift
-              }
-            }
-          }
+        // Prédiction : vitesse lissée de la piste (filtre alpha-bêta adaptatif).
+        var dx = p.vx * dtS
+        var dy = p.vy * dtS
+        val shift = hypot(dx, dy)
+        val maxShift = w * MAX_SHIFT
+        if (shift > maxShift) {
+          dx *= maxShift / shift
+          dy *= maxShift / shift
         }
+        // Visage qui approche / s'éloigne : taille prédite (±25 %).
+        val grow = if (live && w > 0f) (1f + p.vw * dtS / w).coerceIn(0.8f, 1.25f) else 1f
         val scale = if (live) {
-          min(MAX_SCALE, 1f + AGE_GROWTH * (dt / 100_000_000f) + SPEED_GROWTH * hypot(dx, dy) / max(w, 1f))
+          min(MAX_SCALE, grow * (1f + AGE_GROWTH * (dt / 100_000_000f) + SPEED_GROWTH * hypot(dx, dy) / max(w, 1f)))
         } else {
           pick.scale
         }
@@ -178,7 +164,8 @@ internal object FaceMaskPolicy {
             att?.face,
             att?.let { it.anchorCx + (cx - p.rect.centerX()) + it.shiftX } ?: 0f,
             att?.let { it.anchorCy + (cy - p.rect.centerY()) + it.shiftY } ?: 0f,
-            att?.let { it.sizeRatio * (1f + (scale - 1f) * 0.25f) } ?: 1f,
+            att?.let { it.sizeRatio * grow * (1f + (scale / grow - 1f) * 0.25f) } ?: 1f,
+            att?.rotation ?: 0f,
             att?.let { ts - it.landmarkTs } ?: -1L,
           ),
         )
@@ -201,6 +188,7 @@ internal object FaceMaskPolicy {
             src, fb, 0f, 0f, scale,
             if (ok) lf else null,
             fb.rect.centerX(), fb.rect.centerY(), 1f + (scale - 1f) * 0.25f,
+            0f,
             if (ok) age else -1L,
           ),
         )
@@ -222,6 +210,8 @@ internal object FaceMaskPolicy {
     val shiftX: Float,
     val shiftY: Float,
     val sizeRatio: Float,
+    /** Inclinaison gagnée depuis les repères (degrés). */
+    val rotation: Float,
   )
 
   /**
@@ -293,7 +283,20 @@ internal object FaceMaskPolicy {
       ratio = 1f
     }
     if (hypot(shiftX, shiftY) > MOVED_FRACTION * w || abs(ratio - 1f) > SIZE_TOLERANCE) return null
-    return Attach(f, l.timestampNs, f.anchor.centerX(), f.anchor.centerY(), shiftX, shiftY, ratio)
+    // Inclinaison : le masque tourne avec la tête (BlazeFace frais) ; un
+    // masque qui s'écarte de plus de 30° de l'inclinaison du visage actuel
+    // n'est pas posé (flou de repli).
+    var rotation = 0f
+    if (!p.roll.isNaN()) {
+      if (!f.roll.isNaN() && Angles.diff(f.roll, ref?.roll ?: p.roll) > MAX_ROLL_DIFF) return null
+      val refRoll = ref?.roll ?: Float.NaN
+      if (!refRoll.isNaN()) {
+        rotation = Angles.delta(p.roll, refRoll)
+        if (abs(rotation) > MAX_ROLL_DIFF) return null
+      }
+      if (!f.roll.isNaN() && Angles.diff(f.roll + rotation, p.roll) > MAX_ROLL_DIFF) return null
+    }
+    return Attach(f, l.timestampNs, f.anchor.centerX(), f.anchor.centerY(), shiftX, shiftY, ratio, rotation)
   }
 
   private fun nearest(faces: List<FacePatch>, x: Float, y: Float, maxDist: Float): FacePatch? {
@@ -319,7 +322,14 @@ internal class FacePatch(
   val blur: Bitmap,
   /** Le même flou en ellipse aux bords doux (dessous des masques). */
   val blurOval: Bitmap,
-)
+  /** Inclinaison des yeux (BlazeFace ou repères, degrés, tampon) ; NaN si inconnue. */
+  val roll: Float = Float.NaN,
+) {
+  /** Vitesse lissée du centre et de la largeur (px/s), fixée avant publication. */
+  var vx = 0f
+  var vy = 0f
+  var vw = 0f
+}
 
 /** Résultat BlazeFace d'une image caméra (chaque image analysée). */
 internal class FaceResult(
@@ -344,6 +354,8 @@ internal class LandmarkFace(
   val anchor: RectF,
   /** Flou de cette zone, si le visage n'est vu que par les repères. */
   val fallback: FacePatch?,
+  /** Inclinaison de la ligne des yeux du maillage (degrés, tampon). */
+  val roll: Float,
 )
 
 /** Résultat Face Landmarker d'une image (pas forcément chaque image). */

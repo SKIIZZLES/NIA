@@ -232,6 +232,11 @@ describe('formatFaceStats', () => {
     expect(lines[3]).toBe('synchro directe · âge analyse 72 ms · âge repères 104 ms');
     expect(lines).toContain('capteur→résultat 62 ms · horloge realtime');
     expect(lines).toContain('repères prêts (GPU) · 18 ms (max 31) · 21 i/s · sautées 8');
+    const withChecks = formatFaceStats({
+      ...base, mode: 'live', landmarkState: 'ready', landmarkMsAvg: 22, landmarkMsMax: 30, landmarkFps: 26,
+      landmarkSkipped: 3, landmarkDelegate: 'GPU', landmarkRejected: 4, landmarkRoiAvg: 251,
+    });
+    expect(withChecks).toContain('repères prêts (GPU) · 22 ms (max 30) · 26 i/s · sautées 3 · rejetés 4 · zone 251 px');
     expect(lines).toContain('masques 28 images · repli 2 · préparation masque 25 ms');
   });
 

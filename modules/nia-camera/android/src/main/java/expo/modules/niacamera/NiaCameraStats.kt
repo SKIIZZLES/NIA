@@ -49,6 +49,8 @@ internal class NiaCameraStats {
   private var landmarkFrames = 0
   private var landmarkTotalSumMs = 0.0
   private var landmarkSkipped = 0
+  private var landmarkRejected = 0
+  private var roiSideSum = 0L
   private var landmarkDelegate = "—"
   private var fallbackFaces = 0
   private var landmarkState = "off"
@@ -177,6 +179,8 @@ internal class NiaCameraStats {
     if (info.inferMs > landmarkMaxMs) landmarkMaxMs = info.inferMs.toDouble()
     if (info.faces > 0) landmarkFrames++
     landmarkDelegate = info.delegate
+    landmarkRejected += info.rejected
+    roiSideSum += info.roiSide
   }
 
   /** Résultat de capture Camera2 reçu : capteur → fin du pipeline caméra. */
@@ -279,6 +283,8 @@ internal class NiaCameraStats {
       "landmarkFps" to round1(landmarkRuns / sec),
       "landmarkTotalMsAvg" to round1(if (landmarkRuns > 0) landmarkTotalSumMs / landmarkRuns else 0.0),
       "landmarkSkipped" to landmarkSkipped,
+      "landmarkRejected" to landmarkRejected,
+      "landmarkRoiAvg" to (if (landmarkRuns > 0) (roiSideSum / landmarkRuns).toInt() else 0),
       "landmarkDelegate" to landmarkDelegate,
       "analysisAgeMsAvg" to round1(if (analysisAgeCount > 0) analysisAgeSumMs / analysisAgeCount else -1.0),
       "landmarkAgeMsAvg" to round1(if (landmarkAgeCount > 0) landmarkAgeSumMs / landmarkAgeCount else -1.0),
@@ -300,7 +306,7 @@ internal class NiaCameraStats {
         "source=${out["sourceWidth"]}x${out["sourceHeight"]} prep=${out["prepMsAvg"]}ms " +
         "camera>analyse=${out["cameraToAnalysisMsAvg"]}ms reperes=$landmarkState " +
         "${out["landmarkMsAvg"]}/${out["landmarkMsMax"]}ms ${out["landmarkFps"]}i/s $landmarkDelegate img=$landmarkFrames " +
-        "sautees=$landmarkSkipped repli=$fallbackFaces age=${out["analysisAgeMsAvg"]}/${out["landmarkAgeMsAvg"]}ms " +
+        "sautees=$landmarkSkipped rejetes=$landmarkRejected roi=${out["landmarkRoiAvg"]}px repli=$fallbackFaces age=${out["analysisAgeMsAvg"]}/${out["landmarkAgeMsAvg"]}ms " +
         "masques=$maskFrames capteur>resultat=${out["cameraPipelineMsAvg"]}ms horloge=$timestampSource",
     )
     windowStartMs = nowMs
@@ -312,7 +318,7 @@ internal class NiaCameraStats {
     drawSumMs = 0.0; drawMaxMs = 0.0; drawCount = 0
     glWaitSumMs = 0.0; glWaitCount = 0
     landmarkRuns = 0; landmarkSumMs = 0.0; landmarkMaxMs = 0.0; landmarkFrames = 0
-    landmarkTotalSumMs = 0.0; landmarkSkipped = 0
+    landmarkTotalSumMs = 0.0; landmarkSkipped = 0; landmarkRejected = 0; roiSideSum = 0L
     analysisAgeSumMs = 0.0; analysisAgeCount = 0; landmarkAgeSumMs = 0.0; landmarkAgeCount = 0; maskFrames = 0
     halSumMs = 0.0; halCount = 0
     fallbackFaces = 0; queueSumMs = 0.0; queueCount = 0; prepSumMs = 0.0

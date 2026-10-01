@@ -90,6 +90,10 @@ internal class FaceAnalyzer(
     val faces: Int,
     /** "GPU" | "CPU". */
     val delegate: String,
+    /** Visages écartés : repères incohérents avec BlazeFace (inclinaison, forme, taille). */
+    val rejected: Int,
+    /** Côté du recadrage donné à Face Landmarker (px de l'image redressée). */
+    val roiSide: Int,
   )
 
   interface Listener {
@@ -138,21 +142,52 @@ internal class FaceAnalyzer(
   private var delegate = "CPU"
   /** Fil des repères occupé : l'image suivante passe sans repères. */
   private val landmarkBusy = AtomicBoolean(false)
-  private var lastLandmarkTsMs = -1L
   private var landmarkFailures = 0
+  /**
+   * Suivi par nos propres repères quand BlazeFace perd le visage (profil) :
+   * zone de la dernière passe (image redressée) et nombre de passes d'affilée
+   * sans BlazeFace. Fil des repères ; lu par le fil d'analyse.
+   */
+  private var lastLandmarkRoi: RectF? = null
+  @Volatile
+  private var landmarkContinuation = false
+  private var landmarkOnlyStreak = 0
   /** Sprites des masques (fil des repères). */
   private val spritePool = MaskSprite.Pool()
 
   @Volatile
   private var closed = false
 
-  /** Correction de rotation (degrés) trouvée par le sondage ci-dessous. */
+  /**
+   * Correction de rotation (degrés) par rapport à celle de CameraX (capteur +
+   * écran). 0 par défaut ; changée seulement sur preuve forte et répétée, et
+   * remise à 0 dès qu'un visage est trouvé dans la rotation de CameraX.
+   */
   private var rotationOffset = 0
   private var missStreak = 0
   private var probeIndex = 0
+  private var probeCandidate = -1
+  private var probeHits = 0
+  private var frameIndex = 0L
   private var loggedFirst = false
 
-  private class Detection(val bufferRect: RectF, val score: Float)
+  /** Pistes des visages (fil d'analyse) : vitesse lissée pour la prédiction. */
+  private class Track(
+    var cx: Float,
+    var cy: Float,
+    var w: Float,
+    var vx: Float,
+    var vy: Float,
+    var vw: Float,
+    var ts: Long,
+  )
+  private val tracks = ArrayList<Track>()
+
+  /**
+   * Un visage BlazeFace : zone agrandie (tampon), boîte brute (image
+   * redressée) et inclinaison des yeux (degrés, tampon, NaN si inconnue).
+   */
+  private class Detection(val bufferRect: RectF, val score: Float, val uprightBox: RectF, val roll: Float)
 
   private class Pass(
     val faces: List<Detection>,
@@ -203,59 +238,102 @@ internal class FaceAnalyzer(
       val w = buffer.width
       val h = buffer.height
 
-      val deg = rotation + rotationOffset
-      val upright = makeUpright(buffer, deg)
+      frameIndex++
+      var upright = makeUpright(buffer, rotation + rotationOffset)
       val prepMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1e6f
-
-      // Repères sur leur fil, si libre ; jamais attendus ici.
       val wantLandmarks = landmarksWanted
-      val submit = wantLandmarks && startLandmarks()
-      val shared = Shared(buffer, upright, if (submit) 2 else 1)
-      if (submit) {
-        try {
-          landmarkExecutor.execute { runLandmarks(shared, ts, maskEffect) }
-        } catch (e: Throwable) {
-          landmarkBusy.set(false)
-          shared.release()
-        }
-      }
-
+      var submit = false
       try {
         var pass = detectOn(det, upright)
         var detectMs = pass.detectMs
         var raw = pass.rawCount
         var best = pass.bestScore
 
-        // Sondage d'orientation (détecteur seul) : aucun visage depuis un
-        // moment → on essaie, de temps en temps, les trois autres rotations.
+        // Correction active : la rotation de CameraX reste la référence. Dès
+        // qu'elle trouve un visage, on y revient.
+        if (rotationOffset != 0 && (pass.faces.isEmpty() || frameIndex % RESET_CHECK_EVERY == 0L)) {
+          val up0 = makeUpright(buffer, rotation)
+          val p0 = detectOn(det, up0)
+          detectMs += p0.detectMs
+          if (p0.faces.isNotEmpty()) {
+            Log.w(TAG, "visage trouvé dans la rotation CameraX ($rotation°) : correction +$rotationOffset° abandonnée")
+            rotationOffset = 0
+            upright.bitmap.recycle()
+            upright = up0
+            pass = p0
+            raw = max(raw, p0.rawCount)
+            best = max(best, p0.bestScore)
+          } else {
+            up0.bitmap.recycle()
+          }
+        }
+
+        // Sondage d'orientation : seulement après 1 s sans aucun visage, et
+        // une autre rotation n'est adoptée qu'après 3 sondages d'affilée qui
+        // y trouvent un visage net (score ≥ 0,8).
         if (pass.faces.isEmpty()) {
           missStreak++
           if (missStreak >= PROBE_AFTER_MISSES && missStreak % PROBE_EVERY == 0) {
-            probeIndex = (probeIndex + 1) % 3
+            if (probeHits == 0) probeIndex = (probeIndex + 1) % 3
             val candidate = (rotationOffset + 90 * (probeIndex + 1)) % 360
             val up2 = makeUpright(buffer, rotation + candidate)
             val probe = detectOn(det, up2)
-            up2.bitmap.recycle()
             detectMs += probe.detectMs
             raw = max(raw, probe.rawCount)
             best = max(best, probe.bestScore)
-            if (probe.faces.isNotEmpty()) {
-              Log.w(TAG, "visage trouvé avec +$candidate° (rotation CameraX $rotation°) : correction adoptée")
+            val strong = probe.faces.isNotEmpty() && probe.bestScore >= PROBE_MIN_SCORE
+            if (strong && (probeHits == 0 || probeCandidate == candidate)) {
+              probeCandidate = candidate
+              probeHits++
+            } else {
+              probeHits = 0
+              probeCandidate = -1
+            }
+            if (probeHits >= PROBE_CONFIRM) {
+              Log.w(TAG, "visage trouvé $probeHits fois avec +$candidate° (rotation CameraX $rotation°) : correction adoptée")
               rotationOffset = candidate
+              probeHits = 0
+              probeCandidate = -1
+              missStreak = 0
+              upright.bitmap.recycle()
+              upright = up2
               pass = probe
+            } else {
+              up2.bitmap.recycle()
             }
           }
         } else {
           missStreak = 0
+          probeHits = 0
+          probeCandidate = -1
         }
 
         val patches = ArrayList<FacePatch>(pass.faces.size)
         for (d in pass.faces) {
-          makePatch(buffer, d.bufferRect, w, h)?.let { patches.add(it) }
+          makePatch(buffer, d.bufferRect, w, h, d.roll)?.let { patches.add(it) }
         }
+        updateTracks(ts, patches)
         val frameTiny = shrink(buffer, Rect(0, 0, w, h), FRAME_CELLS)
         val (lumaMean, lumaRange) = luma(frameTiny)
         store.add(FaceResult(ts, w, h, sensorToBuffer, patches, frameTiny))
+
+        // Repères APRÈS BlazeFace (résultat déjà publié) : recadrés sur la
+        // boîte fraîche de cette image, sur leur fil, jamais attendus ici.
+        if (wantLandmarks && (pass.faces.isNotEmpty() || landmarkContinuation)) {
+          submit = startLandmarks()
+        }
+        if (submit) {
+          val shared = Shared(buffer, upright, 1)
+          val dets = pass.faces
+          val fx = maskEffect
+          try {
+            landmarkExecutor.execute { runLandmarks(shared, ts, fx, dets) }
+          } catch (e: Throwable) {
+            landmarkBusy.set(false)
+            submit = false
+          }
+        }
+
         if (!loggedFirst) {
           loggedFirst = true
           Log.i(TAG, "1re analyse ${srcW}x$srcH→${w}x$h rot=$rotation° luma=$lumaMean±$lumaRange brut=$raw score=$best")
@@ -282,11 +360,15 @@ internal class FaceAnalyzer(
             startMonoNs = m0,
             landmarksWanted = wantLandmarks,
             landmarkState = if (wantLandmarks) landmarkState else "off",
-            landmarkSkipped = wantLandmarks && !submit,
+            landmarkSkipped = wantLandmarks && pass.faces.isNotEmpty() && !submit,
           ),
         )
       } finally {
-        shared.release()
+        // Confiés au fil des repères : c'est lui qui les recyclera.
+        if (!submit) {
+          upright.bitmap.recycle()
+          buffer.recycle()
+        }
       }
     } catch (e: Throwable) {
       Log.w(TAG, "Analyse échouée (image traitée comme sans visage)", e)
@@ -332,7 +414,15 @@ internal class FaceAnalyzer(
         bb.set(bb.left * uw, bb.top * uh, bb.right * uw, bb.bottom * uh)
       }
       if (bb.width() <= 1f || bb.height() <= 1f) continue
-      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score))
+      // Inclinaison des yeux (points clés 0 et 1 de BlazeFace), dans le tampon.
+      var roll = Float.NaN
+      val kps = d.keypoints().orElse(null)
+      if (kps != null && kps.size >= 2) {
+        val pts = floatArrayOf(kps[0].x() * uw, kps[0].y() * uh, kps[1].x() * uw, kps[1].y() * uh)
+        up.toBuffer.mapPoints(pts)
+        roll = Angles.lineAngle(pts[2] - pts[0], pts[3] - pts[1])
+      }
+      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score, bb, roll))
     }
     return Pass(faces, raw, best, detectMs)
   }
@@ -350,10 +440,66 @@ internal class FaceAnalyzer(
   }
 
   /** Zone + vignettes (pixels, flou, ellipse de flou) d'un visage. */
-  private fun makePatch(buffer: Bitmap, rect: RectF, w: Int, h: Int): FacePatch? {
+  private fun makePatch(buffer: Bitmap, rect: RectF, w: Int, h: Int, roll: Float = Float.NaN): FacePatch? {
     val crop = clampRect(rect, w, h) ?: return null
     val blur = shrink(buffer, crop, BLUR_CELLS)
-    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect))
+    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll)
+  }
+
+  /**
+   * Vitesse de chaque visage (px/s), lissée : filtre alpha-bêta dont le gain
+   * monte quand le visage accélère (réactif sur un geste brusque, calme au
+   * repos, comme un filtre « one-euro »). La position reste la boîte fraîche.
+   */
+  private fun updateTracks(ts: Long, patches: List<FacePatch>) {
+    tracks.removeAll { ts - it.ts > TRACK_DROP_NS || ts < it.ts }
+    val used = BooleanArray(tracks.size)
+    for (p in patches) {
+      val cx = p.rect.centerX()
+      val cy = p.rect.centerY()
+      val w = p.rect.width()
+      var best = -1
+      var bestD = w * TRACK_MATCH
+      for ((i, t) in tracks.withIndex()) {
+        if (used[i]) continue
+        val d = kotlin.math.hypot(t.cx - cx, t.cy - cy)
+        if (d <= bestD) {
+          bestD = d
+          best = i
+        }
+      }
+      if (best < 0) {
+        tracks.add(Track(cx, cy, w, 0f, 0f, 0f, ts))
+        continue
+      }
+      used[best] = true
+      val t = tracks[best]
+      val dt = (ts - t.ts) / 1e9f
+      if (dt <= 0f) continue
+      val rx = cx - (t.cx + t.vx * dt)
+      val ry = cy - (t.cy + t.vy * dt)
+      val rw = w - (t.w + t.vw * dt)
+      val g = kotlin.math.hypot(rx, ry) / max(1f, w * 0.15f)
+      val beta = min(BETA_MAX, BETA_MIN + 0.6f * g)
+      t.vx += beta * rx / dt
+      t.vy += beta * ry / dt
+      t.vw += BETA_MIN * rw / dt
+      // Vitesse plafonnée (≈ 4 largeurs de visage par seconde).
+      val vmax = w * 4f
+      val v = kotlin.math.hypot(t.vx, t.vy)
+      if (v > vmax) {
+        t.vx *= vmax / v
+        t.vy *= vmax / v
+      }
+      t.vw = t.vw.coerceIn(-w, w)
+      t.cx = cx
+      t.cy = cy
+      t.w = w
+      t.ts = ts
+      p.vx = t.vx
+      p.vy = t.vy
+      p.vw = t.vw
+    }
   }
 
   /**
@@ -371,22 +517,52 @@ internal class FaceAnalyzer(
     return landmarkBusy.compareAndSet(false, true)
   }
 
-  /** Fil des repères : inférence, géométrie, sprite, publication. */
-  private fun runLandmarks(shared: Shared, ts: Long, fx: FaceMaskRenderer.Effect) {
+  /**
+   * Fil des repères : recadrage sur la boîte BlazeFace de CETTE image,
+   * inférence (mode IMAGE : aucun suivi interne qui pourrait rester accroché
+   * à une mauvaise zone), contrôle de cohérence avec BlazeFace, géométrie,
+   * sprite, publication.
+   */
+  private fun runLandmarks(shared: Shared, ts: Long, fx: FaceMaskRenderer.Effect, dets: List<Detection>) {
+    var crop: Bitmap? = null
     try {
       if (closed) return
       val lmk = landmarker ?: return
       val up = shared.upright
       val buffer = shared.buffer
       val t = SystemClock.elapsedRealtimeNanos()
-      // Mode VIDEO : horodatages strictement croissants (ms).
-      val tsMs = max(ts / 1_000_000L, lastLandmarkTsMs + 1)
-      lastLandmarkTsMs = tsMs
-      val uw = up.bitmap.width.toFloat()
-      val uh = up.bitmap.height.toFloat()
-      // Pas de close() : il recyclerait l'image (partagée).
+      val uw = up.bitmap.width
+      val uh = up.bitmap.height
+      // Zone à recadrer (image redressée) : boîtes BlazeFace, sinon nos
+      // derniers repères (profil perdu par BlazeFace, quelques passes au plus).
+      val roi = RectF()
+      val scale: Float
+      if (dets.isNotEmpty()) {
+        roi.set(dets[0].uprightBox)
+        for (d in dets) roi.union(d.uprightBox)
+        roi.offset(0f, -roi.height() * 0.1f)
+        scale = ROI_SCALE
+        landmarkOnlyStreak = 0
+      } else {
+        val last = lastLandmarkRoi
+        if (last == null || landmarkOnlyStreak >= LANDMARK_ONLY_MAX) {
+          landmarkContinuation = false
+          return
+        }
+        roi.set(last)
+        scale = ROI_SCALE_CONTINUE
+        landmarkOnlyStreak++
+      }
+      val side = max(roi.width(), roi.height()) * scale
+      val cr = squareCrop(roi.centerX(), roi.centerY(), side, uw, uh) ?: return
+      val c = Bitmap.createBitmap(up.bitmap, cr.left, cr.top, cr.width(), cr.height())
+      crop = c
+      val cw = c.width.toFloat()
+      val ch = c.height.toFloat()
+      val cropToBuffer = Matrix(up.toBuffer).apply { preTranslate(cr.left.toFloat(), cr.top.toFloat()) }
+      // Pas de close() : il recyclerait l'image ; recyclée ci-dessous.
       val res = try {
-        lmk.detectForVideo(BitmapImageBuilder(up.bitmap).build(), tsMs)
+        lmk.detect(BitmapImageBuilder(c).build())
       } catch (e: Throwable) {
         if (landmarkFailures++ < 3) Log.w(TAG, "repères en erreur ($delegate) : repli sur le flou", e)
         if (delegate == "GPU") {
@@ -404,38 +580,84 @@ internal class FaceAnalyzer(
       val w = buffer.width
       val h = buffer.height
       val faces = ArrayList<LandmarkFace>()
+      var rejected = 0
+      var nextRoi: RectF? = null
       for (face in res.faceLandmarks()) {
-        val mask = MaskGeometry.build(face, uw, uh, up.toBuffer) ?: continue
-        // Zone du visage tirée des repères (ancrage, repli), dans l'image
-        // redressée puis ramenée au tampon.
+        if (face.size < 468) continue
+        // Zone du visage tirée des repères (ancrage, repli) : recadrage →
+        // image redressée → tampon.
         var x0 = Float.MAX_VALUE
         var y0 = Float.MAX_VALUE
         var x1 = -Float.MAX_VALUE
         var y1 = -Float.MAX_VALUE
         for (i in MaskGeometry.FACE_OVAL) {
-          val x = face[i].x() * uw
-          val y = face[i].y() * uh
+          val x = face[i].x() * cw
+          val y = face[i].y() * ch
           x0 = min(x0, x); y0 = min(y0, y); x1 = max(x1, x); y1 = max(y1, y)
         }
         val hw = (x1 - x0) * LANDMARK_EXPAND_W / 2f
         val hh = (y1 - y0) * LANDMARK_EXPAND_H / 2f
         val cx = (x0 + x1) / 2f
         val cy = (y0 + y1) / 2f - (y1 - y0) * LANDMARK_SHIFT_UP
-        val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh).also { up.toBuffer.mapRect(it) }
+        val local = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
+        val rect = RectF(local).also { cropToBuffer.mapRect(it) }
+        val check = MeshCheck.of(face, cw, ch, cropToBuffer)
+        if (!check.shapeOk || !matchesDetector(check, rect, dets)) {
+          rejected++
+          continue
+        }
+        val mask = MaskGeometry.build(face, cw, ch, cropToBuffer) ?: continue
         val sprite = MaskSprite.render(mask, fx, spritePool) ?: continue
-        faces.add(LandmarkFace(fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h)))
+        faces.add(
+          LandmarkFace(fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h, check.roll), check.roll),
+        )
+        if (nextRoi == null) nextRoi = RectF(local).apply { offset(cr.left.toFloat(), cr.top.toFloat()) }
       }
+      lastLandmarkRoi = nextRoi
+      landmarkContinuation = nextRoi != null && landmarkOnlyStreak < LANDMARK_ONLY_MAX
       if (closed) return
       val evicted = landmarkStore.add(LandmarkResult(ts, w, h, faces))
       spritePool.retire(evicted.flatMap { r -> r.faces.map { it.sprite } })
       val totalMs = (SystemClock.elapsedRealtimeNanos() - t) / 1e6f
-      listener.onLandmarks(LandmarkInfo(ts, inferMs, totalMs, faces.size, delegate))
+      listener.onLandmarks(LandmarkInfo(ts, inferMs, totalMs, faces.size, delegate, rejected, cr.width()))
     } catch (e: Throwable) {
       if (landmarkFailures++ < 3) Log.w(TAG, "repères en erreur : repli sur le flou", e)
     } finally {
+      crop?.recycle()
       landmarkBusy.set(false)
       shared.release()
     }
+  }
+
+  /**
+   * Repères cohérents avec un visage BlazeFace de la même image : centre
+   * proche, taille voisine, inclinaison des yeux à moins de 30°. Sans
+   * BlazeFace (suivi par nos repères), seule la forme compte.
+   */
+  private fun matchesDetector(check: MeshCheck, rect: RectF, dets: List<Detection>): Boolean {
+    if (dets.isEmpty()) return true
+    for (d in dets) {
+      val dw = d.bufferRect.width()
+      val dist = kotlin.math.hypot(rect.centerX() - d.bufferRect.centerX(), rect.centerY() - d.bufferRect.centerY())
+      if (dist > dw * MESH_MAX_OFFSET) continue
+      val ratio = rect.width() / max(1f, dw)
+      if (ratio < MESH_MIN_SIZE || ratio > MESH_MAX_SIZE) continue
+      if (!d.roll.isNaN() && Angles.diff(check.roll, d.roll) > MAX_ROLL_DIFF) continue
+      return true
+    }
+    return false
+  }
+
+  /** Carré de côté `side` centré, ramené dans l'image (rogné si plus grand). */
+  private fun squareCrop(cx: Float, cy: Float, side: Float, w: Int, h: Int): Rect? {
+    val s = min(side, min(w, h).toFloat())
+    if (s < 32f) return null
+    var l = cx - s / 2f
+    var t = cy - s / 2f
+    l = l.coerceIn(0f, w - s)
+    t = t.coerceIn(0f, h - s)
+    val r = Rect(l.toInt(), t.toInt(), min(w, (l + s).roundToInt()), min(h, (t + s).roundToInt()))
+    return if (r.width() >= 32 && r.height() >= 32) r else null
   }
 
   private fun createLandmarker(preferGpu: Boolean) {
@@ -449,7 +671,10 @@ internal class FaceAnalyzer(
           .build()
         val options = FaceLandmarker.FaceLandmarkerOptions.builder()
           .setBaseOptions(base)
-          .setRunningMode(RunningMode.VIDEO)
+          // IMAGE : chaque passe repart de zéro sur le recadrage BlazeFace
+          // (jalon 2b : le suivi du mode VIDEO restait accroché ~5 s à une
+          // zone faussée après une occultation).
+          .setRunningMode(RunningMode.IMAGE)
           .setNumFaces(MAX_FACES)
           .setMinFaceDetectionConfidence(MIN_CONFIDENCE)
           .setMinFacePresenceConfidence(MIN_CONFIDENCE)
@@ -459,7 +684,6 @@ internal class FaceAnalyzer(
           .build()
         landmarker = FaceLandmarker.createFromOptions(context, options)
         delegate = if (d == Delegate.GPU) "GPU" else "CPU"
-        lastLandmarkTsMs = -1L
         landmarkState = "ready"
         Log.i(TAG, "Face Landmarker prêt ($delegate)")
         return
@@ -575,8 +799,28 @@ internal class FaceAnalyzer(
     const val PIXEL_CELLS = 9
     const val BLUR_CELLS = 5
     const val FRAME_CELLS = 16
-    /** Sondage d'orientation : après 15 analyses sans visage, 1 image sur 5. */
-    const val PROBE_AFTER_MISSES = 15
+    /** Sondage d'orientation : après 30 analyses (≈ 1 s) sans visage, 1 image sur 5. */
+    const val PROBE_AFTER_MISSES = 30
     const val PROBE_EVERY = 5
+    /** Une autre rotation n'est adoptée qu'après 3 sondages d'affilée, score ≥ 0,8. */
+    const val PROBE_CONFIRM = 3
+    const val PROBE_MIN_SCORE = 0.8f
+    /** Correction active : la rotation de CameraX est revérifiée 1 image sur 5. */
+    const val RESET_CHECK_EVERY = 5L
+    /** Recadrage des repères : côté = 2 × la boîte BlazeFace (1,5 × nos repères). */
+    const val ROI_SCALE = 2.0f
+    const val ROI_SCALE_CONTINUE = 1.4f
+    /** Passes d'affilée suivies par nos seuls repères (≈ 0,5 s). */
+    const val LANDMARK_ONLY_MAX = 10
+    /** Cohérence repères ↔ BlazeFace. */
+    const val MESH_MAX_OFFSET = 0.35f
+    const val MESH_MIN_SIZE = 0.55f
+    const val MESH_MAX_SIZE = 1.7f
+    const val MAX_ROLL_DIFF = 30f
+    /** Pistes : appariement ≤ 0,6 largeur, oubli après 250 ms. */
+    const val TRACK_MATCH = 0.6f
+    const val TRACK_DROP_NS = 250_000_000L
+    const val BETA_MIN = 0.25f
+    const val BETA_MAX = 0.85f
   }
 }
