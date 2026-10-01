@@ -1034,6 +1034,13 @@ const sw: TranslationKeys = {
     checkFailedBody: 'Hatukuweza kukagua maandishi kwenye video yako. Angalia muunganisho wako, kisha ujaribu tena.',
     prepareFailed: 'Maandishi na vibandiko vya video yako havikuweza kuandaliwa. Jaribu tena.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Beji ya First: mojawapo ya akaunti 100 za kwanza za NIA',
+    firstRankA11y: 'Beji ya First, nambari %{rank}: mojawapo ya akaunti 100 za kwanza za NIA',
+    firstOwnA11y: 'Beji ya First: akaunti yako ni mojawapo ya akaunti 100 za kwanza za NIA',
+  },
 };
 
 export default sw;

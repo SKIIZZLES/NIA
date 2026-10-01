@@ -16,6 +16,7 @@ import { MediaThumb } from '@/components/MediaThumb';
 import { Ionicons } from '@expo/vector-icons';
 import { FollowButton } from '@/components/FollowButton';
 import { ReportSheet } from '@/components/ReportSheet';
+import { FirstBadge } from '@/components/FirstBadge';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { useFeed } from '@/context/FeedContext';
@@ -187,7 +188,16 @@ export default function PublicProfileScreen() {
             <View style={styles.header}>
               <Image source={{ uri: profile.avatarUrl }} style={styles.avatar} />
               <Text style={styles.displayName}>{profile.displayName}</Text>
-              <Text style={styles.username}>@{profile.username}</Text>
+              <View style={styles.usernameRow}>
+                <Text style={styles.username}>@{profile.username}</Text>
+                <FirstBadge
+                  userId={profile.id}
+                  username={profile.username}
+                  variant="dark"
+                  size="md"
+                  own={isOwn}
+                />
+              </View>
               {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
               <View style={styles.stats}>
                 <Stat label="Publications" value={String(grid.length)} />
@@ -311,8 +321,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 20,
   },
-  username: {
+  usernameRow: {
     marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  username: {
     color: Colors.textSecondary,
     fontFamily: Fonts.medium,
     fontSize: 14,

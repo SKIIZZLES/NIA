@@ -19,6 +19,7 @@ import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
 import { ReportSheet } from '@/components/ReportSheet';
+import { FirstBadge } from '@/components/FirstBadge';
 import { writeErrorKey } from '@/lib/moderation';
 import {
   addComment,
@@ -218,7 +219,14 @@ export function CommentsSheet({
                   <View style={styles.row}>
                     <Image source={{ uri: authorAvatar(item) }} style={styles.avatar} />
                     <View style={styles.rowBody}>
-                      <Text style={styles.authorHandle}>{authorLabel(item)}</Text>
+                      <View style={styles.authorRow}>
+                        <Text style={styles.authorHandle}>{authorLabel(item)}</Text>
+                        <FirstBadge
+                          userId={item.user_id}
+                          username={item.profiles?.username}
+                          variant="dark"
+                        />
+                      </View>
                       <Text style={styles.body}>{item.body}</Text>
                       {own && item.moderation_state && item.moderation_state !== 'visible' ? (
                         <Text style={styles.heldNote}>
@@ -410,11 +418,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.or,
   },
   rowBody: { flex: 1 },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
   authorHandle: {
     color: Colors.or,
     fontFamily: Fonts.medium,
     fontSize: 12,
-    marginBottom: 2,
   },
   body: {
     color: Colors.textPrimary,

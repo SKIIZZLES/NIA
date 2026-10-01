@@ -18,6 +18,7 @@ import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { MediaThumb } from '@/components/MediaThumb';
 import { ModerationBanner } from '@/components/ModerationBanner';
+import { FirstBadge } from '@/components/FirstBadge';
 import { videoDeleteFeedback } from '@/components/videoDeleteFeedback';
 import { isKeywordHeld } from '@/lib/textFilter';
 import { useAuth } from '@/context/AuthContext';
@@ -289,8 +290,13 @@ export default function ProfileScreen() {
     fontFamily: Fonts.bold,
     fontSize: 20,
   },
-  username: {
+  usernameRow: {
     marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  username: {
     color: colors.textSecondary,
     fontFamily: Fonts.medium,
     fontSize: 14,
@@ -571,7 +577,10 @@ export default function ProfileScreen() {
       <Text style={styles.displayName}>
         {user?.displayName || user?.username || t('common.guest')}
       </Text>
-      <Text style={styles.username}>@{user?.username || 'invite'}</Text>
+      <View style={styles.usernameRow}>
+        <Text style={styles.username}>@{user?.username || 'invite'}</Text>
+        {user ? <FirstBadge userId={user.id} username={user.username} size="md" own /> : null}
+      </View>
       <Text style={styles.bio}>{user?.bio || t('profile.defaultBio')}</Text>
       {user && isSuspended(suspendedUntil) ? <ModerationBanner kind="suspended" /> : null}
       <View style={styles.stats}>

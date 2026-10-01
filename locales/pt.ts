@@ -1034,6 +1034,13 @@ const pt: TranslationKeys = {
     checkFailedBody: 'Não conseguimos verificar os textos do seu vídeo. Verifique a sua ligação e tente novamente.',
     prepareFailed: 'Não foi possível preparar os textos e stickers do seu vídeo. Tente novamente.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Selo First: uma das 100 primeiras contas da NIA',
+    firstRankA11y: 'Selo First, n.º %{rank}: uma das 100 primeiras contas da NIA',
+    firstOwnA11y: 'Selo First: faz parte das 100 primeiras contas da NIA',
+  },
 };
 
 export default pt;
