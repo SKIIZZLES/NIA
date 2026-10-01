@@ -82,6 +82,17 @@ const WARM_MATRIX: ColorMatrix5x4 = [
   0, 0, 0, 1, 0,
 ];
 
+/**
+ * Éclat : chaleur ocre SANS éclaircir (01/10/2026). Gains ≤ 1, aucun
+ * décalage (l'ancienne WARM_MATRIX, gains 1,05–1,12, reste pour les autres).
+ */
+const ECLAT_MATRIX: ColorMatrix5x4 = [
+  1, 0, 0, 0, 0,
+  0, 0.95, 0, 0, 0,
+  0, 0, 0.85, 0, 0,
+  0, 0, 0, 1, 0,
+];
+
 /** Cool / night blue */
 const COOL_MATRIX: ColorMatrix5x4 = [
   0.9, 0, 0.05, 0, 0,
@@ -141,14 +152,17 @@ export const FILTERS: FilterDefinition[] = [
     matrix: GLOW_SABLE_MATRIX,
   },
   {
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10 (#292420), il ne peut qu'assombrir ; test __tests__/constants/filtersSkin.test.ts.
+    // Douceur = contraste adouci (× 0,87) + chaleur rosée ; avant : voile
+    // beige clair #E8C9A0 à 22 % (+37/255 sur MST 10).
     id: 'beaute-soft',
     name: 'Doux',
     category: 'beaute',
     previewColor: '#E8D4B8',
     intensity: 0.5,
     type: 'overlay',
-    overlayColor: '#E8C9A0',
-    overlayOpacity: 0.22,
+    overlayColor: '#421B12',
+    overlayOpacity: 0.13,
   },
   {
     id: 'beaute-eclat',
@@ -157,9 +171,11 @@ export const FILTERS: FilterDefinition[] = [
     previewColor: '#D17F2A',
     intensity: 0.45,
     type: 'color-matrix',
-    overlayColor: '#D17F2A',
-    overlayOpacity: 0.12,
-    matrix: WARM_MATRIX,
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10 (#292420), il ne peut qu'assombrir ; test __tests__/constants/filtersSkin.test.ts.
+    // Éclat = teinte ocre brûlé franche ; avant : ocre #D17F2A à 11 % (+12/255).
+    overlayColor: '#521900',
+    overlayOpacity: 0.145,
+    matrix: ECLAT_MATRIX,
   },
 
   // —— Lumière ——
@@ -354,12 +370,16 @@ export const FILTERS: FilterDefinition[] = [
     previewColor: '#9A8B7A',
     intensity: 0.7,
     type: 'color-matrix',
-    overlayColor: '#F5E6D3',
-    overlayOpacity: 0.12,
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10 (#292420), il ne peut qu'assombrir ; test __tests__/constants/filtersSkin.test.ts.
+    // Voile sépia neutre ; avant : voile crème #F5E6D3 à 14 % (+28/255).
+    // NB : la matrice (noir et blanc) est documentaire : l'aperçu et le
+    // fichier n'appliquent que le voile.
+    overlayColor: '#2B2118',
+    overlayOpacity: 0.11,
     matrix: [
-      0.33, 0.33, 0.33, 0, 0.02,
-      0.33, 0.33, 0.33, 0, 0.01,
       0.33, 0.33, 0.33, 0, 0,
+      0.31, 0.31, 0.31, 0, 0,
+      0.27, 0.27, 0.27, 0, 0,
       0, 0, 0, 1, 0,
     ],
   },
@@ -382,8 +402,11 @@ export const FILTERS: FilterDefinition[] = [
     previewColor: '#F5E6D3',
     intensity: 0.45,
     type: 'overlay',
-    overlayColor: '#F5E6D3',
-    overlayOpacity: 0.25,
+    // Jamais d'éclaircissement (01/10/2026) : voile plus sombre que MST 10 (#292420), il ne peut qu'assombrir ; test __tests__/constants/filtersSkin.test.ts.
+    // Sable = voile sable chaud, contraste adouci ; avant : crème #F5E6D3 à
+    // 24 % (+46/255 sur MST 10, peaux foncées grisées).
+    overlayColor: '#30200F',
+    overlayOpacity: 0.14,
   },
   {
     id: 'nia-noir',
