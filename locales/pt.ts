@@ -63,14 +63,6 @@ const pt: TranslationKeys = {
     hintMock: 'Modo mock: sessão local (Expo Go ou env ausente)',
     hintMissingId: 'Defina EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Continuar com Snapchat',
-    fail: 'Falha ao fazer login com Snapchat',
-    alertTitle: 'Snapchat',
-    hintMock: 'Modo mock: sessão local (Expo Go ou env ausente)',
-    hintMissingId: 'Defina EXPO_PUBLIC_SNAP_CLIENT_ID (ver SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Configure o Snap Kit + implemente a função snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Acesso à câmera',
     permissionBody: 'A NIA precisa da câmera para gravar o seu vídeo.',

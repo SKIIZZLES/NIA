@@ -59,14 +59,6 @@ const ak: TranslationKeys = {
     hintMock: 'Mock mode: local session (Expo Go anaa env a ɛnni hɔ)',
     hintMissingId: 'Fa EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS) hyɛ',
   },
-  snapchat: {
-    continue: 'Toa so wɔ Snapchat so',
-    fail: 'Snapchat kɔ mu antumi',
-    alertTitle: 'Snapchat',
-    hintMock: 'Mock mode: local session (Expo Go anaa env a ɛnni hɔ)',
-    hintMissingId: 'Fa EXPO_PUBLIC_SNAP_CLIENT_ID hyɛ (SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Snap Kit + snapchat-auth function hyɛ',
-  },
   camera: {
     permissionTitle: 'Accès à la caméra',
     permissionBody: 'NIA a besoin de la caméra pour filmer ta vidéo.',

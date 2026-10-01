@@ -63,14 +63,6 @@ const ha: TranslationKeys = {
     hintMock: 'Yanayin kwaikwayo: zama na gida (Expo Go ko env ƙasa)',
     hintMissingId: 'Saita EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Ci gaba da Snapchat',
-    fail: 'Shiga da Snapchat ya gaza',
-    alertTitle: 'Snapchat',
-    hintMock: 'Yanayin kwaikwayo: zama na gida (Expo Go ko env ƙasa)',
-    hintMissingId: 'Saita EXPO_PUBLIC_SNAP_CLIENT_ID (duba SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Saita Snap Kit + tura function snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Shiga kamara',
     permissionBody: 'NIA na buƙatar kamara don ɗaukar bidiyonka.',

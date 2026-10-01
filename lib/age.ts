@@ -21,7 +21,7 @@ export const MIN_SIGNUP_AGE = 13;
 export const ADULT_AGE = 18;
 
 /**
- * Comptes sans date (anciens comptes, Google, Snapchat) :
+ * Comptes sans date (anciens comptes, Google, ex-Snapchat) :
  *   - 'required'  : modale obligatoire à l'ouverture de l'app ;
  *   - 'on_demand' : date demandée seulement pour activer les contenus 18+.
  * Décision du fondateur (PLAN §4, S3). Par défaut : 'required'.

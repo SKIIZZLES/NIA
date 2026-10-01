@@ -59,14 +59,6 @@ const arEG: TranslationKeys = {
     hintMock: 'وضع تجريبي: جلسة محلية (Expo Go أو env ناقصة)',
     hintMissingId: 'حط EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'كمّل بـ Snapchat',
-    fail: 'تسجيل دخول Snapchat فشل',
-    alertTitle: 'Snapchat',
-    hintMock: 'وضع تجريبي: جلسة محلية (Expo Go أو env ناقصة)',
-    hintMissingId: 'حط EXPO_PUBLIC_SNAP_CLIENT_ID (شوف SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'ظبّط Snap Kit + انشر دالة snapchat-auth',
-  },
   camera: {
     permissionTitle: 'الوصول للكاميرا',
     permissionBody: 'NIA محتاجة الكاميرا عشان تصوّر الفيديو بتاعك.',
