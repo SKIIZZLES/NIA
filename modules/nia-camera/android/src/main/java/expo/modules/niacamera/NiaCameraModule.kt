@@ -34,7 +34,7 @@ class NiaCameraModule : Module() {
         view.setEffectMode(value ?: "blur")
       }
       Prop("syncMode") { view: NiaCameraView, value: String? ->
-        view.setSyncMode(value ?: "exact")
+        view.setSyncMode(value ?: "live")
       }
       Prop("zoom") { view: NiaCameraView, value: Float? ->
         view.setZoom(value ?: 0f)

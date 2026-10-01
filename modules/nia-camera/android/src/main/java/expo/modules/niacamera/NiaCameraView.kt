@@ -4,6 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.net.Uri
 import android.os.Handler
 import android.os.HandlerThread
@@ -13,6 +18,10 @@ import android.util.Log
 import android.util.Size
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.OptIn
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2Interop
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraEffect
 import androidx.camera.core.CameraSelector
@@ -51,9 +60,15 @@ import java.util.concurrent.Executors
  * Caméra « visage masqué » (A1, jalon 1).
  *
  * CameraX : Preview + VideoCapture + ImageAnalysis, et un OverlayEffect
- * appliqué à Preview ET VideoCapture. Chaque image attend (file de
- * QUEUE_DEPTH images) que MediaPipe l'ait analysée, puis le masque est
- * dessiné dessus avant l'aperçu et l'encodeur : aucun fichier brut n'existe.
+ * appliqué à Preview ET VideoCapture : le masque est dessiné sur chaque
+ * image avant l'aperçu et l'encodeur, aucun fichier brut n'existe.
+ *
+ * Synchro (jalon 2b) :
+ *  - `live` (défaut) : file d'OverlayEffect = 0, chaque image caméra est
+ *    dessinée dès son arrivée avec les dernières analyses (prolongées) ;
+ *  - `exact` : file de QUEUE_DEPTH images, chacune attend sa propre analyse
+ *    (drawFrameAsync). Changer de mode relie la caméra (jamais pendant
+ *    l'enregistrement).
  */
 @SuppressLint("ViewConstructor")
 class NiaCameraView(context: Context, appContext: AppContext) :
@@ -87,10 +102,11 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     get() = true
 
   private val store = FaceStore()
+  private val landmarkStore = LandmarkStore()
   private val stats = NiaCameraStats()
   /** Un par OverlayEffect (recréé à chaque liaison). */
   @Volatile
-  private var renderer = FaceMaskRenderer(store, stats)
+  private var renderer = FaceMaskRenderer(store, landmarkStore, stats, true)
   @Volatile
   private var effectMode = FaceMaskRenderer.Effect.BLUR
   @Volatile
@@ -116,10 +132,12 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   private var zoom: Float = 0f
   private var torch: Boolean = false
 
-  /** Synchro stricte (drawFrameAsync) ; sinon libération par la file seule. */
+  /** Synchro demandée : live (défaut) ou exacte (drawFrameAsync). */
   @Volatile
-  private var exactSync = true
-  private var consecutiveMisses = 0
+  private var liveSync = true
+  /** Synchro de la liaison en cours (la file d'OverlayEffect est figée). */
+  @Volatile
+  private var boundLive = true
 
   // Détection « visage présent » pour le déclencheur (hystérésis).
   private var faceStreak = 0
@@ -160,12 +178,17 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   fun setEffectMode(value: String) {
     effectMode = FaceMaskRenderer.Effect.fromProp(value)
     renderer.effect = effectMode
-    analyzer?.landmarksWanted = effectMode.usesLandmarks
+    analyzer?.let { applyEffectTo(it) }
   }
 
+  private fun applyEffectTo(a: FaceAnalyzer) {
+    a.landmarksWanted = effectMode.usesLandmarks
+    if (effectMode.usesLandmarks) a.maskEffect = effectMode
+  }
+
+  /** "exact" : synchro stricte ; tout le reste ("live", ancien "queue") : live. */
   fun setSyncMode(value: String) {
-    exactSync = value != "queue"
-    consecutiveMisses = 0
+    liveSync = value != "exact"
   }
 
   fun setZoom(value: Float) {
@@ -180,6 +203,8 @@ class NiaCameraView(context: Context, appContext: AppContext) :
 
   fun onPropsUpdated() {
     if (boundFacing != facing) needsBind = true
+    // Jamais de reliaison pendant un enregistrement (reprise à la fin).
+    if (boundLive != liveSync && boundFacing != null && activeRecording == null) needsBind = true
     if (needsBind && isAttachedToWindow) bind()
   }
 
@@ -227,6 +252,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     }, mainExecutor)
   }
 
+  @OptIn(ExperimentalCamera2Interop::class)
   private fun doBind(p: ProcessCameraProvider) {
     if (released) return
     val owner = appContext.currentActivity as? LifecycleOwner
@@ -240,6 +266,8 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     effect = null
     closeAnalyzer()
     store.clear()
+    landmarkStore.clear()
+    val live = liveSync
 
     val selector = if (facing == "front") CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
     val ratio = AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
@@ -271,7 +299,22 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     // cet appareil tombait en 1280 × 720, à convertir et réduire sur le
     // CPU), et le champ couvre plus large que l'aperçu 16:9. Toute taille
     // reste juste : les masques passent par les matrices capteur → tampon.
-    val analysis = ImageAnalysis.Builder()
+    val analysisBuilder = ImageAnalysis.Builder()
+    // Mesure : capteur (début d'exposition) → résultat de capture, pour
+    // séparer le temps de la caméra (HAL / ISP) de notre file d'analyse.
+    Camera2Interop.Extender(analysisBuilder).setSessionCaptureCallback(
+      object : CameraCaptureSession.CaptureCallback() {
+        override fun onCaptureCompleted(
+          session: CameraCaptureSession,
+          request: CaptureRequest,
+          result: TotalCaptureResult,
+        ) {
+          val sensorTs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: return
+          stats.onCaptureResult(sensorTs, SystemClock.elapsedRealtimeNanos(), System.nanoTime())
+        }
+      },
+    )
+    val analysis = analysisBuilder
       .setResolutionSelector(
         ResolutionSelector.Builder()
           .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
@@ -284,15 +327,16 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
       .build()
     detectorFailed = false
-    val r = FaceMaskRenderer(store, stats).also { it.effect = effectMode }
+    val r = FaceMaskRenderer(store, landmarkStore, stats, live).also { it.effect = effectMode }
     renderer = r
-    val a = FaceAnalyzer(context, store, analyzerListener).also { it.landmarksWanted = effectMode.usesLandmarks }
+    val a = FaceAnalyzer(context, store, landmarkStore, analyzerListener).also { applyEffectTo(it) }
     analyzer = a
     analysis.setAnalyzer(analysisExecutor, a)
 
+    // LIVE : file 0 = chaque image est dessinée dès son arrivée.
     val overlay = OverlayEffect(
       CameraEffect.PREVIEW or CameraEffect.VIDEO_CAPTURE,
-      QUEUE_DEPTH,
+      if (live) 0 else QUEUE_DEPTH,
       glHandler,
     ) { t -> Log.e(TAG, "OverlayEffect en erreur", t) }
     overlay.setOnDrawListener { frame ->
@@ -312,6 +356,16 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     camera = cam
     boundCases = listOf(preview, videoCapture, analysis)
     boundFacing = facing
+    boundLive = live
+    try {
+      val src = Camera2CameraInfo.from(cam.cameraInfo)
+        .getCameraCharacteristic(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE)
+      if (src != null) {
+        stats.setTimestampSource(src == CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME)
+      }
+    } catch (e: Throwable) {
+      Log.w(TAG, "SENSOR_INFO_TIMESTAMP_SOURCE illisible", e)
+    }
     cam.cameraControl.setLinearZoom(zoom)
     val obs = Observer<CameraState> { state ->
       if (state.type == CameraState.Type.OPEN) {
@@ -331,8 +385,9 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     }
     Log.i(
       TAG,
-      "caméra liée facing=$facing queue=$QUEUE_DEPTH vue=${width}x$height " +
-        "mode=${previewView.implementationMode}",
+      "caméra liée facing=$facing synchro=${if (live) "live" else "exact"} " +
+        "file=${if (live) 0 else QUEUE_DEPTH} vue=${width}x$height mode=${previewView.implementationMode} " +
+        "horloge=${stats.timestampSource}",
     )
   }
 
@@ -340,6 +395,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
 
   private val analyzerListener = object : FaceAnalyzer.Listener {
     override fun onAnalyzed(info: FaceAnalyzer.Info) = handleAnalyzed(info)
+    override fun onLandmarks(info: FaceAnalyzer.LandmarkInfo) = stats.onLandmarks(info)
     override fun onDetectorError(message: String) = handleDetectorError(message)
   }
 
@@ -347,7 +403,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     stats.onAnalyzed(info)
     val faceCount = info.faceCount
     val fx = effect
-    if (exactSync && fx != null) {
+    if (!boundLive && fx != null) {
       val asked = SystemClock.elapsedRealtimeNanos()
       val future = fx.drawFrameAsync(info.timestampNs)
       future.addListener({
@@ -357,15 +413,9 @@ class NiaCameraView(context: Context, appContext: AppContext) :
         } catch (_: Throwable) {
           false
         }
+        // Image introuvable : elle sort quand même de la file, masquée
+        // d'après les analyses voisines (jamais nue).
         stats.onSync(ok)
-        if (ok) {
-          consecutiveMisses = 0
-        } else if (++consecutiveMisses >= MAX_SYNC_MISSES && exactSync) {
-          // Horodatages analyse / image non concordants : on garde la file
-          // (plus de latence, toujours masqué) au lieu de vider l'aperçu.
-          exactSync = false
-          Log.w(TAG, "drawFrameAsync ne trouve pas les images : passage en mode file")
-        }
       }, glExecutor)
     }
     mainHandler.post { updateFacePresence(faceCount > 0) }
@@ -402,7 +452,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     mainHandler.postDelayed(object : Runnable {
       override fun run() {
         if (released) return
-        val mode = if (exactSync) "exact" else "queue"
+        val mode = if (boundLive) "live" else "exact"
         val effectName = when (effectMode) {
           FaceMaskRenderer.Effect.PIXELATE -> "pixelate"
           FaceMaskRenderer.Effect.SKI_MASK -> "skimask"
@@ -441,6 +491,8 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     activeRecording = pending.start(mainExecutor) { event ->
       if (event is VideoRecordEvent.Finalize) {
         activeRecording = null
+        // Synchro changée pendant l'enregistrement : appliquée maintenant.
+        if (boundLive != liveSync) mainHandler.post { onPropsUpdated() }
         val p = recordPromise
         recordPromise = null
         when (event.error) {
@@ -504,6 +556,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     effect = null
     closeAnalyzer()
     store.clear()
+    landmarkStore.clear()
     analysisExecutor.shutdown()
     glThread.quitSafely()
   }
@@ -512,7 +565,6 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     const val TAG = "NiaCamera"
     /** ≈ 200 ms à 30 i/s : l'analyse a ce temps pour rendre sa réponse. */
     const val QUEUE_DEPTH = 6
-    const val MAX_SYNC_MISSES = 15
     const val FACE_ON_STREAK = 2
     const val FACE_OFF_STREAK = 4
   }

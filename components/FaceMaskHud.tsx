@@ -1,7 +1,7 @@
 /**
  * Caméra, masque visage actif (A1) : bandeau « visage non détecté » et,
  * pendant le test de faisabilité, les mesures (toucher = changer de
- * synchro exact ↔ file, pour comparer sur le téléphone).
+ * synchro direct ↔ exacte, hors enregistrement, pour comparer sur le téléphone).
  */
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';

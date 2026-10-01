@@ -11,11 +11,13 @@ import type { ViewProps } from 'react-native';
 export type NiaFaceEffect = 'blur' | 'pixelate' | 'skimask' | 'fullmask';
 
 /**
- * `exact` : chaque image attend sa propre analyse (latence la plus faible,
- * images sans analyse sautées). `queue` : les images sortent de la file au
- * rythme de la caméra, masquées d'après les analyses voisines.
+ * `live` (défaut) : chaque image caméra est dessinée dès son arrivée, avec
+ * les dernières analyses prolongées par le mouvement (cadence de la caméra,
+ * latence la plus faible). `exact` : chaque image attend sa propre analyse
+ * (calage image par image, plus de latence). Changer de mode relie la caméra
+ * (ignoré pendant un enregistrement, appliqué à la fin).
  */
-export type NiaSyncMode = 'exact' | 'queue';
+export type NiaSyncMode = 'live' | 'exact';
 
 export type NiaCameraStats = {
   renderFps: number;
@@ -29,6 +31,8 @@ export type NiaCameraStats = {
   exact: number;
   neighbor: number;
   hold: number;
+  /** Images dessinées en direct (synchro `live`). */
+  live?: number;
   cover: number;
   /** % d'analyses avec au moins un visage. */
   faceRatio: number;
@@ -56,6 +60,7 @@ export type NiaCameraStats = {
   /** Temps de dessin du masque sur le fil GL (ms). */
   drawMsAvg?: number;
   drawMsMax?: number;
+  /** Anciens APK (avant jalon 2b) : calques non redessinés. */
   redrawSkipped?: number;
   /** Fin d'analyse → image dessinée (ms) ; -1 si inconnu. */
   glWaitMsAvg?: number;
@@ -83,8 +88,27 @@ export type NiaCameraStats = {
   landmarkFrames?: number;
   /** Visages du détecteur sans repères (flou de repli). */
   fallbackFaces?: number;
-  /** Visages vus par les repères seuls (profil…), masqués aussi. */
+  /** Anciens APK : visages vus par les repères seuls. */
   landmarkOnlyFaces?: number;
+  // --- Jalon 2b : rendu découplé de l'analyse.
+  /** Passages de Face Landmarker par seconde (son propre fil). */
+  landmarkFps?: number;
+  /** Inférence + géométrie + pré-rendu du masque (ms). */
+  landmarkTotalMsAvg?: number;
+  /** Images passées sans repères (fil des repères occupé). */
+  landmarkSkipped?: number;
+  /** 'GPU' | 'CPU' | '—'. */
+  landmarkDelegate?: string;
+  /** Âge de l'analyse posée sur l'image au moment du dessin (ms) ; -1 si inconnu. */
+  analysisAgeMsAvg?: number;
+  /** Âge des repères du masque au moment du dessin (ms) ; -1 sans masque. */
+  landmarkAgeMsAvg?: number;
+  /** Images de la seconde avec au moins un masque à repères. */
+  maskFrames?: number;
+  /** Capteur → résultat de capture Camera2 (HAL / ISP, ms) ; -1 si inconnu. */
+  cameraPipelineMsAvg?: number;
+  /** SENSOR_INFO_TIMESTAMP_SOURCE : 'realtime' | 'unknown' | '—'. */
+  timestampSource?: string;
 };
 
 export type NiaCameraError = { code: 'ERR_CAMERA' | 'ERR_DETECTOR' | string; message: string };

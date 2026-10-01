@@ -266,7 +266,8 @@ function CameraScreen() {
   const [faceEffect, setFaceEffect] = useState<FaceEffectId>('off');
   const [faceDetected, setFaceDetected] = useState(false);
   const [faceStats, setFaceStats] = useState<NiaCameraStats | null>(null);
-  const [faceSync, setFaceSync] = useState<NiaSyncMode>('exact');
+  // 'live' : chaque image dessinée tout de suite (jalon 2b) ; 'exact' pour comparer.
+  const [faceSync, setFaceSync] = useState<NiaSyncMode>('live');
   const faceMaskActive = faceMaskAvailable && faceEffect !== 'off' && mode !== 'photo';
   /**
    * Caméra montée. Passer d'une caméra à l'autre laisse un temps sans caméra :
@@ -1385,7 +1386,11 @@ function CameraScreen() {
           faceDetected={faceDetected}
           recording={phase === 'recording'}
           stats={faceStats}
-          onToggleSync={() => setFaceSync((m) => (m === 'exact' ? 'queue' : 'exact'))}
+          onToggleSync={() => {
+            // Changer de synchro relie la caméra : jamais pendant une prise.
+            if (phase !== 'idle') return;
+            setFaceSync((m) => (m === 'exact' ? 'live' : 'exact'));
+          }}
         />
       ) : null}
 

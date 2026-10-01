@@ -17,11 +17,10 @@ import com.google.mediapipe.tasks.vision.facedetector.FaceDetector
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -30,16 +29,21 @@ import kotlin.math.roundToInt
  * Analyse de chaque image (flux ImageAnalysis, RGBA, réduite à ≤ 640 px) :
  *  - MediaPipe Face Detector (BlazeFace courte portée) sur CHAQUE image :
  *    présence et zone de chaque visage (filet de sécurité, jalon 1) ;
- *  - MediaPipe Face Landmarker (478 repères), en parallèle sur un second
- *    fil, seulement quand un masque (cagoule / intégral) est choisi.
+ *    le résultat part TOUT DE SUITE (jamais d'attente des repères) ;
+ *  - MediaPipe Face Landmarker (478 repères), sur son propre fil, seulement
+ *    quand un masque (cagoule / intégral) est choisi : une image à la fois,
+ *    les suivantes passent sans repères tant qu'il travaille (jalon 2b).
+ *    Il pré-dessine le masque (sprite) : le fil GL n'a plus qu'à le poser.
  * Un visage vu par l'un OU l'autre est masqué.
  *
- * Tout est sur l'appareil (CPU). Rien n'est écrit sur le disque ni envoyé :
- * les résultats vivent dans [FaceStore] (≈ 0,5 s) et sont remplacés en continu.
+ * Tout est sur l'appareil (GPU pour les repères si possible, sinon CPU).
+ * Rien n'est écrit sur le disque ni envoyé : les résultats vivent dans
+ * [FaceStore] / [LandmarkStore] (≈ 0,5 s) et sont remplacés en continu.
  */
 internal class FaceAnalyzer(
   private val context: Context,
   private val store: FaceStore,
+  private val landmarkStore: LandmarkStore,
   private val listener: Listener,
 ) : ImageAnalysis.Analyzer {
 
@@ -72,17 +76,25 @@ internal class FaceAnalyzer(
     val landmarksWanted: Boolean,
     /** "off" | "loading" | "ready" | "error". */
     val landmarkState: String,
-    val landmarkMs: Float,
-    /** Visages trouvés par Face Landmarker. */
-    val landmarkFaces: Int,
-    /** Visages vus par le détecteur mais sans repères : flou de repli. */
-    val fallbackFaces: Int,
-    /** Visages vus par les repères seuls (profil…) : ajoutés au masque. */
-    val landmarkOnlyFaces: Int,
+    /** Image passée sans repères : le fil des repères était occupé. */
+    val landmarkSkipped: Boolean,
+  )
+
+  /** Diagnostic d'un passage de Face Landmarker (son propre fil). */
+  class LandmarkInfo(
+    val timestampNs: Long,
+    /** Inférence MediaPipe seule. */
+    val inferMs: Float,
+    /** Inférence + géométrie + pré-rendu des masques. */
+    val totalMs: Float,
+    val faces: Int,
+    /** "GPU" | "CPU". */
+    val delegate: String,
   )
 
   interface Listener {
     fun onAnalyzed(info: Info)
+    fun onLandmarks(info: LandmarkInfo)
     fun onDetectorError(message: String)
   }
 
@@ -109,6 +121,10 @@ internal class FaceAnalyzer(
   @Volatile
   var landmarksWanted = false
 
+  /** Effet des masques à pré-dessiner. */
+  @Volatile
+  var maskEffect: FaceMaskRenderer.Effect = FaceMaskRenderer.Effect.SKI_MASK
+
   private val landmarkExecutor: ExecutorService = Executors.newSingleThreadExecutor { r ->
     Thread(r, "NiaCameraLandmarks")
   }
@@ -118,8 +134,14 @@ internal class FaceAnalyzer(
 
   @Volatile
   private var landmarkState = "off"
+  @Volatile
+  private var delegate = "CPU"
+  /** Fil des repères occupé : l'image suivante passe sans repères. */
+  private val landmarkBusy = AtomicBoolean(false)
   private var lastLandmarkTsMs = -1L
   private var landmarkFailures = 0
+  /** Sprites des masques (fil des repères). */
+  private val spritePool = MaskSprite.Pool()
 
   @Volatile
   private var closed = false
@@ -142,7 +164,19 @@ internal class FaceAnalyzer(
   /** Image redressée pour MediaPipe et la transformation retour. */
   private class Upright(val bitmap: Bitmap, val toBuffer: Matrix)
 
-  private class LandmarkPass(val masks: List<Pair<FaceMask, RectF>>, val ms: Float)
+  /**
+   * Tampon + image redressée partagés entre le fil d'analyse et celui des
+   * repères : recyclés par le dernier des deux qui a fini.
+   */
+  private class Shared(val buffer: Bitmap, val upright: Upright, users: Int) {
+    private val refs = AtomicInteger(users)
+    fun release() {
+      if (refs.decrementAndGet() == 0) {
+        upright.bitmap.recycle()
+        buffer.recycle()
+      }
+    }
+  }
 
   override fun analyze(image: ImageProxy) {
     val t0 = SystemClock.elapsedRealtimeNanos()
@@ -173,119 +207,87 @@ internal class FaceAnalyzer(
       val upright = makeUpright(buffer, deg)
       val prepMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1e6f
 
-      // Repères en parallèle du détecteur (même image, lecture seule).
+      // Repères sur leur fil, si libre ; jamais attendus ici.
       val wantLandmarks = landmarksWanted
-      val lmFuture: Future<LandmarkPass?>? = if (wantLandmarks) startLandmarks(upright, ts) else null
-
-      var pass = detectOn(det, upright)
-      var detectMs = pass.detectMs
-      var raw = pass.rawCount
-      var best = pass.bestScore
-      var landmarksFinished = lmFuture == null
-      val lm: LandmarkPass? = try {
-        lmFuture?.get(LANDMARK_TIMEOUT_MS, TimeUnit.MILLISECONDS).also { landmarksFinished = true }
-      } catch (e: java.util.concurrent.ExecutionException) {
-        landmarksFinished = true
-        if (landmarkFailures++ < 3) Log.w(TAG, "repères en erreur : repli sur le flou", e)
-        null
-      } catch (e: Throwable) {
-        if (landmarkFailures++ < 3) Log.w(TAG, "repères trop lents : repli sur le flou", e)
-        null
-      }
-      // Encore lue par le fil des repères (trop lent) : le GC s'en chargera.
-      if (landmarksFinished) upright.bitmap.recycle()
-
-      // Sondage d'orientation (détecteur seul) : aucun visage depuis un
-      // moment → on essaie, de temps en temps, les trois autres rotations.
-      val lmFound = lm != null && lm.masks.isNotEmpty()
-      if (pass.faces.isEmpty() && !lmFound) {
-        missStreak++
-        if (missStreak >= PROBE_AFTER_MISSES && missStreak % PROBE_EVERY == 0) {
-          probeIndex = (probeIndex + 1) % 3
-          val candidate = (rotationOffset + 90 * (probeIndex + 1)) % 360
-          val up2 = makeUpright(buffer, rotation + candidate)
-          val probe = detectOn(det, up2)
-          up2.bitmap.recycle()
-          detectMs += probe.detectMs
-          raw = max(raw, probe.rawCount)
-          best = max(best, probe.bestScore)
-          if (probe.faces.isNotEmpty()) {
-            Log.w(TAG, "visage trouvé avec +$candidate° (rotation CameraX $rotation°) : correction adoptée")
-            rotationOffset = candidate
-            pass = probe
-          }
+      val submit = wantLandmarks && startLandmarks()
+      val shared = Shared(buffer, upright, if (submit) 2 else 1)
+      if (submit) {
+        try {
+          landmarkExecutor.execute { runLandmarks(shared, ts, maskEffect) }
+        } catch (e: Throwable) {
+          landmarkBusy.set(false)
+          shared.release()
         }
-      } else {
-        missStreak = 0
       }
 
-      // Union détecteur ∪ repères : chaque jeu de repères va au visage du
-      // détecteur qui contient son centre, sinon devient un visage à part
-      // (profil perdu par le détecteur, autre personne…). Jamais retiré.
-      val masks = lm?.masks ?: emptyList()
-      val used = BooleanArray(masks.size)
-      val patches = ArrayList<FacePatch>(pass.faces.size + masks.size)
-      var fallback = 0
-      for (d in pass.faces) {
-        var mask: FaceMask? = null
-        for ((i, m) in masks.withIndex()) {
-          if (used[i]) continue
-          val b = m.first.bounds
-          if (d.bufferRect.contains(b.centerX(), b.centerY())) {
-            used[i] = true
-            mask = m.first
-            break
+      try {
+        var pass = detectOn(det, upright)
+        var detectMs = pass.detectMs
+        var raw = pass.rawCount
+        var best = pass.bestScore
+
+        // Sondage d'orientation (détecteur seul) : aucun visage depuis un
+        // moment → on essaie, de temps en temps, les trois autres rotations.
+        if (pass.faces.isEmpty()) {
+          missStreak++
+          if (missStreak >= PROBE_AFTER_MISSES && missStreak % PROBE_EVERY == 0) {
+            probeIndex = (probeIndex + 1) % 3
+            val candidate = (rotationOffset + 90 * (probeIndex + 1)) % 360
+            val up2 = makeUpright(buffer, rotation + candidate)
+            val probe = detectOn(det, up2)
+            up2.bitmap.recycle()
+            detectMs += probe.detectMs
+            raw = max(raw, probe.rawCount)
+            best = max(best, probe.bestScore)
+            if (probe.faces.isNotEmpty()) {
+              Log.w(TAG, "visage trouvé avec +$candidate° (rotation CameraX $rotation°) : correction adoptée")
+              rotationOffset = candidate
+              pass = probe
+            }
           }
+        } else {
+          missStreak = 0
         }
-        if (wantLandmarks && mask == null) fallback++
-        val crop = clampRect(d.bufferRect, w, h) ?: continue
-        patches.add(FacePatch(d.bufferRect, shrink(buffer, crop, PIXEL_CELLS), shrink(buffer, crop, BLUR_CELLS), mask))
-      }
-      var landmarkOnly = 0
-      for ((i, m) in masks.withIndex()) {
-        if (used[i]) continue
-        val rect = m.second
-        val crop = clampRect(rect, w, h) ?: continue
-        landmarkOnly++
-        patches.add(FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), shrink(buffer, crop, BLUR_CELLS), m.first))
-      }
 
-      val frameTiny = shrink(buffer, Rect(0, 0, w, h), FRAME_CELLS)
-      val (lumaMean, lumaRange) = luma(frameTiny)
-      store.add(FaceResult(ts, w, h, sensorToBuffer, patches, frameTiny))
-      if (!loggedFirst) {
-        loggedFirst = true
-        Log.i(TAG, "1re analyse ${srcW}x$srcH→${w}x$h rot=$rotation° luma=$lumaMean±$lumaRange brut=$raw score=$best")
+        val patches = ArrayList<FacePatch>(pass.faces.size)
+        for (d in pass.faces) {
+          makePatch(buffer, d.bufferRect, w, h)?.let { patches.add(it) }
+        }
+        val frameTiny = shrink(buffer, Rect(0, 0, w, h), FRAME_CELLS)
+        val (lumaMean, lumaRange) = luma(frameTiny)
+        store.add(FaceResult(ts, w, h, sensorToBuffer, patches, frameTiny))
+        if (!loggedFirst) {
+          loggedFirst = true
+          Log.i(TAG, "1re analyse ${srcW}x$srcH→${w}x$h rot=$rotation° luma=$lumaMean±$lumaRange brut=$raw score=$best")
+        }
+        val totalMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1e6f
+        listener.onAnalyzed(
+          Info(
+            timestampNs = ts,
+            faceCount = patches.size,
+            rawCount = raw,
+            bestScore = best,
+            detectMs = detectMs,
+            totalMs = totalMs,
+            prepMs = prepMs,
+            width = w,
+            height = h,
+            sourceWidth = srcW,
+            sourceHeight = srcH,
+            rotation = rotation,
+            rotationOffset = rotationOffset,
+            lumaMean = lumaMean,
+            lumaRange = lumaRange,
+            startRealtimeNs = t0,
+            startMonoNs = m0,
+            landmarksWanted = wantLandmarks,
+            landmarkState = if (wantLandmarks) landmarkState else "off",
+            landmarkSkipped = wantLandmarks && !submit,
+          ),
+        )
+      } finally {
+        shared.release()
       }
-      buffer.recycle()
-      val totalMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1e6f
-      listener.onAnalyzed(
-        Info(
-          timestampNs = ts,
-          faceCount = patches.size,
-          rawCount = raw,
-          bestScore = best,
-          detectMs = detectMs,
-          totalMs = totalMs,
-          prepMs = prepMs,
-          width = w,
-          height = h,
-          sourceWidth = srcW,
-          sourceHeight = srcH,
-          rotation = rotation,
-          rotationOffset = rotationOffset,
-          lumaMean = lumaMean,
-          lumaRange = lumaRange,
-          startRealtimeNs = t0,
-          startMonoNs = m0,
-          landmarksWanted = wantLandmarks,
-          landmarkState = if (wantLandmarks) landmarkState else "off",
-          landmarkMs = lm?.ms ?: 0f,
-          landmarkFaces = masks.size,
-          fallbackFaces = fallback,
-          landmarkOnlyFaces = landmarkOnly,
-        ),
-      )
     } catch (e: Throwable) {
       Log.w(TAG, "Analyse échouée (image traitée comme sans visage)", e)
     } finally {
@@ -347,77 +349,127 @@ internal class FaceAnalyzer(
     return RectF(cx - hw, cy - hh, cx + hw, cy + hh).also { toBuffer.mapRect(it) }
   }
 
-  /** Lance Face Landmarker sur son fil ; null si pas prêt (repli flou). */
-  private fun startLandmarks(up: Upright, ts: Long): Future<LandmarkPass?>? {
-    val lmk = landmarker
-    if (lmk == null) {
-      if (landmarkState == "off") {
-        landmarkState = "loading"
-        landmarkExecutor.execute { createLandmarker() }
-      }
-      return null
-    }
-    // Mode VIDEO : horodatages strictement croissants (ms).
-    val tsMs = max(ts / 1_000_000L, lastLandmarkTsMs + 1)
-    lastLandmarkTsMs = tsMs
-    return landmarkExecutor.submit(
-      Callable {
-        if (closed) return@Callable null
-        val t = SystemClock.elapsedRealtimeNanos()
-        val uw = up.bitmap.width.toFloat()
-        val uh = up.bitmap.height.toFloat()
-        val res = lmk.detectForVideo(BitmapImageBuilder(up.bitmap).build(), tsMs)
-        val out = ArrayList<Pair<FaceMask, RectF>>()
-        for (face in res.faceLandmarks()) {
-          val mask = MaskGeometry.build(face, uw, uh, up.toBuffer) ?: continue
-          // Zone de repli pour ce visage : emprise des repères agrandie,
-          // calculée dans l'image redressée.
-          var x0 = Float.MAX_VALUE
-          var y0 = Float.MAX_VALUE
-          var x1 = -Float.MAX_VALUE
-          var y1 = -Float.MAX_VALUE
-          for (i in MaskGeometry.FACE_OVAL) {
-            val x = face[i].x() * uw
-            val y = face[i].y() * uh
-            x0 = min(x0, x); y0 = min(y0, y); x1 = max(x1, x); y1 = max(y1, y)
-          }
-          val hw = (x1 - x0) * LANDMARK_EXPAND_W / 2f
-          val hh = (y1 - y0) * LANDMARK_EXPAND_H / 2f
-          val cx = (x0 + x1) / 2f
-          val cy = (y0 + y1) / 2f - (y1 - y0) * LANDMARK_SHIFT_UP
-          val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh).also { up.toBuffer.mapRect(it) }
-          out.add(mask to rect)
-        }
-        LandmarkPass(out, (SystemClock.elapsedRealtimeNanos() - t) / 1e6f)
-      },
-    )
+  /** Zone + vignettes (pixels, flou, ellipse de flou) d'un visage. */
+  private fun makePatch(buffer: Bitmap, rect: RectF, w: Int, h: Int): FacePatch? {
+    val crop = clampRect(rect, w, h) ?: return null
+    val blur = shrink(buffer, crop, BLUR_CELLS)
+    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect))
   }
 
-  private fun createLandmarker() {
-    if (closed) return
-    try {
-      val base = BaseOptions.builder()
-        .setModelAssetBuffer(loadAsset(LANDMARKER_ASSET))
-        .setDelegate(Delegate.CPU)
-        .build()
-      val options = FaceLandmarker.FaceLandmarkerOptions.builder()
-        .setBaseOptions(base)
-        .setRunningMode(RunningMode.VIDEO)
-        .setNumFaces(MAX_FACES)
-        .setMinFaceDetectionConfidence(MIN_CONFIDENCE)
-        .setMinFacePresenceConfidence(MIN_CONFIDENCE)
-        .setMinTrackingConfidence(MIN_CONFIDENCE)
-        .setOutputFaceBlendshapes(false)
-        .setOutputFacialTransformationMatrixes(false)
-        .build()
-      landmarker = FaceLandmarker.createFromOptions(context, options)
-      landmarkState = "ready"
-      Log.i(TAG, "Face Landmarker prêt")
-    } catch (e: Throwable) {
-      // Pas d'erreur de montage : le flou du détecteur couvre toujours.
-      Log.e(TAG, "Face Landmarker indisponible : flou de repli", e)
-      landmarkState = "error"
+  /**
+   * Réserve le fil des repères pour cette image. Faux s'il n'est pas prêt
+   * (chargement lancé) ou encore occupé : l'image part sans repères.
+   */
+  private fun startLandmarks(): Boolean {
+    if (landmarker == null) {
+      if (landmarkState == "off") {
+        landmarkState = "loading"
+        landmarkExecutor.execute { createLandmarker(preferGpu = true) }
+      }
+      return false
     }
+    return landmarkBusy.compareAndSet(false, true)
+  }
+
+  /** Fil des repères : inférence, géométrie, sprite, publication. */
+  private fun runLandmarks(shared: Shared, ts: Long, fx: FaceMaskRenderer.Effect) {
+    try {
+      if (closed) return
+      val lmk = landmarker ?: return
+      val up = shared.upright
+      val buffer = shared.buffer
+      val t = SystemClock.elapsedRealtimeNanos()
+      // Mode VIDEO : horodatages strictement croissants (ms).
+      val tsMs = max(ts / 1_000_000L, lastLandmarkTsMs + 1)
+      lastLandmarkTsMs = tsMs
+      val uw = up.bitmap.width.toFloat()
+      val uh = up.bitmap.height.toFloat()
+      // Pas de close() : il recyclerait l'image (partagée).
+      val res = try {
+        lmk.detectForVideo(BitmapImageBuilder(up.bitmap).build(), tsMs)
+      } catch (e: Throwable) {
+        if (landmarkFailures++ < 3) Log.w(TAG, "repères en erreur ($delegate) : repli sur le flou", e)
+        if (delegate == "GPU") {
+          // GPU instable sur cet appareil : on repasse en CPU.
+          try {
+            lmk.close()
+          } catch (_: Throwable) {
+          }
+          landmarker = null
+          createLandmarker(preferGpu = false)
+        }
+        return
+      }
+      val inferMs = (SystemClock.elapsedRealtimeNanos() - t) / 1e6f
+      val w = buffer.width
+      val h = buffer.height
+      val faces = ArrayList<LandmarkFace>()
+      for (face in res.faceLandmarks()) {
+        val mask = MaskGeometry.build(face, uw, uh, up.toBuffer) ?: continue
+        // Zone du visage tirée des repères (ancrage, repli), dans l'image
+        // redressée puis ramenée au tampon.
+        var x0 = Float.MAX_VALUE
+        var y0 = Float.MAX_VALUE
+        var x1 = -Float.MAX_VALUE
+        var y1 = -Float.MAX_VALUE
+        for (i in MaskGeometry.FACE_OVAL) {
+          val x = face[i].x() * uw
+          val y = face[i].y() * uh
+          x0 = min(x0, x); y0 = min(y0, y); x1 = max(x1, x); y1 = max(y1, y)
+        }
+        val hw = (x1 - x0) * LANDMARK_EXPAND_W / 2f
+        val hh = (y1 - y0) * LANDMARK_EXPAND_H / 2f
+        val cx = (x0 + x1) / 2f
+        val cy = (y0 + y1) / 2f - (y1 - y0) * LANDMARK_SHIFT_UP
+        val rect = RectF(cx - hw, cy - hh, cx + hw, cy + hh).also { up.toBuffer.mapRect(it) }
+        val sprite = MaskSprite.render(mask, fx, spritePool) ?: continue
+        faces.add(LandmarkFace(fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h)))
+      }
+      if (closed) return
+      val evicted = landmarkStore.add(LandmarkResult(ts, w, h, faces))
+      spritePool.retire(evicted.flatMap { r -> r.faces.map { it.sprite } })
+      val totalMs = (SystemClock.elapsedRealtimeNanos() - t) / 1e6f
+      listener.onLandmarks(LandmarkInfo(ts, inferMs, totalMs, faces.size, delegate))
+    } catch (e: Throwable) {
+      if (landmarkFailures++ < 3) Log.w(TAG, "repères en erreur : repli sur le flou", e)
+    } finally {
+      landmarkBusy.set(false)
+      shared.release()
+    }
+  }
+
+  private fun createLandmarker(preferGpu: Boolean) {
+    if (closed) return
+    val order = if (preferGpu) listOf(Delegate.GPU, Delegate.CPU) else listOf(Delegate.CPU)
+    for (d in order) {
+      try {
+        val base = BaseOptions.builder()
+          .setModelAssetBuffer(loadAsset(LANDMARKER_ASSET))
+          .setDelegate(d)
+          .build()
+        val options = FaceLandmarker.FaceLandmarkerOptions.builder()
+          .setBaseOptions(base)
+          .setRunningMode(RunningMode.VIDEO)
+          .setNumFaces(MAX_FACES)
+          .setMinFaceDetectionConfidence(MIN_CONFIDENCE)
+          .setMinFacePresenceConfidence(MIN_CONFIDENCE)
+          .setMinTrackingConfidence(MIN_CONFIDENCE)
+          .setOutputFaceBlendshapes(false)
+          .setOutputFacialTransformationMatrixes(false)
+          .build()
+        landmarker = FaceLandmarker.createFromOptions(context, options)
+        delegate = if (d == Delegate.GPU) "GPU" else "CPU"
+        lastLandmarkTsMs = -1L
+        landmarkState = "ready"
+        Log.i(TAG, "Face Landmarker prêt ($delegate)")
+        return
+      } catch (e: Throwable) {
+        Log.w(TAG, "Face Landmarker indisponible en $d", e)
+      }
+    }
+    // Pas d'erreur de montage : le flou du détecteur couvre toujours.
+    Log.e(TAG, "Face Landmarker indisponible : flou de repli")
+    landmarkState = "error"
   }
 
   private fun loadAsset(name: String): ByteBuffer {
@@ -512,8 +564,6 @@ internal class FaceAnalyzer(
     const val RAW_CONFIDENCE = 0.3f
     const val MAX_FACES = 3
     const val WORK_MAX_SIDE = 640
-    /** Au-delà, l'image part sans repères (flou de repli), jamais bloquée. */
-    const val LANDMARK_TIMEOUT_MS = 80L
     const val EXPAND_W = 1.6f
     const val EXPAND_H = 1.9f
     const val SHIFT_UP = 0.12f

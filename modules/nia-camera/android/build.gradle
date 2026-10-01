@@ -31,4 +31,6 @@ dependencies {
   implementation "androidx.camera:camera-effects:${cameraxVersion}"
   // Détection de visage sur l'appareil (Apache 2.0). Aucun envoi réseau.
   implementation "com.google.mediapipe:tasks-vision:1.0.0"
+  // @OptIn(ExperimentalCamera2Interop) : horloge capteur, mesure HAL.
+  implementation "androidx.annotation:annotation-experimental:1.4.1"
 }

@@ -12,6 +12,7 @@ internal class NiaCameraStats {
   private var exact = 0
   private var neighbor = 0
   private var hold = 0
+  private var live = 0
   private var cover = 0
   private var latencySumMs = 0.0
   private var latencyMaxMs = 0.0
@@ -35,7 +36,6 @@ internal class NiaCameraStats {
   private var drawSumMs = 0.0
   private var drawMaxMs = 0.0
   private var drawCount = 0
-  private var redrawSkipped = 0
   private var glWaitSumMs = 0.0
   private var glWaitCount = 0
   private var frameWidth = 0
@@ -47,9 +47,20 @@ internal class NiaCameraStats {
   private var landmarkSumMs = 0.0
   private var landmarkMaxMs = 0.0
   private var landmarkFrames = 0
+  private var landmarkTotalSumMs = 0.0
+  private var landmarkSkipped = 0
+  private var landmarkDelegate = "—"
   private var fallbackFaces = 0
-  private var landmarkOnlyFaces = 0
   private var landmarkState = "off"
+  // Rendu (jalon 2b) : âge des données posées sur chaque image.
+  private var analysisAgeSumMs = 0.0
+  private var analysisAgeCount = 0
+  private var landmarkAgeSumMs = 0.0
+  private var landmarkAgeCount = 0
+  private var maskFrames = 0
+  // Caméra : capteur → résultat de capture (pipeline HAL / ISP).
+  private var halSumMs = 0.0
+  private var halCount = 0
   private var queueSumMs = 0.0
   private var queueCount = 0
   private var prepSumMs = 0.0
@@ -62,18 +73,51 @@ internal class NiaCameraStats {
   @Volatile
   var previewViewSize: String = "0x0"
 
-  /** Base de temps des horodatages caméra, devinée à la première image. */
+  /** Base de temps des horodatages caméra (Camera2, sinon devinée). */
   private var clock: Int = CLOCK_UNKNOWN
 
+  /** SENSOR_INFO_TIMESTAMP_SOURCE : "realtime" | "unknown" | "—". */
+  @Volatile
+  var timestampSource: String = "—"
+
+  /** Base annoncée par Camera2 : REALTIME = elapsedRealtimeNanos, sinon System.nanoTime. */
   @Synchronized
-  fun onRendered(kind: FaceMaskPolicy.Kind, frameTs: Long, realtimeNs: Long, monoNs: Long) {
+  fun setTimestampSource(realtime: Boolean) {
+    timestampSource = if (realtime) "realtime" else "unknown"
+    clock = if (realtime) CLOCK_REALTIME else CLOCK_MONOTONIC
+  }
+
+  @Synchronized
+  fun onRendered(
+    kind: FaceMaskPolicy.Kind,
+    frameTs: Long,
+    realtimeNs: Long,
+    monoNs: Long,
+    analysisAgeNs: Long,
+    masks: Int,
+    landmarkAgeNs: Long,
+    fallbacks: Int,
+  ) {
     rendered++
     when (kind) {
       FaceMaskPolicy.Kind.EXACT -> exact++
       FaceMaskPolicy.Kind.NEIGHBOR -> neighbor++
       FaceMaskPolicy.Kind.HOLD -> hold++
+      FaceMaskPolicy.Kind.LIVE -> live++
       FaceMaskPolicy.Kind.COVER -> cover++
     }
+    if (analysisAgeNs in 0..5_000_000_000L) {
+      analysisAgeSumMs += analysisAgeNs / 1e6
+      analysisAgeCount++
+    }
+    if (masks > 0) {
+      maskFrames++
+      if (landmarkAgeNs >= 0) {
+        landmarkAgeSumMs += landmarkAgeNs / 1e6
+        landmarkAgeCount++
+      }
+    }
+    fallbackFaces += fallbacks
     if (clock == CLOCK_UNKNOWN) {
       clock = when {
         realtimeNs - frameTs in 0..MAX_PLAUSIBLE_NS -> CLOCK_REALTIME
@@ -108,14 +152,7 @@ internal class NiaCameraStats {
     lastInfo = info
     prepSumMs += info.prepMs
     landmarkState = info.landmarkState
-    if (info.landmarksWanted && info.landmarkMs > 0f) {
-      landmarkRuns++
-      landmarkSumMs += info.landmarkMs
-      if (info.landmarkMs > landmarkMaxMs) landmarkMaxMs = info.landmarkMs.toDouble()
-    }
-    if (info.landmarkFaces > 0) landmarkFrames++
-    fallbackFaces += info.fallbackFaces
-    landmarkOnlyFaces += info.landmarkOnlyFaces
+    if (info.landmarkSkipped) landmarkSkipped++
     // Capture → début d'analyse (même base de temps que la latence).
     val start = when (clock) {
       CLOCK_REALTIME -> info.startRealtimeNs
@@ -131,16 +168,38 @@ internal class NiaCameraStats {
     }
   }
 
+  /** Un passage de Face Landmarker (son fil). */
+  @Synchronized
+  fun onLandmarks(info: FaceAnalyzer.LandmarkInfo) {
+    landmarkRuns++
+    landmarkSumMs += info.inferMs
+    landmarkTotalSumMs += info.totalMs
+    if (info.inferMs > landmarkMaxMs) landmarkMaxMs = info.inferMs.toDouble()
+    if (info.faces > 0) landmarkFrames++
+    landmarkDelegate = info.delegate
+  }
+
+  /** Résultat de capture Camera2 reçu : capteur → fin du pipeline caméra. */
+  @Synchronized
+  fun onCaptureResult(sensorTs: Long, realtimeNs: Long, monoNs: Long) {
+    val now = when (clock) {
+      CLOCK_REALTIME -> realtimeNs
+      CLOCK_MONOTONIC -> monoNs
+      else -> return
+    }
+    val ms = (now - sensorTs) / 1e6
+    if (ms in 0.0..5000.0) {
+      halSumMs += ms
+      halCount++
+    }
+  }
+
   /** Temps passé à dessiner le masque (fil GL, canevas logiciel). */
   @Synchronized
-  fun onDrawCost(ms: Double, skipped: Boolean, width: Int, height: Int, rotation: Int) {
-    if (skipped) {
-      redrawSkipped++
-    } else {
-      drawSumMs += ms
-      drawCount++
-      if (ms > drawMaxMs) drawMaxMs = ms
-    }
+  fun onDrawCost(ms: Double, width: Int, height: Int, rotation: Int) {
+    drawSumMs += ms
+    drawCount++
+    if (ms > drawMaxMs) drawMaxMs = ms
     frameWidth = width
     frameHeight = height
     frameRotation = rotation
@@ -179,6 +238,7 @@ internal class NiaCameraStats {
       "exact" to exact,
       "neighbor" to neighbor,
       "hold" to hold,
+      "live" to live,
       "cover" to cover,
       "faceRatio" to round1(if (analyzed > 0) withFace * 100.0 / analyzed else 0.0),
       "syncOk" to syncOk,
@@ -201,7 +261,6 @@ internal class NiaCameraStats {
       "bestScore" to round2(bestScore.toDouble()),
       "drawMsAvg" to round1(if (drawCount > 0) drawSumMs / drawCount else 0.0),
       "drawMsMax" to round1(drawMaxMs),
-      "redrawSkipped" to redrawSkipped,
       "glWaitMsAvg" to round1(if (glWaitCount > 0) glWaitSumMs / glWaitCount else -1.0),
       "frameWidth" to frameWidth,
       "frameHeight" to frameHeight,
@@ -217,33 +276,46 @@ internal class NiaCameraStats {
       "landmarkMsMax" to round1(landmarkMaxMs),
       "landmarkFrames" to landmarkFrames,
       "fallbackFaces" to fallbackFaces,
-      "landmarkOnlyFaces" to landmarkOnlyFaces,
+      "landmarkFps" to round1(landmarkRuns / sec),
+      "landmarkTotalMsAvg" to round1(if (landmarkRuns > 0) landmarkTotalSumMs / landmarkRuns else 0.0),
+      "landmarkSkipped" to landmarkSkipped,
+      "landmarkDelegate" to landmarkDelegate,
+      "analysisAgeMsAvg" to round1(if (analysisAgeCount > 0) analysisAgeSumMs / analysisAgeCount else -1.0),
+      "landmarkAgeMsAvg" to round1(if (landmarkAgeCount > 0) landmarkAgeSumMs / landmarkAgeCount else -1.0),
+      "maskFrames" to maskFrames,
+      "cameraPipelineMsAvg" to round1(if (halCount > 0) halSumMs / halCount else -1.0),
+      "timestampSource" to timestampSource,
     )
     Log.i(
       TAG,
       "stats render=${out["renderFps"]}fps analysis=${out["analysisFps"]}fps " +
         "detect=${out["detectMsAvg"]}/${out["detectMsMax"]}ms analysis=${out["analysisMsAvg"]}ms " +
         "latency=${out["latencyMsAvg"]}/${out["latencyMsMax"]}ms " +
-        "exact=$exact neighbor=$neighbor hold=$hold cover=$cover face=${out["faceRatio"]}% " +
+        "exact=$exact neighbor=$neighbor hold=$hold live=$live cover=$cover face=${out["faceRatio"]}% " +
         "sync=$syncOk/$syncMissed clock=${out["clock"]} mode=$mode effect=$effect " +
         "analyse=${out["analysisWidth"]}x${out["analysisHeight"]} rot=${out["analysisRotation"]}+${out["rotationOffset"]} " +
         "luma=${out["lumaMean"]}±${out["lumaRange"]} brut=$rawDetections score=${out["bestScore"]} " +
-        "dessin=${out["drawMsAvg"]}/${out["drawMsMax"]}ms saut=$redrawSkipped attenteGL=${out["glWaitMsAvg"]}ms " +
+        "dessin=${out["drawMsAvg"]}/${out["drawMsMax"]}ms attenteGL=${out["glWaitMsAvg"]}ms " +
         "cadre=${frameWidth}x$frameHeight apercu=$previewState vue=$previewViewSize " +
         "source=${out["sourceWidth"]}x${out["sourceHeight"]} prep=${out["prepMsAvg"]}ms " +
         "camera>analyse=${out["cameraToAnalysisMsAvg"]}ms reperes=$landmarkState " +
-        "${out["landmarkMsAvg"]}/${out["landmarkMsMax"]}ms img=$landmarkFrames repli=$fallbackFaces seuls=$landmarkOnlyFaces",
+        "${out["landmarkMsAvg"]}/${out["landmarkMsMax"]}ms ${out["landmarkFps"]}i/s $landmarkDelegate img=$landmarkFrames " +
+        "sautees=$landmarkSkipped repli=$fallbackFaces age=${out["analysisAgeMsAvg"]}/${out["landmarkAgeMsAvg"]}ms " +
+        "masques=$maskFrames capteur>resultat=${out["cameraPipelineMsAvg"]}ms horloge=$timestampSource",
     )
     windowStartMs = nowMs
-    rendered = 0; exact = 0; neighbor = 0; hold = 0; cover = 0
+    rendered = 0; exact = 0; neighbor = 0; hold = 0; live = 0; cover = 0
     latencySumMs = 0.0; latencyMaxMs = 0.0; latencyCount = 0
     analyzed = 0; withFace = 0; detectSumMs = 0.0; detectMaxMs = 0.0; analysisSumMs = 0.0
     syncOk = 0; syncMissed = 0
     rawDetections = 0; bestScore = 0f; lumaSum = 0L; lumaRangeSum = 0L
-    drawSumMs = 0.0; drawMaxMs = 0.0; drawCount = 0; redrawSkipped = 0
+    drawSumMs = 0.0; drawMaxMs = 0.0; drawCount = 0
     glWaitSumMs = 0.0; glWaitCount = 0
     landmarkRuns = 0; landmarkSumMs = 0.0; landmarkMaxMs = 0.0; landmarkFrames = 0
-    fallbackFaces = 0; landmarkOnlyFaces = 0; queueSumMs = 0.0; queueCount = 0; prepSumMs = 0.0
+    landmarkTotalSumMs = 0.0; landmarkSkipped = 0
+    analysisAgeSumMs = 0.0; analysisAgeCount = 0; landmarkAgeSumMs = 0.0; landmarkAgeCount = 0; maskFrames = 0
+    halSumMs = 0.0; halCount = 0
+    fallbackFaces = 0; queueSumMs = 0.0; queueCount = 0; prepSumMs = 0.0
     return out
   }
 

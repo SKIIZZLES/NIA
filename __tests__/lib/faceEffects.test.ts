@@ -206,6 +206,45 @@ describe('formatFaceStats', () => {
     expect(lines).toContain('caméra→analyse — · préparation 0 ms');
   });
 
+  it('synchro directe (jalon 2b) : âges, repères sur leur fil, capteur', () => {
+    const lines = formatFaceStats({
+      ...base,
+      mode: 'live',
+      live: 29,
+      cover: 1,
+      analysisAgeMsAvg: 71.6,
+      landmarkAgeMsAvg: 104.2,
+      cameraToAnalysisMsAvg: 88,
+      prepMsAvg: 6.4,
+      cameraPipelineMsAvg: 62.3,
+      timestampSource: 'realtime',
+      landmarkState: 'ready',
+      landmarkMsAvg: 18.4,
+      landmarkMsMax: 31,
+      landmarkFps: 21.2,
+      landmarkSkipped: 8,
+      landmarkDelegate: 'GPU',
+      landmarkTotalMsAvg: 24.6,
+      maskFrames: 28,
+      fallbackFaces: 2,
+    });
+    expect(lines[2]).toBe('direct 29 · flou total 1');
+    expect(lines[3]).toBe('synchro directe · âge analyse 72 ms · âge repères 104 ms');
+    expect(lines).toContain('capteur→résultat 62 ms · horloge realtime');
+    expect(lines).toContain('repères prêts (GPU) · 18 ms (max 31) · 21 i/s · sautées 8');
+    expect(lines).toContain('masques 28 images · repli 2 · préparation masque 25 ms');
+  });
+
+  it('synchro directe sans masque : âge des repères inconnu', () => {
+    const lines = formatFaceStats({ ...base, mode: 'live', analysisAgeMsAvg: 60, landmarkAgeMsAvg: -1 });
+    expect(lines[3]).toBe('synchro directe · âge analyse 60 ms · âge repères —');
+    expect(lines[2]).toBe('direct 0 · flou total 15');
+  });
+
+  it('synchro exacte : libellé et compte', () => {
+    expect(formatFaceStats(base)[3]).toBe('synchro exacte 14/23');
+  });
+
   it('ancien APK sans diagnostic : quatre lignes', () => {
     expect(formatFaceStats(base)).toHaveLength(4);
   });

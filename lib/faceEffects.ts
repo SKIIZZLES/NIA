@@ -100,6 +100,7 @@ type StatsLike = {
   exact: number;
   neighbor: number;
   hold: number;
+  live?: number;
   cover: number;
   syncOk: number;
   syncMissed: number;
@@ -129,7 +130,21 @@ type StatsLike = {
   landmarkFrames?: number;
   fallbackFaces?: number;
   landmarkOnlyFaces?: number;
+  landmarkFps?: number;
+  landmarkTotalMsAvg?: number;
+  landmarkSkipped?: number;
+  landmarkDelegate?: string;
+  analysisAgeMsAvg?: number;
+  landmarkAgeMsAvg?: number;
+  maskFrames?: number;
+  cameraPipelineMsAvg?: number;
+  timestampSource?: string;
 };
+
+/** Valeur en ms arrondie, « — » si inconnue (négative). */
+function ms(v: number | undefined): string {
+  return v != null && v >= 0 ? `${Math.round(v)} ms` : '—';
+}
 
 const LANDMARK_STATE_LABEL: Record<string, string> = {
   loading: 'chargement',
@@ -154,8 +169,12 @@ export function formatFaceStats(s: StatsLike): string[] {
   const lines = [
     `image ${s.renderFps.toFixed(0)} i/s · analyse ${s.analysisFps.toFixed(0)} i/s`,
     `détection ${s.detectMsAvg.toFixed(0)} ms (max ${s.detectMsMax.toFixed(0)}) · latence ${latency}`,
-    `exact ${s.exact} · voisin ${s.neighbor} · maintien ${s.hold} · flou total ${s.cover}`,
-    `synchro ${s.mode} ${s.syncOk}/${s.syncOk + s.syncMissed}`,
+    s.mode === 'live'
+      ? `direct ${s.live ?? 0} · flou total ${s.cover}`
+      : `exact ${s.exact} · voisin ${s.neighbor} · maintien ${s.hold} · flou total ${s.cover}`,
+    s.mode === 'live'
+      ? `synchro directe · âge analyse ${ms(s.analysisAgeMsAvg)} · âge repères ${ms(s.landmarkAgeMsAvg)}`
+      : `synchro ${s.mode === 'exact' ? 'exacte' : s.mode} ${s.syncOk}/${s.syncOk + s.syncMissed}`,
   ];
   // Diagnostic (APK récents seulement).
   if (s.previewState != null) {
@@ -177,12 +196,27 @@ export function formatFaceStats(s: StatsLike): string[] {
     const source = s.sourceWidth ? ` · source ${s.sourceWidth}×${s.sourceHeight}` : '';
     lines.push(`caméra→analyse ${cam} · préparation ${Math.round(s.prepMsAvg ?? 0)} ms${source}`);
   }
+  if (s.cameraPipelineMsAvg != null) {
+    lines.push(`capteur→résultat ${ms(s.cameraPipelineMsAvg)} · horloge ${s.timestampSource ?? '—'}`);
+  }
   if (s.landmarkState != null && s.landmarkState !== 'off') {
     const label = LANDMARK_STATE_LABEL[s.landmarkState] ?? s.landmarkState;
-    lines.push(
-      `repères ${label} · ${Math.round(s.landmarkMsAvg ?? 0)} ms (max ${Math.round(s.landmarkMsMax ?? 0)}) · ` +
-        `images ${s.landmarkFrames ?? 0} · repli ${s.fallbackFaces ?? 0} · seuls ${s.landmarkOnlyFaces ?? 0}`,
-    );
+    if (s.landmarkFps != null) {
+      const delegate = s.landmarkDelegate && s.landmarkDelegate !== '—' ? ` (${s.landmarkDelegate})` : '';
+      lines.push(
+        `repères ${label}${delegate} · ${Math.round(s.landmarkMsAvg ?? 0)} ms (max ${Math.round(s.landmarkMsMax ?? 0)}) · ` +
+          `${s.landmarkFps.toFixed(0)} i/s · sautées ${s.landmarkSkipped ?? 0}`,
+      );
+      lines.push(
+        `masques ${s.maskFrames ?? 0} images · repli ${s.fallbackFaces ?? 0} · ` +
+          `préparation masque ${Math.round(s.landmarkTotalMsAvg ?? 0)} ms`,
+      );
+    } else {
+      lines.push(
+        `repères ${label} · ${Math.round(s.landmarkMsAvg ?? 0)} ms (max ${Math.round(s.landmarkMsMax ?? 0)}) · ` +
+          `images ${s.landmarkFrames ?? 0} · repli ${s.fallbackFaces ?? 0} · seuls ${s.landmarkOnlyFaces ?? 0}`,
+      );
+    }
   }
   if (s.drawMsAvg != null) {
     const wait = s.glWaitMsAvg != null && s.glWaitMsAvg >= 0 ? ` · attente GL ${Math.round(s.glWaitMsAvg)} ms` : '';
