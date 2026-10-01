@@ -26,13 +26,13 @@
       },
       "permissions": [
         "CAMERA",
-        "RECORD_AUDIO",
-        "READ_MEDIA_IMAGES",
-        "READ_MEDIA_VIDEO"
+        "RECORD_AUDIO"
       ],
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO"
       ]
     },
     "web": {
