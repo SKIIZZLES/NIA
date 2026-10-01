@@ -74,7 +74,7 @@
 | **022** | **suppression définitive de vidéo, reposts conservés** — appliquée (#43) |
 | **020** | **âge déclaré et contenus 18+** — appliquée et vérifiée le 30/09/2026 (#45, accord du fondateur) : `020_verify` 16/16, 017/018/019/022 relancées toutes `true`, empreinte des 10 tables inchangée |
 **Réservée, non écrite** : 021 enregistrements de lives.
-**Écrite, NON appliquée** : 023 badge First (100 premiers comptes, `profiles.first_rank`) — en attente de l'accord du fondateur.
+**023** badge First (100 premiers comptes, `profiles.first_rank`) : appliquée et vérifiée le 01/10/2026 (#54, accord du fondateur). `023_verify` passe à 11/11, `karamba.gassama` = First #1, le modérateur et le compte probe sont exclus, les rangs sont définitifs, « #N » est désactivé.
 
 **Modération** : compte modérateur `niaapp@outlook.com` (orthographe confirmée
 par le fondateur le 30/09/2026, identique à l'adresse de contact publique du
