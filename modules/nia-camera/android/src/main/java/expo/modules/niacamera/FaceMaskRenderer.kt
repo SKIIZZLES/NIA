@@ -34,15 +34,21 @@ internal class FaceMaskRenderer(
     SKI_MASK,
     /** Masque intégral (jalon 2) : visage couvert, yeux et bouche opaques. */
     FULL_MASK,
+    /**
+     * Accessoire (A2.0) : objet posé sur le visage (lunettes…). PAS un
+     * masque d'anonymat : sans visage, rien n'est dessiné (ni flou, ni repli).
+     */
+    ACCESSORY,
     ;
 
-    val usesLandmarks: Boolean get() = this == SKI_MASK || this == FULL_MASK
+    val usesLandmarks: Boolean get() = this == SKI_MASK || this == FULL_MASK || this == ACCESSORY
 
     companion object {
       fun fromProp(value: String?): Effect = when (value) {
         "pixelate" -> PIXELATE
         "skimask" -> SKI_MASK
         "fullmask" -> FULL_MASK
+        "accessory" -> ACCESSORY
         else -> BLUR
       }
     }
@@ -62,6 +68,11 @@ internal class FaceMaskRenderer(
    */
   @Volatile
   var debugOutline = false
+
+  /** Accessoire choisi (A2.0), déjà tramé ; null : rien à poser. */
+  @Volatile
+  var accessoryArt: AccessoryCatalog.Art? = null
+  private val accessoryPainter = AccessoryPainter()
   private val outlinePaint = Paint().apply {
     style = Paint.Style.STROKE
     isAntiAlias = true
@@ -105,6 +116,7 @@ internal class FaceMaskRenderer(
     }
 
     val canvas = frame.overlayCanvas
+    if (fx == Effect.ACCESSORY) return drawAccessories(frame, canvas, plan, ts, t0)
     var masks = 0
     var landmarkAgeSum = 0L
     var haloRatioSum = 0.0
@@ -161,7 +173,9 @@ internal class FaceMaskRenderer(
           }
           canvas.scale(item.maskScale, item.maskScale)
           canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
-          canvas.drawBitmap(m.sprite, m.spriteSrc, m.spriteRect, blurPaint)
+          val sprite = m.sprite
+          val spriteRect = m.spriteRect
+          if (sprite != null && spriteRect != null) canvas.drawBitmap(sprite, m.spriteSrc, spriteRect, blurPaint)
           canvas.restore()
           if (outline) {
             // Contrôle, par-dessus le masque : halo (cyan), ellipse de sécurité (jaune).
@@ -206,6 +220,69 @@ internal class FaceMaskRenderer(
       plan.kind, ts, now, System.nanoTime(),
       plan.analysisAgeNs, masks, if (masks > 0) landmarkAgeSum / masks else -1L, plan.fallbacks,
       plan.held, plan.uncovered, haloRatioSum,
+    )
+    return true
+  }
+
+  /**
+   * Mode accessoire (A2.0) : calque transparent, l'objet posé sur chaque
+   * visage dont les repères sont frais et couvrent la boîte BlazeFace
+   * (même suivi que les masques : déplacé, tourné, mis à l'échelle). Sans
+   * visage, image d'analyse absente ou détecteur en panne : rien (ce n'est
+   * pas de l'anonymat, pas de flou plein cadre).
+   */
+  private fun drawAccessories(frame: Frame, canvas: android.graphics.Canvas, plan: FaceMaskPolicy.Plan, ts: Long, t0: Long): Boolean {
+    canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+    val a0 = SystemClock.elapsedRealtimeNanos()
+    val art = accessoryArt
+    var drawn = 0
+    var hidden = 0
+    var ageSum = 0L
+    var yaw = Float.NaN
+    var pitch = Float.NaN
+    if (art != null && !detectorFailed && plan.kind != FaceMaskPolicy.Kind.COVER) {
+      val outline = debugOutline
+      var lastSrc: FaceResult? = null
+      for (item in plan.items) {
+        val m = item.mask
+        val pose = m?.accessory
+        if (m == null || pose == null) {
+          hidden++
+          continue
+        }
+        if (item.src !== lastSrc) {
+          if (lastSrc != null) canvas.restore()
+          canvas.save()
+          canvas.setMatrix(analysisToFrame(frame, item.src))
+          lastSrc = item.src
+        }
+        canvas.save()
+        canvas.translate(item.maskCx, item.maskCy)
+        if (item.maskRotation != 0f) canvas.rotate(item.maskRotation)
+        canvas.scale(item.accScale, item.accScale)
+        canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
+        val ok = accessoryPainter.draw(canvas, art, pose, outline)
+        canvas.restore()
+        if (ok) {
+          drawn++
+          ageSum += item.landmarkAgeNs
+          if (yaw.isNaN()) {
+            yaw = pose.yawDeg
+            pitch = pose.pitchDeg
+          }
+        } else {
+          hidden++
+        }
+      }
+      if (lastSrc != null) canvas.restore()
+    }
+    val now = SystemClock.elapsedRealtimeNanos()
+    stats.onAccessoryDraw((now - a0) / 1e6, drawn, hidden, yaw, pitch)
+    stats.onDrawCost((now - t0) / 1e6, frame.size.width, frame.size.height, frame.rotationDegrees)
+    stats.onRendered(
+      plan.kind, ts, now, System.nanoTime(),
+      plan.analysisAgeNs, drawn, if (drawn > 0) ageSum / drawn else -1L, 0,
+      plan.held, plan.uncovered, 0.0,
     )
     return true
   }

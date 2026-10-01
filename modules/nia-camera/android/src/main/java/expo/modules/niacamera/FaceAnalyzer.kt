@@ -609,6 +609,9 @@ internal class FaceAnalyzer(
    * à une mauvaise zone), contrôle de cohérence avec BlazeFace, géométrie,
    * sprite, publication.
    */
+  /** Lissage des poses d'accessoires (fil des repères uniquement). */
+  private val accessorySmoother = AccessorySmoother()
+
   private fun runLandmarks(shared: Shared, ts: Long, fx: FaceMaskRenderer.Effect, dets: List<Detection>) {
     var crop: Bitmap? = null
     try {
@@ -673,7 +676,10 @@ internal class FaceAnalyzer(
       var rejected = 0
       var nextRoi: RectF? = null
       val tracks = ArrayList<MeshTrack>(res.faceLandmarks().size)
-      for (face in res.faceLandmarks()) {
+      val accessoryMode = fx == FaceMaskRenderer.Effect.ACCESSORY
+      val poseMatrices = if (accessoryMode) res.facialTransformationMatrixes().orElse(null) else null
+      val poses = ArrayList<AccessoryPose?>()
+      for ((fi, face) in res.faceLandmarks().withIndex()) {
         if (face.size < MaskGeometry.MESH_POINTS) continue
         // Masque épousant le visage (silhouette du maillage, paupières,
         // lèvres) : recadrage → image redressée → tampon. Dégénéré : écarté.
@@ -695,27 +701,43 @@ internal class FaceAnalyzer(
           rejected++
           continue
         }
-        val sprite = MaskSprite.render(mask, fx, spritePool) ?: continue
-        val halo = MaskSprite.renderHalo(mask, fx, buffer) { r, cells -> shrink(buffer, r, cells) }
+        // Accessoire (A2.0) : pas de masque pré-rendu, juste la pose (yeux,
+        // oreilles, lacet / tangage), lissée plus bas.
+        val pose = if (accessoryMode) AccessoryPose.of(face, cw, ch, cropToBuffer, poseMatrices?.getOrNull(fi)) else null
+        if (accessoryMode && pose == null) {
+          rejected++
+          continue
+        }
+        val sprite = if (accessoryMode) null else (MaskSprite.render(mask, fx, spritePool) ?: continue)
+        val halo = if (accessoryMode) null else MaskSprite.renderHalo(mask, fx, buffer) { r, cells -> shrink(buffer, r, cells) }
         val speed = meshSpeed(mask, ts)
         tracks.add(MeshTrack(mask.centerX, mask.centerY, mask.halfSize, ts))
         faces.add(
           LandmarkFace(
-            fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h, check.roll), check.roll,
+            fx, sprite?.bitmap, sprite?.src, sprite?.rect, rect, makePatch(buffer, rect, w, h, check.roll), check.roll,
             halo?.bitmap, halo?.src, halo?.rect, speed,
             outlineBounds(if (fx == FaceMaskRenderer.Effect.SKI_MASK) mask.hood else mask.full),
             if (fx == FaceMaskRenderer.Effect.SKI_MASK) mask.hoodHalo else mask.fullHalo,
           ),
         )
+        poses.add(pose)
         // Zone suivante (image redressée) : la zone du visage, ramenée du tampon.
         if (nextRoi == null) nextRoi = RectF(rect).also { bufferToUpright(up).mapRect(it) }
       }
       meshTracks = tracks
+      if (accessoryMode) {
+        // Anti-tremblement (One Euro, par visage) ; les poses lissées
+        // remplacent les brutes avant publication au fil GL.
+        val smooth = accessorySmoother.smooth(poses, ts)
+        for (i in faces.indices) faces[i] = faces[i].withAccessory(smooth[i])
+      } else {
+        accessorySmoother.clear()
+      }
       lastLandmarkRoi = nextRoi
       landmarkContinuation = nextRoi != null && landmarkOnlyStreak < LANDMARK_ONLY_MAX
       if (closed) return
       val evicted = landmarkStore.add(LandmarkResult(ts, w, h, faces))
-      spritePool.retire(evicted.flatMap { r -> r.faces.map { it.sprite } })
+      spritePool.retire(evicted.flatMap { r -> r.faces.mapNotNull { it.sprite } })
       val totalMs = (SystemClock.elapsedRealtimeNanos() - t) / 1e6f
       listener.onLandmarks(LandmarkInfo(ts, inferMs, totalMs, faces.size, delegate, rejected, cr.width()))
     } catch (e: Throwable) {
@@ -830,7 +852,9 @@ internal class FaceAnalyzer(
           .setMinFacePresenceConfidence(MIN_CONFIDENCE)
           .setMinTrackingConfidence(MIN_CONFIDENCE)
           .setOutputFaceBlendshapes(false)
-          .setOutputFacialTransformationMatrixes(false)
+          // Matrice de pose de la tête (A2.0) : gratuite (calculée de toute
+          // façon par le modèle), lacet / tangage des accessoires.
+          .setOutputFacialTransformationMatrixes(true)
           .build()
         landmarker = FaceLandmarker.createFromOptions(context, options)
         delegate = if (d == Delegate.GPU) "GPU" else "CPU"

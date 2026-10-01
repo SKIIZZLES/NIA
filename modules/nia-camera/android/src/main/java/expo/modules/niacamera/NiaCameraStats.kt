@@ -71,6 +71,15 @@ internal class NiaCameraStats {
   private var queueSumMs = 0.0
   private var queueCount = 0
   private var prepSumMs = 0.0
+  // Accessoires (A2.0) : coût du dessin (fil GL), objets cachés, pose de la tête.
+  private var accSumMs = 0.0
+  private var accMaxMs = 0.0
+  private var accCount = 0
+  private var accFrames = 0
+  private var accHidden = 0
+  private var yawSum = 0.0
+  private var pitchSum = 0.0
+  private var poseCount = 0
 
   /** État du flux d'aperçu (PreviewView) : "streaming", "idle"… */
   @Volatile
@@ -223,6 +232,25 @@ internal class NiaCameraStats {
     frameRotation = rotation
   }
 
+  /**
+   * Dessin des accessoires d'une image (fil GL) : durée, objets posés,
+   * objets cachés (repères absents, tête trop tournée), pose du premier
+   * visage (NaN si aucun).
+   */
+  @Synchronized
+  fun onAccessoryDraw(ms: Double, drawn: Int, hidden: Int, yawDeg: Float, pitchDeg: Float) {
+    accSumMs += ms
+    accCount++
+    if (ms > accMaxMs) accMaxMs = ms
+    if (drawn > 0) accFrames++
+    accHidden += hidden
+    if (!yawDeg.isNaN() && !pitchDeg.isNaN()) {
+      yawSum += yawDeg
+      pitchSum += pitchDeg
+      poseCount++
+    }
+  }
+
   /** Délai entre la fin d'une analyse et le dessin de son image. */
   @Synchronized
   fun onGlWait(ms: Double) {
@@ -308,6 +336,13 @@ internal class NiaCameraStats {
       "maskFrames" to maskFrames,
       "cameraPipelineMsAvg" to round1(if (halCount > 0) halSumMs / halCount else -1.0),
       "timestampSource" to timestampSource,
+      "accessoryDrawMsAvg" to round2(if (accCount > 0) accSumMs / accCount else -1.0),
+      "accessoryDrawMsMax" to round2(if (accCount > 0) accMaxMs else -1.0),
+      "accessoryFrames" to accFrames,
+      "accessoryHidden" to accHidden,
+      "poseYawDeg" to round1(if (poseCount > 0) yawSum / poseCount else 0.0),
+      "posePitchDeg" to round1(if (poseCount > 0) pitchSum / poseCount else 0.0),
+      "poseFrames" to poseCount,
     )
     Log.i(
       TAG,
@@ -324,7 +359,9 @@ internal class NiaCameraStats {
         "camera>analyse=${out["cameraToAnalysisMsAvg"]}ms reperes=$landmarkState " +
         "${out["landmarkMsAvg"]}/${out["landmarkMsMax"]}ms ${out["landmarkFps"]}i/s $landmarkDelegate img=$landmarkFrames " +
         "sautees=$landmarkSkipped rejetes=$landmarkRejected roi=${out["landmarkRoiAvg"]}px repli=$fallbackFaces maintenus=$heldMasks noncouverts=$uncoveredMasks halo=${out["haloRatioAvg"]} age=${out["analysisAgeMsAvg"]}/${out["landmarkAgeMsAvg"]}ms " +
-        "masques=$maskFrames capteur>resultat=${out["cameraPipelineMsAvg"]}ms horloge=$timestampSource",
+        "masques=$maskFrames capteur>resultat=${out["cameraPipelineMsAvg"]}ms horloge=$timestampSource " +
+        "accessoire=${out["accessoryDrawMsAvg"]}/${out["accessoryDrawMsMax"]}ms poses=$accFrames caches=$accHidden " +
+        "lacet=${out["poseYawDeg"]} tangage=${out["posePitchDeg"]}",
     )
     windowStartMs = nowMs
     rendered = 0; exact = 0; neighbor = 0; hold = 0; live = 0; cover = 0
@@ -340,6 +377,8 @@ internal class NiaCameraStats {
     halSumMs = 0.0; halCount = 0
     heldMasks = 0; uncoveredMasks = 0; haloRatioSum = 0.0; haloRatioCount = 0
     fallbackFaces = 0; queueSumMs = 0.0; queueCount = 0; prepSumMs = 0.0
+    accSumMs = 0.0; accMaxMs = 0.0; accCount = 0; accFrames = 0; accHidden = 0
+    yawSum = 0.0; pitchSum = 0.0; poseCount = 0
     return out
   }
 

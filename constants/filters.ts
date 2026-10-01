@@ -90,11 +90,15 @@ const COOL_MATRIX: ColorMatrix5x4 = [
   0, 0, 0, 1, 0,
 ];
 
-/** Soft beauty (slight contrast + warm) */
-const BEAUTY_MATRIX: ColorMatrix5x4 = [
-  1.08, 0.04, 0.02, 0, 0.01,
-  0.03, 1.06, 0.02, 0, 0.01,
-  0.02, 0.03, 1.02, 0, 0,
+/**
+ * Glow Sable : teinte chaude SANS éclaircir (01/10/2026). Diagonale ≤ 1 et
+ * aucun décalage : aucun canal ne monte, le bleu baisse un peu (chaleur).
+ * L'ancienne matrice « beauté » (gains 1,02–1,08 + décalage) éclaircissait.
+ */
+const GLOW_SABLE_MATRIX: ColorMatrix5x4 = [
+  1, 0, 0, 0, 0,
+  0, 0.97, 0, 0, 0,
+  0, 0, 0.9, 0, 0,
   0, 0, 0, 1, 0,
 ];
 
@@ -121,15 +125,20 @@ const FILM_MATRIX: ColorMatrix5x4 = [
 export const FILTERS: FilterDefinition[] = [
   // —— Beauté ——
   {
+    // Jamais d'éclaircissement de la peau (règle NIA) : voile bronze foncé,
+    // plus sombre que la peau la plus foncée de l'échelle Monk (MST 10,
+    // #292420) — il réchauffe sans jamais éclaircir, aperçu = fichier. Avant
+    // (jusqu'au 01/10/2026) : voile crème #F5E6D3 à 19 %, qui éclaircissait
+    // les peaux foncées jusqu'à +46/255. Test : __tests__/constants/filtersSkin.test.ts.
     id: 'beaute-glow',
     name: 'Glow Sable',
     category: 'beaute',
-    previewColor: '#F5E6D3',
+    previewColor: '#C8A27A',
     intensity: 0.55,
     type: 'color-matrix',
-    overlayColor: '#F5E6D3',
-    overlayOpacity: 0.18,
-    matrix: BEAUTY_MATRIX,
+    overlayColor: '#3A1C06',
+    overlayOpacity: 0.14,
+    matrix: GLOW_SABLE_MATRIX,
   },
   {
     id: 'beaute-soft',

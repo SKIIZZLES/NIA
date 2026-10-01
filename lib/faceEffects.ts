@@ -149,6 +149,14 @@ type StatsLike = {
   maskFrames?: number;
   cameraPipelineMsAvg?: number;
   timestampSource?: string;
+  effect?: string;
+  accessoryDrawMsAvg?: number;
+  accessoryDrawMsMax?: number;
+  accessoryFrames?: number;
+  accessoryHidden?: number;
+  poseYawDeg?: number;
+  posePitchDeg?: number;
+  poseFrames?: number;
 };
 
 /** Valeur en ms arrondie, « — » si inconnue (négative). */
@@ -172,16 +180,40 @@ export function isAnalysisFrameBlank(s: Pick<StatsLike, 'lumaMean' | 'lumaRange'
   return s.lumaMean < DARK_FRAME_LUMA || (s.lumaRange != null && s.lumaRange >= 0 && s.lumaRange < FLAT_FRAME_RANGE);
 }
 
+/** Budget du dessin des accessoires sur le fil GL (A2.0), ms. */
+export const ACCESSORY_DRAW_BUDGET_MS = 4;
+
+/**
+ * Ligne « accessoire » du panneau (A2.0) : coût du dessin (moyen, max, avec
+ * alerte au-delà du budget), objets posés / cachés, pose de la tête. Null
+ * hors mode accessoire ou sur un ancien APK.
+ */
+export function formatAccessoryStats(s: StatsLike): string | null {
+  if (s.effect !== 'accessory' || s.accessoryDrawMsAvg == null) return null;
+  const d = (v: number | undefined) => (v != null && v >= 0 ? v.toFixed(1) : '—');
+  const over = (s.accessoryDrawMsMax ?? 0) > ACCESSORY_DRAW_BUDGET_MS ? ' ⚠' : '';
+  const pose =
+    (s.poseFrames ?? 0) > 0
+      ? ` · lacet ${Math.round(s.poseYawDeg ?? 0)}° · tangage ${Math.round(s.posePitchDeg ?? 0)}°`
+      : ' · pose —';
+  return (
+    `accessoire ${d(s.accessoryDrawMsAvg)} ms (max ${d(s.accessoryDrawMsMax)})${over} · ` +
+    `posé ${s.accessoryFrames ?? 0} · caché ${s.accessoryHidden ?? 0}${pose}`
+  );
+}
+
 /** Lignes des mesures de test (valeurs techniques, non traduites). */
 export function formatFaceStats(s: StatsLike): string[] {
   const latency =
     s.latencyMsAvg >= 0 ? `${Math.round(s.latencyMsAvg)} ms (max ${Math.round(s.latencyMsMax)})` : '—';
+  // Accessoires (A2.0) : sans visage, rien n'est dessiné (pas de flou total).
+  const coverLabel = s.effect === 'accessory' ? 'sans visage' : 'flou total';
   const lines = [
     `image ${s.renderFps.toFixed(0)} i/s · analyse ${s.analysisFps.toFixed(0)} i/s`,
     `détection ${s.detectMsAvg.toFixed(0)} ms (max ${s.detectMsMax.toFixed(0)}) · latence ${latency}`,
     s.mode === 'live'
-      ? `direct ${s.live ?? 0} · flou total ${s.cover}`
-      : `exact ${s.exact} · voisin ${s.neighbor} · maintien ${s.hold} · flou total ${s.cover}`,
+      ? `direct ${s.live ?? 0} · ${coverLabel} ${s.cover}`
+      : `exact ${s.exact} · voisin ${s.neighbor} · maintien ${s.hold} · ${coverLabel} ${s.cover}`,
     s.mode === 'live'
       ? `synchro directe · âge analyse ${ms(s.analysisAgeMsAvg)} · âge repères ${ms(s.landmarkAgeMsAvg)}`
       : `synchro ${s.mode === 'exact' ? 'exacte' : s.mode} ${s.syncOk}/${s.syncOk + s.syncMissed}`,
@@ -236,6 +268,8 @@ export function formatFaceStats(s: StatsLike): string[] {
       );
     }
   }
+  const accessoryLine = formatAccessoryStats(s);
+  if (accessoryLine) lines.push(accessoryLine);
   if (s.drawMsAvg != null) {
     const wait = s.glWaitMsAvg != null && s.glWaitMsAvg >= 0 ? ` · attente GL ${Math.round(s.glWaitMsAvg)} ms` : '';
     lines.push(`dessin ${Math.round(s.drawMsAvg)} ms (max ${Math.round(s.drawMsMax ?? 0)})${wait}`);

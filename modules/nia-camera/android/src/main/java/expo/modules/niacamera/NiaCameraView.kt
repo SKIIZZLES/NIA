@@ -114,6 +114,10 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   private var debugOutline = false
   @Volatile
   private var detectorFailed = false
+  /** Accessoire choisi (A2.0, effet "accessory"), tramé une fois ; null : aucun. */
+  @Volatile
+  private var accessoryArt: AccessoryCatalog.Art? = null
+  private var accessoryId: String? = null
   private var analyzer: FaceAnalyzer? = null
 
   private var provider: ProcessCameraProvider? = null
@@ -182,6 +186,19 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     effectMode = FaceMaskRenderer.Effect.fromProp(value)
     renderer.effect = effectMode
     analyzer?.let { applyEffectTo(it) }
+  }
+
+  /**
+   * Objet du catalogue (A2.0) : identifiant de `lib/accessories.ts`, null ou
+   * inconnu = aucun. Le dessin vectoriel est tramé ici (fil principal, une
+   * fois par choix) ; l'ancien bitmap n'est pas recyclé (le fil GL peut
+   * encore le poser), le ramasse-miettes s'en charge.
+   */
+  fun setAccessory(id: String?) {
+    if (id == accessoryId) return
+    accessoryId = id
+    accessoryArt = AccessoryCatalog.byId(id)?.let { AccessoryCatalog.load(context, it) }
+    renderer.accessoryArt = accessoryArt
   }
 
   fun setDebugOutline(value: Boolean) {
@@ -338,6 +355,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     val r = FaceMaskRenderer(store, landmarkStore, stats, live).also {
       it.effect = effectMode
       it.debugOutline = debugOutline
+      it.accessoryArt = accessoryArt
     }
     renderer = r
     val a = FaceAnalyzer(context, store, landmarkStore, analyzerListener).also { applyEffectTo(it) }
@@ -354,6 +372,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       r.detectorFailed = detectorFailed
       r.effect = effectMode
       r.debugOutline = debugOutline
+      r.accessoryArt = accessoryArt
       r.onDraw(frame)
     }
     effect = overlay
@@ -469,6 +488,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
           FaceMaskRenderer.Effect.PIXELATE -> "pixelate"
           FaceMaskRenderer.Effect.SKI_MASK -> "skimask"
           FaceMaskRenderer.Effect.FULL_MASK -> "fullmask"
+          FaceMaskRenderer.Effect.ACCESSORY -> "accessory"
           else -> "blur"
         }
         stats.flush(SystemClock.elapsedRealtime(), mode, effectName)?.let { onStats(it) }

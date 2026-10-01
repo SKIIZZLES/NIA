@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lunettes Sable — dessin original NIA (A2.0). Licence : voir licence.json. Même tracé que assets/accessories/glasses-sable/glasses-sable.svg. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="1000dp" android:height="360dp"
+    android:viewportWidth="1000" android:viewportHeight="360">
+    <path android:pathData="M202,86 H378 A56,56 0 0 1 434,142 V208 A56,56 0 0 1 378,264 H202 A56,56 0 0 1 146,208 V142 A56,56 0 0 1 202,86 Z" android:fillColor="#1E120A" android:fillAlpha="0.16"/>
+    <path android:pathData="M622,86 H798 A56,56 0 0 1 854,142 V208 A56,56 0 0 1 798,264 H622 A56,56 0 0 1 566,208 V142 A56,56 0 0 1 622,86 Z" android:fillColor="#1E120A" android:fillAlpha="0.16"/>
+    <path android:pathData="M202,60 H378 A82,82 0 0 1 460,142 V208 A82,82 0 0 1 378,290 H202 A82,82 0 0 1 120,208 V142 A82,82 0 0 1 202,60 Z M202,86 H378 A56,56 0 0 1 434,142 V208 A56,56 0 0 1 378,264 H202 A56,56 0 0 1 146,208 V142 A56,56 0 0 1 202,86 Z" android:fillColor="#E2C49A" android:fillType="evenOdd" android:strokeColor="#8B5A2B" android:strokeWidth="7" android:strokeLineJoin="round"/>
+    <path android:pathData="M161,66 H419 A7,7 0 0 1 426,73 V73 A7,7 0 0 1 419,80 H161 A7,7 0 0 1 154,73 V73 A7,7 0 0 1 161,66 Z" android:fillColor="#D17F2A"/>
+    <path android:pathData="M622,60 H798 A82,82 0 0 1 880,142 V208 A82,82 0 0 1 798,290 H622 A82,82 0 0 1 540,208 V142 A82,82 0 0 1 622,60 Z M622,86 H798 A56,56 0 0 1 854,142 V208 A56,56 0 0 1 798,264 H622 A56,56 0 0 1 566,208 V142 A56,56 0 0 1 622,86 Z" android:fillColor="#E2C49A" android:fillType="evenOdd" android:strokeColor="#8B5A2B" android:strokeWidth="7" android:strokeLineJoin="round"/>
+    <path android:pathData="M581,66 H839 A7,7 0 0 1 846,73 V73 A7,7 0 0 1 839,80 H581 A7,7 0 0 1 574,73 V73 A7,7 0 0 1 581,66 Z" android:fillColor="#D17F2A"/>
+    <path android:pathData="M456,124 Q500,98 544,124 L544,150 Q500,128 456,150 Z" android:fillColor="#E2C49A" android:strokeColor="#8B5A2B" android:strokeWidth="5" android:strokeLineJoin="round"/>
+    <path android:pathData="M52,114 H116 A12,12 0 0 1 128,126 V138 A12,12 0 0 1 116,150 H52 A12,12 0 0 1 40,138 V126 A12,12 0 0 1 52,114 Z" android:fillColor="#E2C49A" android:strokeColor="#8B5A2B" android:strokeWidth="5" android:strokeLineJoin="round"/>
+    <path android:pathData="M884,114 H948 A12,12 0 0 1 960,126 V138 A12,12 0 0 1 948,150 H884 A12,12 0 0 1 872,138 V126 A12,12 0 0 1 884,114 Z" android:fillColor="#E2C49A" android:strokeColor="#8B5A2B" android:strokeWidth="5" android:strokeLineJoin="round"/>
+</vector>

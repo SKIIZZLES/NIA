@@ -121,6 +121,11 @@ internal object FaceMaskPolicy {
     val landmarkAgeNs: Long,
     /** Ovale de la tête (Flou, Pixels) : `scale` + marge de vitesse (jalon 2f). */
     val headScale: Float = scale,
+    /**
+     * Accessoire (A2) : comme `maskScale`, sans la marge de sécurité (un
+     * accessoire n'a rien à couvrir ; il suit juste la taille du visage).
+     */
+    val accScale: Float = 1f,
   )
 
   class Plan(
@@ -220,7 +225,9 @@ internal object FaceMaskPolicy {
         var maskScale = 1f
         var haloScale = 1f
         var lmAge = -1L
+        var accScale = 1f
         if (att != null) {
+          accScale = att.sizeRatio * grow
           maskCx = att.anchorCx + (cx - p.rect.centerX()) + att.shiftX
           maskCy = att.anchorCy + (cy - p.rect.centerY()) + att.shiftY
           maskScale = att.sizeRatio * grow * (1f + (scale / grow - 1f) * 0.25f)
@@ -247,6 +254,7 @@ internal object FaceMaskPolicy {
             haloScale,
             if (att != null) lmAge else -1L,
             headScale,
+            accScale,
           ),
         )
       }
@@ -494,13 +502,16 @@ internal class FaceResult(
   val frameTiny: Bitmap,
 )
 
-/** Un visage vu par Face Landmarker, masque déjà dessiné (sprite). */
+/**
+ * Un visage vu par Face Landmarker : masque déjà dessiné (sprite), ou, en
+ * mode accessoire (A2), pose de l'accessoire (pas de sprite).
+ */
 internal class LandmarkFace(
   val effect: FaceMaskRenderer.Effect,
-  /** Masque pré-rendu (fond transparent) : zone utile et place dans le tampon. */
-  val sprite: Bitmap,
-  val spriteSrc: android.graphics.Rect,
-  val spriteRect: RectF,
+  /** Masque pré-rendu (fond transparent) : zone utile et place dans le tampon. Null en mode accessoire. */
+  val sprite: Bitmap?,
+  val spriteSrc: android.graphics.Rect?,
+  val spriteRect: RectF?,
   /** Zone agrandie tirée des repères : ancrage du masque. */
   val anchor: RectF,
   /** Flou de cette zone, si le visage n'est vu que par les repères. */
@@ -517,7 +528,14 @@ internal class LandmarkFace(
   val silhouette: RectF? = null,
   /** Contour du halo (x,y… tampon) : tracé de contrôle (panneau). */
   val haloOutline: FloatArray? = null,
-)
+  /** Mode accessoire (A2) : yeux, oreilles, lacet / tangage lissés (tampon). */
+  val accessory: AccessoryPose? = null,
+) {
+  fun withAccessory(p: AccessoryPose?) = LandmarkFace(
+    effect, sprite, spriteSrc, spriteRect, anchor, fallback, roll, halo, haloSrc, haloRect, meshSpeed,
+    silhouette, haloOutline, p,
+  )
+}
 
 /** Résultat Face Landmarker d'une image (pas forcément chaque image). */
 internal class LandmarkResult(

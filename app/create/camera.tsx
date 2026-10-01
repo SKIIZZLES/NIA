@@ -81,6 +81,14 @@ import {
   type FaceEffectId,
 } from '@/lib/faceEffects';
 import {
+  acceptAccessoryNotice,
+  accessoryChips,
+  hasAcceptedAccessoryNotice,
+  isAccessoryActive,
+  nativeAccessory,
+  type AccessoryChoice,
+} from '@/lib/accessories';
+import {
   NiaCameraView,
   isNiaCameraAvailable,
   type NiaCameraHandle,
@@ -271,13 +279,35 @@ function CameraScreen() {
   // 'live' : chaque image dessinée tout de suite (jalon 2b) ; 'exact' pour comparer.
   const [faceSync, setFaceSync] = useState<NiaSyncMode>('live');
   const faceMaskActive = faceMaskAvailable && faceEffect !== 'off' && mode !== 'photo';
+  // --- A2.0 : accessoires (objet amusant posé sur le visage, PAS de l'anonymat).
+  const [accessory, setAccessory] = useState<AccessoryChoice>('off');
+  const [accessoriesOpen, setAccessoriesOpen] = useState(false);
+  const accessoryActive = isAccessoryActive({
+    available: faceMaskAvailable,
+    accessory,
+    faceEffect,
+    photo: mode === 'photo',
+  });
+  /** Caméra native (masque ou accessoire) plutôt qu'expo-camera. */
+  const nativeCameraActive = faceMaskActive || accessoryActive;
+  /**
+   * Effet natif : le dernier actif est gardé pendant la bascule vers
+   * expo-camera (sinon le flou par défaut apparaîtrait un instant).
+   */
+  const lastNativeEffectRef = useRef<'blur' | 'pixelate' | 'skimask' | 'fullmask' | 'accessory'>('blur');
+  const nativeEffect = accessoryActive
+    ? 'accessory'
+    : faceMaskActive
+      ? (nativeFaceEffect(faceEffect) ?? 'blur')
+      : lastNativeEffectRef.current;
+  lastNativeEffectRef.current = nativeEffect;
   /**
    * Caméra montée. Passer d'une caméra à l'autre laisse un temps sans caméra :
    * expo-camera libère toute la session CameraX en se démontant, elle ne doit
    * pas couper la caméra à masque qui vient de démarrer (et inversement).
    */
   const [mountedCamera, setMountedCamera] = useState<'expo' | 'mask' | 'none'>(
-    faceMaskActive ? 'mask' : 'expo',
+    nativeCameraActive ? 'mask' : 'expo',
   );
   const mountedCameraRef = useRef(mountedCamera);
   mountedCameraRef.current = mountedCamera;
@@ -877,7 +907,7 @@ function CameraScreen() {
   // --- A1 : bascule entre expo-camera et la caméra à masque, avec un court
   // temps sans caméra (voir `mountedCamera`).
   useEffect(() => {
-    const want = faceMaskActive ? 'mask' : 'expo';
+    const want = nativeCameraActive ? 'mask' : 'expo';
     if (mountedCameraRef.current === want) return;
     setReady(false);
     setFaceDetected(false);
@@ -885,7 +915,7 @@ function CameraScreen() {
     setMountedCamera('none');
     const id = setTimeout(() => setMountedCamera(want), CAMERA_SWITCH_MS);
     return () => clearTimeout(id);
-  }, [faceMaskActive]);
+  }, [nativeCameraActive]);
 
   /** Bouton « Masque » : désactivé → flou → pixels ; avis à la 1re activation. */
   const cycleFaceEffect = useCallback(async () => {
@@ -899,6 +929,7 @@ function CameraScreen() {
           onPress: () => {
             void acceptFaceNotice();
             if (mode === 'photo') setMode('video');
+            setAccessory('off');
             setFaceEffect(next);
           },
         },
@@ -906,8 +937,43 @@ function CameraScreen() {
       return;
     }
     if (next !== 'off' && mode === 'photo') setMode('video');
+    // Masque et accessoire s'excluent : le masque l'emporte.
+    if (next !== 'off') setAccessory('off');
     setFaceEffect(next);
   }, [busy, faceEffect, mode, setMode, t]);
+
+  /**
+   * Rangée « Accessoires » (A2.0) : choisir un objet retire le masque (ils
+   * s'excluent) et passe en vidéo ; avis à la 1re activation (« un
+   * accessoire ne vous cache pas »).
+   */
+  const pickAccessory = useCallback(
+    async (next: AccessoryChoice) => {
+      if (busy || segmentsRef.current.length > 0) return;
+      const apply = () => {
+        if (next !== 'off') {
+          setFaceEffect('off');
+          if (mode === 'photo') setMode('video');
+        }
+        setAccessory(next);
+      };
+      if (next !== 'off' && accessory === 'off' && !(await hasAcceptedAccessoryNotice())) {
+        Alert.alert(t('camera.accessoryNoticeTitle'), t('camera.accessoryNoticeBody'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('camera.faceNoticeAccept'),
+            onPress: () => {
+              void acceptAccessoryNotice();
+              apply();
+            },
+          },
+        ]);
+        return;
+      }
+      apply();
+    },
+    [accessory, busy, mode, setMode, t],
+  );
 
   /**
    * La caméra à masque n'a pas démarré : on revient à la caméra normale, SANS
@@ -918,9 +984,11 @@ function CameraScreen() {
       abandonRef.current = true;
       stopRecording();
     }
+    const wasAccessory = accessoryActive;
     setFaceEffect('off');
-    Alert.alert(t('common.error'), t('camera.faceUnavailable'));
-  }, [phase, stopRecording, t]);
+    setAccessory('off');
+    Alert.alert(t('common.error'), t(wasAccessory ? 'camera.accessoryUnavailable' : 'camera.faceUnavailable'));
+  }, [accessoryActive, phase, stopRecording, t]);
 
   // --- Zoom au pincement : événements tactiles bruts, pas de dépendance.
   const onTouchMove = useCallback(
@@ -1095,6 +1163,7 @@ function CameraScreen() {
           borderRadius: Radii.pill,
         },
         durationChipOn: { backgroundColor: colors.mediaScrimStrong },
+        accessoryChip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
         durationText: {
           color: colors.onMediaMuted,
           fontFamily: Fonts.medium,
@@ -1339,7 +1408,8 @@ function CameraScreen() {
           ref={niaCameraRef}
           style={styles.fill}
           facing={facing}
-          effect={nativeFaceEffect(faceEffect) ?? 'blur'}
+          effect={nativeEffect}
+          accessory={nativeAccessory(accessory, accessoryActive)}
           syncMode={faceSync}
           mute={!micGranted || playSoundWhileRecording}
           zoom={zoom}
@@ -1386,6 +1456,7 @@ function CameraScreen() {
       {mountedCamera === 'mask' && !cameraFailed ? (
         <FaceMaskHud
           top={insets.top + 72}
+          mode={nativeEffect === 'accessory' ? 'accessory' : 'mask'}
           faceDetected={faceDetected}
           recording={phase === 'recording'}
           stats={faceStats}
@@ -1517,7 +1588,10 @@ function CameraScreen() {
           icon="color-filter-outline"
           label={t('camera.filters')}
           a11y={t('camera.filters')}
-          onPress={() => setFiltersOpen((v) => !v)}
+          onPress={() => {
+            setAccessoriesOpen(false);
+            setFiltersOpen((v) => !v);
+          }}
           disabled={busy}
           active={filtersOpen || !!filter}
           styles={styles}
@@ -1533,6 +1607,24 @@ function CameraScreen() {
             disabled={busy || hasSegments}
             dimmed={hasSegments}
             active={faceEffect !== 'off'}
+            styles={styles}
+            color={chrome}
+            activeColor={colors.or}
+          />
+        ) : null}
+        {faceMaskAvailable ? (
+          // A2.0 : rangée distincte de « Masque » (un accessoire ne cache pas).
+          <SideButton
+            icon={accessory === 'off' ? 'glasses-outline' : 'glasses'}
+            label={t('camera.accessories')}
+            a11y={t('camera.accessoriesA11y')}
+            onPress={() => {
+              setFiltersOpen(false);
+              setAccessoriesOpen((v) => !v);
+            }}
+            disabled={busy || hasSegments}
+            dimmed={hasSegments}
+            active={accessoriesOpen || accessory !== 'off'}
             styles={styles}
             color={chrome}
             activeColor={colors.or}
@@ -1592,6 +1684,34 @@ function CameraScreen() {
               onSelect={(f) => setFilter(f)}
             />
           </View>
+        ) : accessoriesOpen && !busy && !hasSegments ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.durationRow}
+            contentContainerStyle={styles.durationContent}
+            accessibilityLabel={t('camera.accessories')}
+          >
+            {accessoryChips().map((chip) => {
+              const on = accessory === chip.id;
+              return (
+                <Pressable
+                  key={chip.id}
+                  onPress={() => void pickAccessory(chip.id)}
+                  style={[styles.durationChip, styles.accessoryChip, on && styles.durationChipOn]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                >
+                  <Ionicons
+                    name={chip.icon as React.ComponentProps<typeof Ionicons>['name']}
+                    size={16}
+                    color={on ? chrome : colors.onMediaMuted}
+                  />
+                  <Text style={[styles.durationText, on && styles.durationTextOn]}>{t(chip.labelKey)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         ) : !busy && !hasSegments ? (
           <ScrollView
             horizontal

@@ -30,7 +30,7 @@ class NiaCameraModule : Module() {
         view.facing = if (value == "front") "front" else "back"
       }
       Prop("effect") { view: NiaCameraView, value: String? ->
-        // "blur" | "pixelate" | "skimask" | "fullmask"
+        // "blur" | "pixelate" | "skimask" | "fullmask" | "accessory" (A2.0)
         view.setEffectMode(value ?: "blur")
       }
       Prop("syncMode") { view: NiaCameraView, value: String? ->
@@ -44,6 +44,10 @@ class NiaCameraModule : Module() {
       }
       Prop("mute") { view: NiaCameraView, value: Boolean? ->
         view.mute = value == true
+      }
+      Prop("accessory") { view: NiaCameraView, value: String? ->
+        // A2.0 : identifiant du catalogue (lib/accessories.ts), null = aucun.
+        view.setAccessory(value)
       }
       Prop("debugOutline") { view: NiaCameraView, value: Boolean? ->
         // Test (jalon 2e) : contours des calques de flou.

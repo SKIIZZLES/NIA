@@ -2,6 +2,8 @@
  * Caméra, masque visage actif (A1) : bandeau « visage non détecté » et,
  * pendant le test de faisabilité, les mesures (toucher = changer de
  * synchro direct ↔ exacte, hors enregistrement, pour comparer sur le téléphone).
+ * Mode accessoire (A2.0) : bandeau « montrez votre visage pour voir
+ * l'accessoire » (hors enregistrement ; rien n'est flouté, rien n'est bloqué).
  */
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,10 +11,13 @@ import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
 import { SHOW_FACE_METRICS, faceOutlineLabel, formatFaceStats } from '@/lib/faceEffects';
+import { accessoryOutlineLabel } from '@/lib/accessories';
 import type { NiaCameraStats } from '@/modules/nia-camera';
 
 type Props = {
   top: number;
+  /** 'accessory' (A2.0) : objet amusant, pas de l'anonymat. */
+  mode?: 'mask' | 'accessory';
   faceDetected: boolean;
   recording: boolean;
   stats: NiaCameraStats | null;
@@ -24,6 +29,7 @@ type Props = {
 
 export function FaceMaskHud({
   top,
+  mode = 'mask',
   faceDetected,
   recording,
   stats,
@@ -64,10 +70,14 @@ export function FaceMaskHud({
 
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { top }]}>
-      {!faceDetected ? (
+      {!faceDetected && (mode === 'mask' || !recording) ? (
         <View style={styles.banner} accessibilityLiveRegion="polite">
           <Text style={styles.bannerText}>
-            {recording ? t('camera.faceLost') : t('camera.faceShowToFilm')}
+            {mode === 'accessory'
+              ? t('camera.accessoryShowFace')
+              : recording
+                ? t('camera.faceLost')
+                : t('camera.faceShowToFilm')}
           </Text>
         </View>
       ) : null}
@@ -89,7 +99,7 @@ export function FaceMaskHud({
           accessibilityState={{ checked: debugOutline }}
         >
           <Text style={[styles.metricsLine, debugOutline && { color: colors.or }]}>
-            {faceOutlineLabel(debugOutline)}
+            {mode === 'accessory' ? accessoryOutlineLabel(debugOutline) : faceOutlineLabel(debugOutline)}
           </Text>
         </Pressable>
       ) : null}

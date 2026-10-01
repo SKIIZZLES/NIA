@@ -8,7 +8,12 @@ import type { ViewProps } from 'react-native';
  * `skimask` (cagoule, yeux voilés) et `fullmask` (masque intégral) suivent
  * les repères MediaPipe Face Landmarker ; sans repères, le visage reste flouté.
  */
-export type NiaFaceEffect = 'blur' | 'pixelate' | 'skimask' | 'fullmask';
+/**
+ * `accessory` (A2.0) : un objet du catalogue (`accessory`) posé sur le visage.
+ * Ce n'est PAS de l'anonymat : sans visage, rien n'est dessiné (ni flou ni
+ * repli) et le déclencheur n'est jamais bloqué.
+ */
+export type NiaFaceEffect = 'blur' | 'pixelate' | 'skimask' | 'fullmask' | 'accessory';
 
 /**
  * `live` (défaut) : chaque image caméra est dessinée dès son arrivée, avec
@@ -120,6 +125,19 @@ export type NiaCameraStats = {
   cameraPipelineMsAvg?: number;
   /** SENSOR_INFO_TIMESTAMP_SOURCE : 'realtime' | 'unknown' | '—'. */
   timestampSource?: string;
+  // --- Accessoires (A2.0).
+  /** Dessin des accessoires sur le fil GL (ms, budget ≤ 4) ; -1 si rien dessiné. */
+  accessoryDrawMsAvg?: number;
+  accessoryDrawMsMax?: number;
+  /** Images de la seconde avec au moins un accessoire posé. */
+  accessoryFrames?: number;
+  /** Accessoires cachés (repères absents, tête trop tournée), sur la seconde. */
+  accessoryHidden?: number;
+  /** Pose moyenne de la tête (degrés) : lacet (> 0 : côté repère 33 vers la caméra), tangage. */
+  poseYawDeg?: number;
+  posePitchDeg?: number;
+  /** Images de la seconde où la pose a été mesurée. */
+  poseFrames?: number;
 };
 
 export type NiaCameraError = { code: 'ERR_CAMERA' | 'ERR_DETECTOR' | string; message: string };
@@ -141,6 +159,8 @@ export type NiaCameraProps = ViewProps & {
   mute?: boolean;
   /** Test (jalon 2e) : trace les contours des calques de flou (cuits dans l'image). */
   debugOutline?: boolean;
+  /** Effet `accessory` (A2.0) : identifiant du catalogue (`lib/accessories.ts`), null = aucun. */
+  accessory?: string | null;
   onCameraReady?: () => void;
   onMountError?: (error: NiaCameraError) => void;
   /** Visage détecté (avec hystérésis) : débloque le déclencheur. */

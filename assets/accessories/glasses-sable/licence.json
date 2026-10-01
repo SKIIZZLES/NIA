@@ -1,0 +1,12 @@
+{
+  "id": "glasses-sable",
+  "name": "Lunettes Sable",
+  "author": "Haby (NIA)",
+  "source": "Dessin vectoriel original NIA : assets/accessories/glasses-sable/glasses-sable.svg ; même tracé, au format Android, dans modules/nia-camera/android/src/main/res/drawable/nia_acc_glasses_sable.xml",
+  "licence": "NIA-original",
+  "createdAt": "2026-10-01",
+  "aiGenerated": false,
+  "culturalReview": "non requise : monture neutre, sans motif culturel",
+  "palette": ["#E2C49A sable doré", "#8B5A2B bronze", "#D17F2A ocre", "#1E120A brun très foncé (verres, 16 %)"],
+  "notes": "Verres teintés d'un brun très foncé à 16 % : ils peuvent seulement assombrir, jamais éclaircir la peau."
+}
