@@ -1036,6 +1036,13 @@ const arSD: TranslationKeys = {
     checkFailedBody: 'لم نتمكن من التحقق من النصوص على الفيديو الخاص بك. تحقق من اتصالك ثم حاول مرة أخرى.',
     prepareFailed: 'تعذّر تجهيز النصوص والملصقات في الفيديو الخاص بك. حاول مرة أخرى.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'شارة First: واحد من أول 100 حساب في NIA',
+    firstRankA11y: 'شارة First، رقم %{rank}: واحد من أول 100 حساب في NIA',
+    firstOwnA11y: 'شارة First: حسابك من أول 100 حساب في NIA',
+  },
 };
 
 export default arSD;

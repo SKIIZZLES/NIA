@@ -30,6 +30,7 @@ import { videoDeleteFeedback } from '@/components/videoDeleteFeedback';
 import { useIsFocused, useRouter } from 'expo-router';
 import { SyncedSound } from '@/components/SyncedSound';
 import { OverlayLayer } from '@/components/OverlayLayer';
+import { FirstBadge } from '@/components/FirstBadge';
 import { canRepostItem } from '@/lib/publishOptions';
 
 const { height: SCREEN_H, width: SCREEN_W } = Dimensions.get('window');
@@ -548,6 +549,7 @@ function VideoCardInner({
           <Pressable onPress={openProfile}>
             <Text style={styles.handle}>{item.handle}</Text>
           </Pressable>
+          <FirstBadge userId={item.userId} username={item.handle} variant="dark" />
           {canMute && muteBesideHandle ? (
             <Pressable
               onPress={() => setMuted((m) => !m)}

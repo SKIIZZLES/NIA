@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MediaThumb } from '@/components/MediaThumb';
 import { useI18n } from '@/context/I18nContext';
 import { useColors } from '@/context/ThemeContext';
+import { FirstBadge } from '@/components/FirstBadge';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { formatCount, type VideoItem } from '@/data/mockVideos';
 import {
@@ -320,6 +321,8 @@ export default function SearchScreen() {
           borderColor: 'rgba(201, 162, 39, 0.35)',
         },
         rowBody: { flex: 1, minWidth: 0 },
+        nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+        nameShrink: { flexShrink: 1 },
         rowTitle: {
           color: colors.sable,
           fontFamily: Fonts.bold,
@@ -493,9 +496,12 @@ export default function SearchScreen() {
                 <Pressable style={styles.row} onPress={() => onPerson(p)}>
                   <Image source={{ uri: p.avatarUrl }} style={styles.avatar} />
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowTitle} numberOfLines={1}>
-                      {p.displayName}
-                    </Text>
+                    <View style={styles.nameRow}>
+                      <Text style={[styles.rowTitle, styles.nameShrink]} numberOfLines={1}>
+                        {p.displayName}
+                      </Text>
+                      <FirstBadge userId={p.id} username={p.username} />
+                    </View>
                     <Text style={styles.rowMeta} numberOfLines={1}>
                       @{p.username}
                       {p.bio ? ` · ${p.bio}` : ''}
@@ -516,9 +522,12 @@ export default function SearchScreen() {
                     style={styles.thumb}
                   />
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowTitle} numberOfLines={1}>
-                      {v.handle}
-                    </Text>
+                    <View style={styles.nameRow}>
+                      <Text style={[styles.rowTitle, styles.nameShrink]} numberOfLines={1}>
+                        {v.handle}
+                      </Text>
+                      <FirstBadge userId={v.userId} username={v.handle} />
+                    </View>
                     <Text style={styles.rowMeta} numberOfLines={2}>
                       {v.caption || t('search.noCaption')}
                     </Text>

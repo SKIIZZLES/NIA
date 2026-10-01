@@ -1033,6 +1033,13 @@ const es: TranslationKeys = {
     checkFailedBody: 'No hemos podido verificar los textos de tu vídeo. Comprueba tu conexión y vuelve a intentarlo.',
     prepareFailed: 'No se pudieron preparar los textos y stickers de tu vídeo. Vuelve a intentarlo.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Insignia First: una de las 100 primeras cuentas de NIA',
+    firstRankA11y: 'Insignia First, n.º %{rank}: una de las 100 primeras cuentas de NIA',
+    firstOwnA11y: 'Insignia First: formas parte de las 100 primeras cuentas de NIA',
+  },
 };
 
 export default es;

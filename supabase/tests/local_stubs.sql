@@ -41,6 +41,8 @@ create table if not exists auth.users (
 -- l'API admin, suspension).
 alter table auth.users add column if not exists raw_app_meta_data jsonb default '{}'::jsonb;
 alter table auth.users add column if not exists banned_until timestamptz;
+-- Comptes anonymes de Supabase Auth (023 : jamais de badge First).
+alter table auth.users add column if not exists is_anonymous boolean not null default false;
 
 -- Même implémentation que Supabase (claims PostgREST).
 create or replace function auth.uid() returns uuid

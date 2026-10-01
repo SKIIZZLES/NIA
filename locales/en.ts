@@ -1036,6 +1036,13 @@ const en: TranslationKeys = {
     checkFailedBody: 'We could not check the texts on your video. Check your connection, then try again.',
     prepareFailed: 'The texts and stickers on your video could not be prepared. Please try again.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'First badge: one of the first 100 accounts on NIA',
+    firstRankA11y: 'First badge, number %{rank}: one of the first 100 accounts on NIA',
+    firstOwnA11y: 'First badge: you are one of the first 100 accounts on NIA',
+  },
 };
 
 export default en;

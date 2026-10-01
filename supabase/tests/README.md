@@ -1,4 +1,4 @@
-# Tests SQL — suppression de compte (013 / 014), 015 → 020, 022
+# Tests SQL — suppression de compte (013 / 014), 015 → 020, 022, 023
 
 **Uniquement sur un Postgres local et jetable.** `local_stubs.sql` recrée des
 doubles minimaux des schémas `auth` et `storage` de Supabase (`auth.users`,
@@ -134,3 +134,31 @@ Jouée en dernier, après 017, 018, 019 et 022 (même ordre que la prod).
 - `020_verify_after_apply.sql` (16 lignes, lecture seule) : toutes `t` ;
 - `017`, `018`, `019` et `022_verify_after_apply.sql` relancés après 020, puis
   014, 016, 017, 018, 019 et 022 rejoués.
+
+## Suite : 023 (badge First, 100 premiers comptes)
+
+Jouée après 020 (même ordre que la prod ; 021 reste réservée).
+
+- `023_seed_before.sql` : comptes « d'avant 023 » dans un ordre d'inscription
+  mélangé (réels, modérateur, `@example.com`, `.test`, `.localhost`, anonyme,
+  sans e-mail, Snapchat `@users.nia.app`, `contest@latest.fr`), puis
+  empreinte jsonb de `profiles`, `videos`, `comments`, `moderators`,
+  `auth.users` ;
+- 023, appliquée **deux fois** (idempotence : le rattrapage ne joue qu'au
+  premier passage) ;
+- `023_first_badge.test.sql` (F0 → F9) : rattrapage dans l'ordre
+  d'inscription avec exclusions, aucune autre donnée modifiée, attribution
+  à l'inscription (comptes techniques sans rang ni place consommée), colonne
+  en lecture seule pour `authenticated` / `anon` / contexte modérateur,
+  valeur fournie à l'insertion ignorée, corrections `service_role` / SQL
+  Editor, contraintes 1..100 et unicité, compteur et fonctions fermés à
+  l'app, plafond de 100, rang jamais réattribué après suppression de compte,
+  inscription annulée sans trou, concurrence (dblink : la 2e inscription
+  attend le verrou du compteur ; commit → plus de place, rollback → place
+  reprise) ;
+- `023_first_badge_stress.sh` : 150 inscriptions en parallèle (30 sessions
+  psql) depuis un compteur à 0 → exactement 100 rangs, 1..100, sans doublon ;
+- `023_verify_after_apply.sql` (11 lignes, lecture seule) : toutes `t` ;
+- `017`, `018`, `019`, `020` et `022_verify_after_apply.sql` relancés après
+  023, puis 014, 016, 017, 018, 019 et 022 rejoués (`020_age_mature.test.sql`
+  n'est pas rejoué : son contrôle G0 compare l'empreinte prise juste avant 020).

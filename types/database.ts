@@ -43,6 +43,8 @@ export type Database = {
           created_at: string;
           /** Migration 017 — absent avant application. */
           suspended_until?: string | null;
+          /** Migration 023 — badge First (1..100), attribué par le serveur. */
+          first_rank?: number | null;
         };
         Insert: {
           id: string;

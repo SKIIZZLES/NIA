@@ -1034,6 +1034,13 @@ const ha: TranslationKeys = {
     checkFailedBody: 'Ba mu iya duba rubutun bidiyonku ba. Duba haɗin intanet ɗinku, sannan ku sake gwadawa.',
     prepareFailed: 'Ba a iya shirya rubutu da sitika na bidiyonku ba. Sake gwadawa.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Alamar First: ɗaya daga cikin asusun farko 100 na NIA',
+    firstRankA11y: 'Alamar First, lamba %{rank}: ɗaya daga cikin asusun farko 100 na NIA',
+    firstOwnA11y: 'Alamar First: asusunku na cikin asusun farko 100 na NIA',
+  },
 };
 
 export default ha;
