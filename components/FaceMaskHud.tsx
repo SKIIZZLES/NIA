@@ -8,7 +8,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
-import { SHOW_FACE_METRICS, formatFaceStats } from '@/lib/faceEffects';
+import { SHOW_FACE_METRICS, faceOutlineLabel, formatFaceStats } from '@/lib/faceEffects';
 import type { NiaCameraStats } from '@/modules/nia-camera';
 
 type Props = {
@@ -17,9 +17,20 @@ type Props = {
   recording: boolean;
   stats: NiaCameraStats | null;
   onToggleSync: () => void;
+  /** Test (jalon 2e) : contours des calques de flou. */
+  debugOutline: boolean;
+  onToggleOutline: () => void;
 };
 
-export function FaceMaskHud({ top, faceDetected, recording, stats, onToggleSync }: Props) {
+export function FaceMaskHud({
+  top,
+  faceDetected,
+  recording,
+  stats,
+  onToggleSync,
+  debugOutline,
+  onToggleOutline,
+}: Props) {
   const colors = useColors();
   const { t } = useI18n();
   const styles = useMemo(
@@ -41,6 +52,12 @@ export function FaceMaskHud({ top, faceDetected, recording, stats, onToggleSync 
         },
         metricsTitle: { color: colors.or, fontFamily: Fonts.bold, fontSize: 11 },
         metricsLine: { color: colors.onMedia, fontFamily: Fonts.regular, fontSize: 11 },
+        outlineToggle: {
+          backgroundColor: colors.mediaScrimStrong,
+          borderRadius: Radii.md,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
+        },
       }),
     [colors],
   );
@@ -62,6 +79,18 @@ export function FaceMaskHud({ top, faceDetected, recording, stats, onToggleSync 
               {line}
             </Text>
           ))}
+        </Pressable>
+      ) : null}
+      {SHOW_FACE_METRICS && stats ? (
+        <Pressable
+          onPress={onToggleOutline}
+          style={styles.outlineToggle}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: debugOutline }}
+        >
+          <Text style={[styles.metricsLine, debugOutline && { color: colors.or }]}>
+            {faceOutlineLabel(debugOutline)}
+          </Text>
         </Pressable>
       ) : null}
     </View>

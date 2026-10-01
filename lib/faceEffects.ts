@@ -71,6 +71,11 @@ export function isFaceShutterBlocked(input: {
  */
 export const SHOW_FACE_METRICS = true;
 
+/** Test (jalon 2e, panneau des mesures) : interrupteur des contours du flou. */
+export function faceOutlineLabel(on: boolean): string {
+  return `Contours du flou : ${on ? 'oui' : 'non'}`;
+}
+
 export const FACE_NOTICE_KEY = 'nia.faceEffects.noticeAccepted.v1';
 
 /** L'avis de première utilisation a déjà été accepté sur cet appareil. */
@@ -130,6 +135,9 @@ type StatsLike = {
   landmarkFrames?: number;
   fallbackFaces?: number;
   landmarkOnlyFaces?: number;
+  heldMasks?: number;
+  uncoveredMasks?: number;
+  haloRatioAvg?: number;
   landmarkFps?: number;
   landmarkTotalMsAvg?: number;
   landmarkSkipped?: number;
@@ -215,6 +223,12 @@ export function formatFaceStats(s: StatsLike): string[] {
         `masques ${s.maskFrames ?? 0} images · repli ${s.fallbackFaces ?? 0} · ` +
           `préparation masque ${Math.round(s.landmarkTotalMsAvg ?? 0)} ms`,
       );
+      if (s.heldMasks != null) {
+        const halo = s.haloRatioAvg != null && s.haloRatioAvg > 0 ? `×${s.haloRatioAvg.toFixed(2)}` : '—';
+        lines.push(
+          `halo ${halo} · maintenus ${s.heldMasks} · non couverts ${s.uncoveredMasks ?? 0}`,
+        );
+      }
     } else {
       lines.push(
         `repères ${label} · ${Math.round(s.landmarkMsAvg ?? 0)} ms (max ${Math.round(s.landmarkMsMax ?? 0)}) · ` +

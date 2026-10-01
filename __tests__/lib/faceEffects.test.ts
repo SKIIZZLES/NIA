@@ -8,6 +8,7 @@ import {
   acceptFaceNotice,
   faceEffectA11yKey,
   faceEffectShortLabelKey,
+  faceOutlineLabel,
   formatFaceStats,
   hasAcceptedFaceNotice,
   isAnalysisFrameBlank,
@@ -238,6 +239,25 @@ describe('formatFaceStats', () => {
     });
     expect(withChecks).toContain('repères prêts (GPU) · 22 ms (max 30) · 26 i/s · sautées 3 · rejetés 4 · zone 251 px');
     expect(lines).toContain('masques 28 images · repli 2 · préparation masque 25 ms');
+    expect(lines.some((l) => l.startsWith('halo '))).toBe(false);
+  });
+
+  it('jalon 2e : halo relatif, masques maintenus et non couverts', () => {
+    const live = {
+      ...base, mode: 'live' as const, landmarkState: 'ready', landmarkMsAvg: 20, landmarkMsMax: 30,
+      landmarkFps: 25, landmarkSkipped: 0, maskFrames: 30, fallbackFaces: 1,
+    };
+    expect(formatFaceStats({ ...live, heldMasks: 3, uncoveredMasks: 1, haloRatioAvg: 1.04 })).toContain(
+      'halo ×1.04 · maintenus 3 · non couverts 1',
+    );
+    expect(formatFaceStats({ ...live, heldMasks: 0, uncoveredMasks: 0, haloRatioAvg: -1 })).toContain(
+      'halo — · maintenus 0 · non couverts 0',
+    );
+  });
+
+  it('libellé de l’interrupteur des contours du flou', () => {
+    expect(faceOutlineLabel(true)).toBe('Contours du flou : oui');
+    expect(faceOutlineLabel(false)).toBe('Contours du flou : non');
   });
 
   it('synchro directe sans masque : âge des repères inconnu', () => {

@@ -3,6 +3,7 @@ package expo.modules.niacamera
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.RectF
 import android.os.SystemClock
@@ -54,6 +55,19 @@ internal class FaceMaskRenderer(
   @Volatile
   var detectorFailed = false
 
+  /**
+   * Contrôle (jalon 2e, interrupteur du panneau) : trace les contours des
+   * calques de flou — halo (cyan), ellipse de sécurité (jaune), repli
+   * (magenta). Cuit dans l'aperçu ET la vidéo.
+   */
+  @Volatile
+  var debugOutline = false
+  private val outlinePaint = Paint().apply {
+    style = Paint.Style.STROKE
+    isAntiAlias = true
+  }
+  private val outlinePath = Path()
+
   private val pixelPaint = Paint().apply {
     isFilterBitmap = false
     isAntiAlias = false
@@ -93,6 +107,8 @@ internal class FaceMaskRenderer(
     val canvas = frame.overlayCanvas
     var masks = 0
     var landmarkAgeSum = 0L
+    var haloRatioSum = 0.0
+    val outline = debugOutline
     if (plan.kind == FaceMaskPolicy.Kind.COVER) {
       // Une seule passe opaque (SRC : pas de mélange), puis l'image
       // entière réduite, agrandie avec lissage = flou plein cadre.
@@ -121,7 +137,8 @@ internal class FaceMaskRenderer(
         val m = item.mask
         if (m != null) {
           // 1. Filet de sécurité : petite ellipse floue serrée sur la boîte
-          //    BlazeFace fraîche (cachée par le masque quand tout va bien).
+          //    BlazeFace fraîche (cachée par le masque quand tout va bien ;
+          //    l'ellipse du sprite, en retrait, fait ≈ la boîte BlazeFace).
           val core = p.core
           if (core != null) {
             placed(core, item.dx, item.dy, item.scale, coreRect)
@@ -146,14 +163,34 @@ internal class FaceMaskRenderer(
           canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
           canvas.drawBitmap(m.sprite, m.spriteSrc, m.spriteRect, blurPaint)
           canvas.restore()
+          if (outline) {
+            // Contrôle, par-dessus le masque : halo (cyan), ellipse de sécurité (jaune).
+            canvas.save()
+            canvas.translate(item.maskCx, item.maskCy)
+            if (item.maskRotation != 0f) canvas.rotate(item.maskRotation)
+            canvas.scale(item.haloScale, item.haloScale)
+            canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
+            strokePoly(canvas, m.haloOutline, DEBUG_HALO, item.haloScale)
+            canvas.restore()
+            if (core != null) {
+              MaskSprite.ovalVisible(p.blurOval, coreRect, dst)
+              stroke(canvas, dst, DEBUG_CORE, 1f)
+            }
+          }
           masks++
           landmarkAgeSum += item.landmarkAgeNs
+          if (item.maskScale > 0f) haloRatioSum += (item.haloScale / item.maskScale).toDouble()
         } else if (pixelate) {
           canvas.drawBitmap(p.pixel, null, dst, pixelPaint)
         } else if (fx.usesLandmarks) {
           // Repli des masques (repères absents / écartés) : toute la zone,
           // en ellipse plumée (plus de grand rectangle flou).
-          canvas.drawBitmap(p.blurOval, null, dst, blurPaint)
+          // L'ellipse plumée du sprite est en retrait (la plume doit finir
+          // dans l'image) : agrandie pour que sa mi-opacité suive l'ellipse
+          // inscrite dans la zone.
+          MaskSprite.ovalFill(p.blurOval, dst, coreRect)
+          canvas.drawBitmap(p.blurOval, null, coreRect, blurPaint)
+          if (outline) stroke(canvas, dst, DEBUG_FALLBACK, 1f)
         } else {
           // Flou.
           canvas.drawBitmap(p.blur, null, dst, blurPaint)
@@ -166,6 +203,7 @@ internal class FaceMaskRenderer(
     stats.onRendered(
       plan.kind, ts, now, System.nanoTime(),
       plan.analysisAgeNs, masks, if (masks > 0) landmarkAgeSum / masks else -1L, plan.fallbacks,
+      plan.held, plan.uncovered, haloRatioSum,
     )
     return true
   }
@@ -187,6 +225,29 @@ internal class FaceMaskRenderer(
     return tmpMatrix
   }
 
+  /** Contrôle : ellipse inscrite dans `r` (trait ~1,5 px du tampon d'analyse). */
+  private fun stroke(canvas: android.graphics.Canvas, r: RectF, color: Int, scale: Float) {
+    outlinePaint.color = color
+    outlinePaint.strokeWidth = DEBUG_STROKE / scale
+    canvas.drawOval(r, outlinePaint)
+  }
+
+  /** Contrôle : contour fermé (x,y…), dans le repère courant. */
+  private fun strokePoly(canvas: android.graphics.Canvas, pts: FloatArray?, color: Int, scale: Float) {
+    if (pts == null || pts.size < 6) return
+    outlinePath.rewind()
+    outlinePath.moveTo(pts[0], pts[1])
+    var i = 2
+    while (i + 1 < pts.size) {
+      outlinePath.lineTo(pts[i], pts[i + 1])
+      i += 2
+    }
+    outlinePath.close()
+    outlinePaint.color = color
+    outlinePaint.strokeWidth = DEBUG_STROKE / scale
+    canvas.drawPath(outlinePath, outlinePaint)
+  }
+
   /** `r` déplacé de (dx, dy) puis agrandi de `s` autour de son centre. */
   private fun placed(r: RectF, dx: Float, dy: Float, s: Float, out: RectF) {
     val hw = r.width() * s / 2f
@@ -197,6 +258,10 @@ internal class FaceMaskRenderer(
   }
 
   companion object {
+    const val DEBUG_STROKE = 1.5f
+    val DEBUG_HALO: Int = Color.rgb(0x00, 0xE5, 0xFF)
+    val DEBUG_CORE: Int = Color.rgb(0xFF, 0xE0, 0x00)
+    val DEBUG_FALLBACK: Int = Color.rgb(0xFF, 0x30, 0xD0)
     /** Noir chaud NIA, opaque. */
     val COVER_COLOR: Int = Color.rgb(0x0B, 0x0B, 0x0B)
     // Cagoule : tricot anthracite, voile noir maillé.

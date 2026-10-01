@@ -90,9 +90,12 @@ internal object MaskGeometry {
   const val FULL_SIDE = 1.06f
   const val FULL_UP = 1.08f
   const val FULL_DOWN = 1.04f
-  /** Halo : silhouette + 12 % (cœur opaque), puis plume de 5 % de la largeur. */
-  const val HALO_PAD = 0.12f
-  const val FEATHER = 0.05f
+  /**
+   * Halo (jalon 2e) : liseré fin, silhouette + 4 %, plume de 2,5 % de la
+   * largeur du visage ; il ne s'élargit qu'en mouvement (`FaceMaskPolicy`).
+   */
+  const val HALO_PAD = 0.04f
+  const val FEATHER = 0.025f
   // Trous : élargissement le long du coin → coin, hauteur ×, hauteur minimale
   // (fraction de la demi-largeur : rapport largeur / hauteur ≤ 2,8 yeux, ≤ 3,6 bouche).
   const val EYE_B = 1.25f

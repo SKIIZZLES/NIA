@@ -45,6 +45,10 @@ class NiaCameraModule : Module() {
       Prop("mute") { view: NiaCameraView, value: Boolean? ->
         view.mute = value == true
       }
+      Prop("debugOutline") { view: NiaCameraView, value: Boolean? ->
+        // Test (jalon 2e) : contours des calques de flou.
+        view.setDebugOutline(value == true)
+      }
 
       OnViewDidUpdateProps { view: NiaCameraView ->
         view.onPropsUpdated()

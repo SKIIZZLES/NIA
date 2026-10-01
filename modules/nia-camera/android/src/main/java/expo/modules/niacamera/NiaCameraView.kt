@@ -109,6 +109,9 @@ class NiaCameraView(context: Context, appContext: AppContext) :
   private var renderer = FaceMaskRenderer(store, landmarkStore, stats, true)
   @Volatile
   private var effectMode = FaceMaskRenderer.Effect.BLUR
+  /** Test (jalon 2e) : contours des calques de flou, cuits dans l'image. */
+  @Volatile
+  private var debugOutline = false
   @Volatile
   private var detectorFailed = false
   private var analyzer: FaceAnalyzer? = null
@@ -179,6 +182,11 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     effectMode = FaceMaskRenderer.Effect.fromProp(value)
     renderer.effect = effectMode
     analyzer?.let { applyEffectTo(it) }
+  }
+
+  fun setDebugOutline(value: Boolean) {
+    debugOutline = value
+    renderer.debugOutline = value
   }
 
   private fun applyEffectTo(a: FaceAnalyzer) {
@@ -327,7 +335,10 @@ class NiaCameraView(context: Context, appContext: AppContext) :
       .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
       .build()
     detectorFailed = false
-    val r = FaceMaskRenderer(store, landmarkStore, stats, live).also { it.effect = effectMode }
+    val r = FaceMaskRenderer(store, landmarkStore, stats, live).also {
+      it.effect = effectMode
+      it.debugOutline = debugOutline
+    }
     renderer = r
     val a = FaceAnalyzer(context, store, landmarkStore, analyzerListener).also { applyEffectTo(it) }
     analyzer = a
@@ -342,6 +353,7 @@ class NiaCameraView(context: Context, appContext: AppContext) :
     overlay.setOnDrawListener { frame ->
       r.detectorFailed = detectorFailed
       r.effect = effectMode
+      r.debugOutline = debugOutline
       r.onDraw(frame)
     }
     effect = overlay

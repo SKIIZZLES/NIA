@@ -53,6 +53,11 @@ internal class NiaCameraStats {
   private var roiSideSum = 0L
   private var landmarkDelegate = "—"
   private var fallbackFaces = 0
+  // Jalon 2e : masques maintenus, écartés (couverture), taille du halo.
+  private var heldMasks = 0
+  private var uncoveredMasks = 0
+  private var haloRatioSum = 0.0
+  private var haloRatioCount = 0
   private var landmarkState = "off"
   // Rendu (jalon 2b) : âge des données posées sur chaque image.
   private var analysisAgeSumMs = 0.0
@@ -99,6 +104,9 @@ internal class NiaCameraStats {
     masks: Int,
     landmarkAgeNs: Long,
     fallbacks: Int,
+    held: Int = 0,
+    uncovered: Int = 0,
+    haloRatioSum: Double = 0.0,
   ) {
     rendered++
     when (kind) {
@@ -120,6 +128,12 @@ internal class NiaCameraStats {
       }
     }
     fallbackFaces += fallbacks
+    heldMasks += held
+    uncoveredMasks += uncovered
+    if (masks > 0) {
+      this.haloRatioSum += haloRatioSum
+      haloRatioCount += masks
+    }
     if (clock == CLOCK_UNKNOWN) {
       clock = when {
         realtimeNs - frameTs in 0..MAX_PLAUSIBLE_NS -> CLOCK_REALTIME
@@ -280,6 +294,9 @@ internal class NiaCameraStats {
       "landmarkMsMax" to round1(landmarkMaxMs),
       "landmarkFrames" to landmarkFrames,
       "fallbackFaces" to fallbackFaces,
+      "heldMasks" to heldMasks,
+      "uncoveredMasks" to uncoveredMasks,
+      "haloRatioAvg" to round2(if (haloRatioCount > 0) haloRatioSum / haloRatioCount else -1.0),
       "landmarkFps" to round1(landmarkRuns / sec),
       "landmarkTotalMsAvg" to round1(if (landmarkRuns > 0) landmarkTotalSumMs / landmarkRuns else 0.0),
       "landmarkSkipped" to landmarkSkipped,
@@ -306,7 +323,7 @@ internal class NiaCameraStats {
         "source=${out["sourceWidth"]}x${out["sourceHeight"]} prep=${out["prepMsAvg"]}ms " +
         "camera>analyse=${out["cameraToAnalysisMsAvg"]}ms reperes=$landmarkState " +
         "${out["landmarkMsAvg"]}/${out["landmarkMsMax"]}ms ${out["landmarkFps"]}i/s $landmarkDelegate img=$landmarkFrames " +
-        "sautees=$landmarkSkipped rejetes=$landmarkRejected roi=${out["landmarkRoiAvg"]}px repli=$fallbackFaces age=${out["analysisAgeMsAvg"]}/${out["landmarkAgeMsAvg"]}ms " +
+        "sautees=$landmarkSkipped rejetes=$landmarkRejected roi=${out["landmarkRoiAvg"]}px repli=$fallbackFaces maintenus=$heldMasks noncouverts=$uncoveredMasks halo=${out["haloRatioAvg"]} age=${out["analysisAgeMsAvg"]}/${out["landmarkAgeMsAvg"]}ms " +
         "masques=$maskFrames capteur>resultat=${out["cameraPipelineMsAvg"]}ms horloge=$timestampSource",
     )
     windowStartMs = nowMs
@@ -321,6 +338,7 @@ internal class NiaCameraStats {
     landmarkTotalSumMs = 0.0; landmarkSkipped = 0; landmarkRejected = 0; roiSideSum = 0L
     analysisAgeSumMs = 0.0; analysisAgeCount = 0; landmarkAgeSumMs = 0.0; landmarkAgeCount = 0; maskFrames = 0
     halSumMs = 0.0; halCount = 0
+    heldMasks = 0; uncoveredMasks = 0; haloRatioSum = 0.0; haloRatioCount = 0
     fallbackFaces = 0; queueSumMs = 0.0; queueCount = 0; prepSumMs = 0.0
     return out
   }

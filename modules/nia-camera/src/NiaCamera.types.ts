@@ -90,6 +90,13 @@ export type NiaCameraStats = {
   fallbackFaces?: number;
   /** Anciens APK : visages vus par les repères seuls. */
   landmarkOnlyFaces?: number;
+  // --- Jalon 2e.
+  /** Masques maintenus (repères de 100 à 150 ms, suivis par la boîte fraîche). */
+  heldMasks?: number;
+  /** Masques écartés : ils ne couvraient plus la boîte du visage (flou de repli). */
+  uncoveredMasks?: number;
+  /** Halo / masque moyen (1 = liseré seul) ; -1 sans masque. */
+  haloRatioAvg?: number;
   // --- Jalon 2b : rendu découplé de l'analyse.
   /** Passages de Face Landmarker par seconde (son propre fil). */
   landmarkFps?: number;
@@ -132,6 +139,8 @@ export type NiaCameraProps = ViewProps & {
   zoom?: number;
   enableTorch?: boolean;
   mute?: boolean;
+  /** Test (jalon 2e) : trace les contours des calques de flou (cuits dans l'image). */
+  debugOutline?: boolean;
   onCameraReady?: () => void;
   onMountError?: (error: NiaCameraError) => void;
   /** Visage détecté (avec hystérésis) : débloque le déclencheur. */

@@ -1,14 +1,15 @@
 package expo.modules.niacamera
 
 import android.graphics.Bitmap
+import android.graphics.BitmapShader
 import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffXfermode
+import android.graphics.Matrix
 import android.graphics.Rect
+import android.graphics.Shader
 import android.graphics.RectF
 import android.os.SystemClock
 import kotlin.math.ceil
@@ -74,18 +75,29 @@ internal object MaskSprite {
     strokeCap = Paint.Cap.ROUND
     strokeJoin = Paint.Join.ROUND
   }
-  private val bitmapPaint = Paint().apply { isFilterBitmap = true }
   /**
-   * Découpes plumées (DST_IN + flou du bord), une par fil : l'ellipse est
-   * préparée par le fil d'analyse, le halo par le fil des repères.
+   * Flou peint DANS une forme, à bord plumé (jalon 2e). Le flou est la
+   * texture (BitmapShader) d'un pinceau qui remplit la forme, flou de bord
+   * compris : rien n'est jamais peint hors de la forme.
+   *
+   * Jalons 2c–2d : le flou couvrait toute l'image du sprite, puis une forme
+   * en DST_IN devait effacer le reste. Mais Skia n'applique un mode de
+   * fusion que là où la forme dessine : les coins gardaient le flou entier.
+   * Chaque « ellipse » ou « halo » était donc posé en RECTANGLE flou à bords
+   * droits (vu au téléphone ; vérifié avec Skia : 10 000 px opaques sur
+   * 10 000).
    */
-  private fun featherPaint(radius: Float) = Paint().apply {
-    isAntiAlias = true
-    color = Color.BLACK
-    xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-    maskFilter = BlurMaskFilter(max(0.5f, radius), BlurMaskFilter.Blur.NORMAL)
+  private fun blurFill(blur: Bitmap, dst: RectF, featherPx: Float): Paint {
+    val m = Matrix().apply {
+      setRectToRect(RectF(0f, 0f, blur.width.toFloat(), blur.height.toFloat()), dst, Matrix.ScaleToFit.FILL)
+    }
+    return Paint().apply {
+      isAntiAlias = true
+      isFilterBitmap = true
+      shader = BitmapShader(blur, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply { setLocalMatrix(m) }
+      if (featherPx > 0f) maskFilter = BlurMaskFilter(featherPx, BlurMaskFilter.Blur.NORMAL)
+    }
   }
-  private val ovalPaint = featherPaint(OVAL_FEATHER)
 
   /** Masque `fx` (cagoule / intégral) en sprite ; fil des repères uniquement. */
   fun render(m: FaceMask, fx: FaceMaskRenderer.Effect, pool: Pool): Sprite? {
@@ -177,16 +189,40 @@ internal object MaskSprite {
    * Flou `blur` découpé en ellipse plumée (bord doux, pas d'arête) : filet
    * de sécurité sous les masques et repli quand les repères manquent.
    */
+  /**
+   * Où poser `blurOval` pour que la mi-opacité de son ellipse (en retrait de
+   * 2 × OVAL_FEATHER dans le sprite, plume comprise) suive l'ellipse inscrite
+   * dans `rect` : `rect` agrandi d'autant autour de son centre.
+   */
+  fun ovalFill(oval: Bitmap, rect: RectF, out: RectF) = ovalScale(oval, rect, out, true)
+
+  /** Inverse de [ovalFill] : ellipse visible (mi-opacité) de `blurOval` posé dans `rect`. */
+  fun ovalVisible(oval: Bitmap, rect: RectF, out: RectF) = ovalScale(oval, rect, out, false)
+
+  private fun ovalScale(oval: Bitmap, rect: RectF, out: RectF, grow: Boolean) {
+    var kx = oval.width / max(1f, oval.width - 4f * OVAL_FEATHER)
+    var ky = oval.height / max(1f, oval.height - 4f * OVAL_FEATHER)
+    if (!grow) {
+      kx = 1f / kx
+      ky = 1f / ky
+    }
+    val hw = rect.width() * kx / 2f
+    val hh = rect.height() * ky / 2f
+    out.set(rect.centerX() - hw, rect.centerY() - hh, rect.centerX() + hw, rect.centerY() + hh)
+  }
+
   fun blurOval(blur: Bitmap, rect: RectF): Bitmap {
     val aspect = if (rect.width() > 0f) rect.height() / rect.width() else 1f
     val w = if (aspect <= 1f) OVAL_SIDE else max(8, (OVAL_SIDE / aspect).toInt())
     val h = if (aspect <= 1f) max(8, (OVAL_SIDE * aspect).toInt()) else OVAL_SIDE
     val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
     val c = Canvas(bmp)
-    val r = RectF(0f, 0f, w.toFloat(), h.toFloat())
-    c.drawBitmap(blur, null, r, bitmapPaint)
-    r.inset(OVAL_FEATHER, OVAL_FEATHER)
-    c.drawOval(r, ovalPaint)
+    val full = RectF(0f, 0f, w.toFloat(), h.toFloat())
+    // La plume s'étend d'environ 2 × son rayon autour du bord : l'ellipse
+    // est rentrée d'autant pour finir à zéro AVANT le bord de l'image (sinon
+    // le bord de l'image ferait une arête droite).
+    val oval = RectF(full).apply { inset(OVAL_FEATHER * 2f, OVAL_FEATHER * 2f) }
+    c.drawOval(oval, blurFill(blur, full, OVAL_FEATHER))
     return bmp
   }
 
@@ -214,12 +250,12 @@ internal object MaskSprite {
     val c = Canvas(bmp)
     c.scale(k, k)
     c.translate(-bounds.left, -bounds.top)
-    // Flou de la zone réellement dans l'image, étiré sur le halo.
-    c.drawBitmap(blur, null, RectF(crop), bitmapPaint)
-    blur.recycle()
+    // Flou de la zone réellement dans l'image, peint dans la silhouette
+    // élargie, bord plumé (la marge `bounds` laisse la plume finir à zéro).
     val path = Path()
     polygon(halo, path)
-    c.drawPath(path, featherPaint(feather))
+    c.drawPath(path, blurFill(blur, RectF(crop), feather))
+    blur.recycle()
     return Sprite(bmp, Rect(0, 0, bw, bh), bounds)
   }
 

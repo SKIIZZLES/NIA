@@ -19,12 +19,16 @@ import kotlin.math.min
  *    ne bloquent plus), voisin à ±70 ms, maintien ≤ 100 ms.
  *
  * Dans les deux modes :
- *  - un visage sans repères frais (> 100 ms) ou qui a bougé depuis ses
- *    repères garde le flou (repli), jamais le masque seul ;
- *  - sous chaque masque (jalon 2d), un halo de flou plumé épousant sa
- *    silhouette, qui grandit avec l'âge des repères et la vitesse du
- *    maillage, plus une petite ellipse floue serrée sur la boîte BlazeFace
- *    fraîche (filet de sécurité, cachée par le masque au repos) ;
+ *  - un visage sans repères récents (> 150 ms), dont le masque ne couvre
+ *    plus la boîte BlazeFace, ou qui a bougé depuis ses repères garde le
+ *    flou (repli), jamais le masque seul ;
+ *  - sous chaque masque, un liseré de flou plumé épousant sa silhouette
+ *    (+4 % au repos, jalon 2e), qui ne s'élargit qu'en mouvement ou si les
+ *    repères vieillissent, plus une petite ellipse floue serrée sur la boîte
+ *    BlazeFace fraîche (filet de sécurité, cachée par le masque au repos) ;
+ *  - repères brièvement en retard (≤ 150 ms) : le dernier masque valable
+ *    reste posé, suivi par la boîte BlazeFace fraîche, s'il couvre encore
+ *    la boîte du visage ; sinon flou de repli ;
  *  - repli (repères absents) : ellipse de flou plumée de la zone du visage ;
  *  - visage absent des analyses depuis plus de 100 ms (ou plus aucune
  *    analyse récente) : flou plein cadre (COVER), cuit dans le fichier.
@@ -37,8 +41,13 @@ internal object FaceMaskPolicy {
   const val HOLD_NS = 100_000_000L
   /** LIVE : au-delà, l'analyse la plus récente est trop vieille → COVER. */
   const val LIVE_MAX_AGE_NS = 200_000_000L
-  /** Repères utilisables jusqu'à 100 ms de l'analyse du visage. */
+  /** Repères « frais » : jusqu'à 100 ms de l'analyse du visage. */
   const val LANDMARK_STALE_NS = 100_000_000L
+  /**
+   * Masque maintenu (jalon 2e) : repères jusqu'à 150 ms de l'analyse, suivis
+   * par la boîte BlazeFace fraîche, seulement s'ils couvrent encore le visage.
+   */
+  const val MASK_HOLD_NS = 150_000_000L
   /** Prolongation maximale du mouvement (LIVE). */
   const val MAX_EXTRAPOLATION_NS = 150_000_000L
 
@@ -57,15 +66,29 @@ internal object FaceMaskPolicy {
   /** Masque et visage inclinés différemment de plus de 30° : flou de repli. */
   const val MAX_ROLL_DIFF = 30f
   /**
-   * Halo sous le masque (jalon 2d) : en plus de la croissance BlazeFace,
-   * +6 % par 100 ms d'âge des repères et + 3 × (vitesse du maillage, en
-   * largeurs de visage / s) × âge. Réglé hors ligne sur la vidéo de référence
-   * (repères de 80–115 ms, analyse de 40 ms) : fuite maximale 3–5 % de la
-   * silhouette contre 12–16 % pour le jalon 2c, flou au repos ≈ 0,7 × l'aire
-   * du masque contre ≈ 1,0.
+   * Halo sous le masque, RELATIF au masque (jalon 2e) : 1 au repos (le
+   * liseré de +4 % est dans le sprite du halo), puis
+   *  + 0,8 × le déplacement prédit au-delà de 2 % de la zone ;
+   *  + 3 × (vitesse au-delà de 0,8 largeur / s : maillage ou boîte BlazeFace,
+   *    la plus forte) × âge des repères ;
+   *  + 8 % par tranche de 50 ms d'âge des repères au-delà de 100 ms (maintien).
+   * Les zones mortes ignorent le tremblement au repos : au jalon 2d, l'âge
+   * (≈ 100 ms au téléphone) et le bruit de vitesse du maillage gonflaient le
+   * halo de ~25 % même immobile.
    */
-  const val HALO_AGE_GROWTH = 0.06f
+  const val HALO_SPEED_GROWTH = 0.8f
+  const val HALO_SHIFT_DEAD = 0.02f
   const val MESH_SPEED_GROWTH = 3f
+  const val MESH_SPEED_DEAD = 0.8f
+  const val HALO_STALE_GROWTH = 0.08f
+  const val MAX_HALO = 1.6f
+  /**
+   * Couverture : la boîte BlazeFace fraîche × 0,75 (yeux → bouche) doit tomber
+   * dans l'emprise de la silhouette du masque posé (+5 %). Hors vidéo de test,
+   * la marge est de 2 à 15 % quand masque et boîte sont du même instant.
+   */
+  const val COVER_FACE = 0.75f
+  const val COVER_SLACK = 0.05f
 
   enum class Kind { EXACT, NEIGHBOR, HOLD, LIVE, COVER }
 
@@ -98,6 +121,9 @@ internal object FaceMaskPolicy {
     val analysisAgeNs: Long,
     /** Visages dessinés sans masque alors qu'un masque à repères est demandé. */
     val fallbacks: Int,
+    /** Masques maintenus (repères de plus de 100 ms) / écartés faute de couvrir le visage. */
+    val held: Int = 0,
+    val uncovered: Int = 0,
   )
 
   private class Pick(val res: FaceResult, val kind: Kind, val scale: Float)
@@ -147,6 +173,8 @@ internal object FaceMaskPolicy {
 
     val items = ArrayList<Item>()
     var fallbacks = 0
+    var held = 0
+    var uncovered = 0
     var kind = picks.firstOrNull()?.kind ?: if (live) Kind.LIVE else Kind.HOLD
     for (pick in picks) {
       val src = pick.res
@@ -172,19 +200,38 @@ internal object FaceMaskPolicy {
         }
         val cx = p.rect.centerX() + dx
         val cy = p.rect.centerY() + dy
-        val att = if (wantMask) attach(src, p, results, landmarks, effect) else null
+        var att = if (wantMask) attach(src, p, results, landmarks, effect) else null
+        var maskCx = 0f
+        var maskCy = 0f
+        var maskScale = 1f
+        var haloScale = 1f
+        var lmAge = -1L
+        if (att != null) {
+          maskCx = att.anchorCx + (cx - p.rect.centerX()) + att.shiftX
+          maskCy = att.anchorCy + (cy - p.rect.centerY()) + att.shiftY
+          maskScale = att.sizeRatio * grow * (1f + (scale / grow - 1f) * 0.25f)
+          lmAge = max(0L, ts - att.landmarkTs)
+          // Vitesse lissée de la boîte, en largeurs de visage / s (comme le maillage).
+          val faceSide = p.face?.let { max(it.width(), it.height()) } ?: (w / 1.6f)
+          val boxSpeed = hypot(p.vx, p.vy) / max(faceSide, 1f)
+          haloScale = maskScale * haloGrowth(hypot(dx, dy) / max(w, 1f), lmAge, max(att.face.meshSpeed, boxSpeed))
+          // Le masque (même maintenu) doit couvrir la boîte fraîche du visage.
+          if (!covers(att.face, maskCx, maskCy, maskScale, att.rotation, p.face, dx, dy)) {
+            att = null
+            uncovered++
+          } else if (abs(att.landmarkTs - src.timestampNs) > LANDMARK_STALE_NS) {
+            held++
+          }
+        }
         if (wantMask && att == null) fallbacks++
-        val lmAge = att?.let { max(0L, ts - it.landmarkTs) } ?: -1L
         items.add(
           Item(
             src, p, dx, dy, scale,
             att?.face,
-            att?.let { it.anchorCx + (cx - p.rect.centerX()) + it.shiftX } ?: 0f,
-            att?.let { it.anchorCy + (cy - p.rect.centerY()) + it.shiftY } ?: 0f,
-            att?.let { it.sizeRatio * grow * (1f + (scale / grow - 1f) * 0.25f) } ?: 1f,
+            maskCx, maskCy, maskScale,
             att?.rotation ?: 0f,
-            att?.let { it.sizeRatio * haloGrowth(scale, lmAge, it.face.meshSpeed) } ?: 1f,
-            lmAge,
+            haloScale,
+            if (att != null) lmAge else -1L,
           ),
         )
       }
@@ -207,7 +254,7 @@ internal object FaceMaskPolicy {
             if (ok) lf else null,
             fb.rect.centerX(), fb.rect.centerY(), 1f + (scale - 1f) * 0.25f,
             0f,
-            haloGrowth(scale, age, lf.meshSpeed),
+            (1f + (scale - 1f) * 0.25f) * haloGrowth(0f, age, lf.meshSpeed),
             if (ok) age else -1L,
           ),
         )
@@ -216,20 +263,57 @@ internal object FaceMaskPolicy {
     }
     if (items.isEmpty()) return Plan(Kind.COVER, emptyList(), latest, ts - latest.timestampNs, 0)
     val age = picks.firstOrNull()?.let { ts - it.res.timestampNs } ?: (ts - (lmFace?.timestampNs ?: ts))
-    return Plan(kind, items, null, age, fallbacks)
+    return Plan(kind, items, null, age, fallbacks, held, uncovered)
   }
 
   /**
-   * Halo : croissance BlazeFace (`scale` : âge de l'analyse, déplacement
-   * prédit), plus l'âge des repères et le mouvement propre du maillage
-   * (tête qui pivote ou hoche, que la boîte BlazeFace voit mal).
+   * Croissance du halo RELATIVE au masque : 1 au repos, plus le mouvement
+   * réel (déplacement prédit, vitesse du maillage) et le maintien.
    */
-  fun haloGrowth(scale: Float, landmarkAgeNs: Long, meshSpeed: Float): Float {
+  fun haloGrowth(shiftFraction: Float, landmarkAgeNs: Long, speed: Float): Float {
     val age = max(0L, landmarkAgeNs)
-    return min(
-      MAX_SCALE,
-      scale + HALO_AGE_GROWTH * (age / 100_000_000f) + MESH_SPEED_GROWTH * meshSpeed * (age / 1e9f),
-    )
+    val g = 1f +
+      HALO_SPEED_GROWTH * max(0f, shiftFraction - HALO_SHIFT_DEAD) +
+      MESH_SPEED_GROWTH * max(0f, speed - MESH_SPEED_DEAD) * (age / 1e9f) +
+      HALO_STALE_GROWTH * max(0f, (age - LANDMARK_STALE_NS) / 50_000_000f)
+    return min(MAX_HALO, g)
+  }
+
+  /**
+   * Le masque posé (centre, échelle, rotation) couvre-t-il la boîte fraîche
+   * du visage ? Ses coins (boîte BlazeFace × 0,75, déplacée comme le visage)
+   * sont ramenés dans le repère des repères et doivent tomber dans l'emprise
+   * de la silhouette (+5 %). Sans boîte BlazeFace : rien à vérifier.
+   */
+  fun covers(
+    f: LandmarkFace,
+    maskCx: Float,
+    maskCy: Float,
+    maskScale: Float,
+    rotationDeg: Float,
+    face: RectF?,
+    dx: Float,
+    dy: Float,
+  ): Boolean {
+    val sil = f.silhouette ?: return true
+    if (face == null || maskScale <= 0f) return true
+    val hw = face.width() * COVER_FACE / 2f
+    val hh = face.height() * COVER_FACE / 2f
+    val cx = face.centerX() + dx
+    val cy = face.centerY() + dy
+    val r = Math.toRadians(-rotationDeg.toDouble())
+    val cos = kotlin.math.cos(r).toFloat()
+    val sin = kotlin.math.sin(r).toFloat()
+    val sx = sil.width() * COVER_SLACK
+    val sy = sil.height() * COVER_SLACK
+    for (k in 0 until 4) {
+      val px = (if (k % 2 == 0) cx - hw else cx + hw) - maskCx
+      val py = (if (k < 2) cy - hh else cy + hh) - maskCy
+      val qx = (px * cos - py * sin) / maskScale + f.anchor.centerX()
+      val qy = (px * sin + py * cos) / maskScale + f.anchor.centerY()
+      if (qx < sil.left - sx || qx > sil.right + sx || qy < sil.top - sy || qy > sil.bottom + sy) return false
+    }
+    return true
   }
 
   private class Attach(
@@ -262,7 +346,7 @@ internal object FaceMaskPolicy {
     // Du plus proche au plus lointain dans le temps (≤ 100 ms) : le premier
     // jeu de repères qui se raccroche à ce visage gagne.
     val candidates = landmarks.filter {
-      it.faces.isNotEmpty() && abs(it.timestampNs - src.timestampNs) <= LANDMARK_STALE_NS &&
+      it.faces.isNotEmpty() && abs(it.timestampNs - src.timestampNs) <= MASK_HOLD_NS &&
         it.bufferWidth == src.bufferWidth && it.bufferHeight == src.bufferHeight
     }.sortedBy { abs(it.timestampNs - src.timestampNs) }
     for (l in candidates) {
@@ -366,6 +450,8 @@ internal class FacePatch(
    * floue sous le masque, cachée par lui au repos. Null : pas de filet.
    */
   val core: RectF? = null,
+  /** Boîte BlazeFace telle quelle (tampon) : le masque posé doit la couvrir. */
+  val face: RectF? = null,
 ) {
   /** Vitesse lissée du centre et de la largeur (px/s), fixée avant publication. */
   var vx = 0f
@@ -404,6 +490,10 @@ internal class LandmarkFace(
   val haloRect: RectF?,
   /** Vitesse propre du maillage depuis la passe précédente (largeurs de visage / s). */
   val meshSpeed: Float,
+  /** Emprise de la silhouette du masque (tampon) : contrôle de couverture. */
+  val silhouette: RectF? = null,
+  /** Contour du halo (x,y… tampon) : tracé de contrôle (panneau). */
+  val haloOutline: FloatArray? = null,
 )
 
 /** Résultat Face Landmarker d'une image (pas forcément chaque image). */

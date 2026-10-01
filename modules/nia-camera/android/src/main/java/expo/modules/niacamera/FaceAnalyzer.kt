@@ -196,6 +196,8 @@ internal class FaceAnalyzer(
     val roll: Float,
     /** Zone serrée (boîte à peine élargie, tampon) : filet de sécurité sous le masque. */
     val coreRect: RectF,
+    /** Boîte BlazeFace telle quelle (tampon) : contrôle de couverture du masque. */
+    val faceBox: RectF,
   )
 
   /** Visage d'une passe de repères : vitesse propre du maillage à la passe suivante. */
@@ -322,7 +324,7 @@ internal class FaceAnalyzer(
 
         val patches = ArrayList<FacePatch>(pass.faces.size)
         for (d in pass.faces) {
-          makePatch(buffer, d.bufferRect, w, h, d.roll, d.coreRect)?.let { patches.add(it) }
+          makePatch(buffer, d.bufferRect, w, h, d.roll, d.coreRect, d.faceBox)?.let { patches.add(it) }
         }
         updateTracks(ts, patches)
         val frameTiny = shrink(buffer, Rect(0, 0, w, h), FRAME_CELLS)
@@ -434,7 +436,7 @@ internal class FaceAnalyzer(
         up.toBuffer.mapPoints(pts)
         roll = Angles.lineAngle(pts[2] - pts[0], pts[3] - pts[1])
       }
-      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score, bb, roll, coreToBuffer(bb, up.toBuffer)))
+      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score, bb, roll, coreToBuffer(bb, up.toBuffer), RectF(bb).also { up.toBuffer.mapRect(it) }))
     }
     return Pass(faces, raw, best, detectMs)
   }
@@ -452,6 +454,21 @@ internal class FaceAnalyzer(
   }
 
   /** Zone serrée (sourcils → menton, joue → joue), ramenée au tampon. */
+  /** Emprise (tampon) du contour dessiné du masque : contrôle de couverture. */
+  private fun outlineBounds(pts: FloatArray): RectF {
+    var x0 = Float.MAX_VALUE
+    var y0 = Float.MAX_VALUE
+    var x1 = -Float.MAX_VALUE
+    var y1 = -Float.MAX_VALUE
+    var i = 0
+    while (i + 1 < pts.size) {
+      x0 = min(x0, pts[i]); x1 = max(x1, pts[i])
+      y0 = min(y0, pts[i + 1]); y1 = max(y1, pts[i + 1])
+      i += 2
+    }
+    return RectF(x0, y0, x1, y1)
+  }
+
   private fun coreToBuffer(bb: RectF, toBuffer: Matrix): RectF {
     val cx = bb.centerX()
     val cy = bb.centerY() - bb.height() * CORE_UP
@@ -468,10 +485,11 @@ internal class FaceAnalyzer(
     h: Int,
     roll: Float = Float.NaN,
     core: RectF? = null,
+    face: RectF? = null,
   ): FacePatch? {
     val crop = clampRect(rect, w, h) ?: return null
     val blur = shrink(buffer, crop, BLUR_CELLS)
-    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll, core)
+    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll, core, face)
   }
 
   /**
@@ -645,6 +663,8 @@ internal class FaceAnalyzer(
           LandmarkFace(
             fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h, check.roll), check.roll,
             halo?.bitmap, halo?.src, halo?.rect, speed,
+            outlineBounds(if (fx == FaceMaskRenderer.Effect.SKI_MASK) mask.hood else mask.full),
+            if (fx == FaceMaskRenderer.Effect.SKI_MASK) mask.hoodHalo else mask.fullHalo,
           ),
         )
         // Zone suivante (image redressée) : la zone du visage, ramenée du tampon.

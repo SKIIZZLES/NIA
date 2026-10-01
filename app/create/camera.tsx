@@ -264,6 +264,8 @@ function CameraScreen() {
   // --- A1 : masque visage cuit dans le fichier (flou / pixels).
   const faceMaskAvailable = useMemo(() => isNiaCameraAvailable(), []);
   const [faceEffect, setFaceEffect] = useState<FaceEffectId>('off');
+  // Test (jalon 2e) : contours des calques de flou, depuis le panneau des mesures.
+  const [faceOutline, setFaceOutline] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
   const [faceStats, setFaceStats] = useState<NiaCameraStats | null>(null);
   // 'live' : chaque image dessinée tout de suite (jalon 2b) ; 'exact' pour comparer.
@@ -1342,6 +1344,7 @@ function CameraScreen() {
           mute={!micGranted || playSoundWhileRecording}
           zoom={zoom}
           enableTorch={torch && torchUsable}
+          debugOutline={faceOutline}
           onCameraReady={() => setReady(true)}
           onFaceChange={setFaceDetected}
           onStats={setFaceStats}
@@ -1391,6 +1394,8 @@ function CameraScreen() {
             if (phase !== 'idle') return;
             setFaceSync((m) => (m === 'exact' ? 'live' : 'exact'));
           }}
+          debugOutline={faceOutline}
+          onToggleOutline={() => setFaceOutline((v) => !v)}
         />
       ) : null}
 
