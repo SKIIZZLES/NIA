@@ -1029,6 +1029,13 @@ const zu: TranslationKeys = {
     checkFailedBody: 'Asikwazanga ukuhlola imibhalo esevidiyweni yakho. Hlola uxhumano lwakho, bese uzama futhi.',
     prepareFailed: 'Imibhalo nezitikha zevidiyo yakho azikwazanga ukulungiswa. Zama futhi.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Ibheji le-First: enye yama-akhawunti angu-100 okuqala ku-NIA',
+    firstRankA11y: 'Ibheji le-First, inombolo %{rank}: enye yama-akhawunti angu-100 okuqala ku-NIA',
+    firstOwnA11y: 'Ibheji le-First: i-akhawunti yakho ingenye yama-akhawunti angu-100 okuqala ku-NIA',
+  },
 };
 
 export default zu;

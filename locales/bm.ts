@@ -1029,6 +1029,13 @@ const bm: TranslationKeys = {
     checkFailedBody: 'Nous n’avons pas pu vérifier les textes posés sur votre vidéo. Vérifiez votre connexion, puis réessayez.',
     prepareFailed: 'Les textes et stickers de votre vidéo n’ont pas pu être préparés. Réessayez.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Badge First : l’un des 100 premiers comptes de NIA',
+    firstRankA11y: 'Badge First, n° %{rank} : l’un des 100 premiers comptes de NIA',
+    firstOwnA11y: 'Badge First : vous faites partie des 100 premiers comptes de NIA',
+  },
 };
 
 export default bm;

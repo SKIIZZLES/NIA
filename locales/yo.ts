@@ -1029,6 +1029,13 @@ const yo: TranslationKeys = {
     checkFailedBody: 'A kò lè ṣàyẹ̀wò àwọn ọ̀rọ̀ lórí fídíò yín. Ẹ ṣàyẹ̀wò ìsopọ̀ yín, lẹ́yìn náà ẹ tún gbìyànjú.',
     prepareFailed: 'A kò lè pèsè àwọn ọ̀rọ̀ àti sítíkà fídíò yín. Ẹ tún gbìyànjú.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Àmì First: ọ̀kan lára àwọn àkáǹtì 100 àkọ́kọ́ lórí NIA',
+    firstRankA11y: 'Àmì First, nọ́mbà %{rank}: ọ̀kan lára àwọn àkáǹtì 100 àkọ́kọ́ lórí NIA',
+    firstOwnA11y: 'Àmì First: àkáǹtì yín wà lára àwọn àkáǹtì 100 àkọ́kọ́ lórí NIA',
+  },
 };
 
 export default yo;

@@ -1029,6 +1029,13 @@ const ig: TranslationKeys = {
     checkFailedBody: 'Anyị enweghị ike inyocha ederede dị na vidiyo gị. Lelee njikọ gị, wee nwaa ọzọ.',
     prepareFailed: 'Enweghị ike ịkwadebe ederede na stika vidiyo gị. Nwaa ọzọ.',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'Baajị First: otu n’ime akaụntụ 100 mbụ na NIA',
+    firstRankA11y: 'Baajị First, nọmba %{rank}: otu n’ime akaụntụ 100 mbụ na NIA',
+    firstOwnA11y: 'Baajị First: akaụntụ gị so n’ime akaụntụ 100 mbụ na NIA',
+  },
 };
 
 export default ig;

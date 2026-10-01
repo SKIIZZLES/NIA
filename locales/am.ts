@@ -1029,6 +1029,13 @@ const am: TranslationKeys = {
     checkFailedBody: 'በቪዲዮዎ ላይ ያሉትን ጽሑፎች ማረጋገጥ አልቻልንም። ግንኙነትዎን ያረጋግጡ፣ ከዚያ እንደገና ይሞክሩ።',
     prepareFailed: 'የቪዲዮዎን ጽሑፎችና ተለጣፊዎች ማዘጋጀት አልተቻለም። እንደገና ይሞክሩ።',
   },
+  badge: {
+    first: 'First',
+    firstRank: 'First #%{rank}',
+    firstA11y: 'የFirst ባጅ፦ ከNIA የመጀመሪያዎቹ 100 መለያዎች አንዱ',
+    firstRankA11y: 'የFirst ባጅ፣ ቁጥር %{rank}፦ ከNIA የመጀመሪያዎቹ 100 መለያዎች አንዱ',
+    firstOwnA11y: 'የFirst ባጅ፦ መለያዎ ከNIA የመጀመሪያዎቹ 100 መለያዎች አንዱ ነው',
+  },
 };
 
 export default am;

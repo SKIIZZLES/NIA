@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Exécute les tests SQL (suppression de compte, 016, 017, 018, 019, 022, 020) sur un Postgres LOCAL jetable.
+# Exécute les tests SQL (suppression de compte, 016, 017, 018, 019, 022, 020, 023) sur un Postgres LOCAL jetable.
 #
 #   PGHOST=/tmp PGPORT=55432 PGUSER=postgres supabase/tests/run_local.sh
 #
@@ -142,5 +142,34 @@ run "$ROOT/supabase/tests/018_keyword_filter.test.sql"
 run "$ROOT/supabase/tests/019_live_l2.test.sql"
 run "$ROOT/supabase/tests/022_video_delete_refs.test.sql"
 echo "--- 014, 016, 017, 018, 019, 022 rejoués après 020"
+
+# 023 (badge First) : après 020 et 022 (ordre de la prod ; 021 réservée).
+run "$ROOT/supabase/tests/_helpers.sql"
+run "$ROOT/supabase/tests/023_seed_before.sql"   # comptes à classer / exclure + empreinte
+run "$ROOT/supabase/migrations/023_first_badge.sql"
+run "$ROOT/supabase/migrations/023_first_badge.sql"   # idempotence : 2e passage
+echo "--- 023 appliquée deux fois"
+run "$ROOT/supabase/tests/023_first_badge.test.sql"
+PGHOST="$HOST" "$ROOT/supabase/tests/023_first_badge_stress.sh" "$DB"
+echo "--- 023_verify_after_apply.sql"
+VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/023_verify_after_apply.sql")"
+echo "$VERIFY"
+echo "($(wc -l <<<"$VERIFY") lignes)"
+if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : une ligne de vérification n'est pas ok" >&2; exit 1; fi
+for V in 017 018 019 020 022; do
+  VERIFY="$("${PSQL[@]}" -d "$DB" -At -F '|' -f "$ROOT/supabase/tests/${V}_verify_after_apply.sql")"
+  if grep -qv '|t$' <<<"$VERIFY"; then echo "échec : ${V}_verify_after_apply après 023" >&2; echo "$VERIFY"; exit 1; fi
+  echo "--- ${V}_verify_after_apply.sql après 023 : $(wc -l <<<"$VERIFY") lignes ok"
+done
+run "$ROOT/supabase/tests/_helpers.sql"
+run "$ROOT/supabase/tests/014_account_deletion.test.sql"
+run "$ROOT/supabase/tests/016_publish_options.test.sql"
+run "$ROOT/supabase/tests/017_safety_reports.test.sql"
+run "$ROOT/supabase/tests/018_keyword_filter.test.sql"
+run "$ROOT/supabase/tests/019_live_l2.test.sql"
+run "$ROOT/supabase/tests/022_video_delete_refs.test.sql"
+# 020_age_mature.test.sql n'est pas rejoué : son contrôle G0 compare l'empreinte
+# prise juste avant 020 (les comptes ajoutés par 023_seed_before la changent).
+echo "--- 014, 016, 017, 018, 019, 022 rejoués après 023"
 "${PSQL[@]}" -d postgres -c "drop database $DB" >/dev/null
 echo "=== TOUS LES TESTS SQL PASSENT ==="
