@@ -67,6 +67,7 @@ internal class FaceMaskRenderer(
   private val tmpMatrix = Matrix()
   private val inverse = Matrix()
   private val dst = RectF()
+  private val coreRect = RectF()
   private val srcRect = RectF()
   private val frameRect = RectF()
 
@@ -119,13 +120,28 @@ internal class FaceMaskRenderer(
         placed(p.rect, item.dx, item.dy, item.scale, dst)
         val m = item.mask
         if (m != null) {
-          // 1. Filet de sécurité : flou elliptique de la zone du visage.
-          canvas.drawBitmap(p.blurOval, null, dst, blurPaint)
-          // 2. Masque pré-dessiné, suivi depuis ses repères (déplacé, tourné
-          //    et mis à l'échelle d'après la boîte BlazeFace la plus fraîche).
+          // 1. Filet de sécurité : petite ellipse floue serrée sur la boîte
+          //    BlazeFace fraîche (cachée par le masque quand tout va bien).
+          val core = p.core
+          if (core != null) {
+            placed(core, item.dx, item.dy, item.scale, coreRect)
+            canvas.drawBitmap(p.blurOval, null, coreRect, blurPaint)
+          }
+          // 2. Halo plumé épousant la silhouette, puis 3. le masque
+          //    pré-dessiné, suivis depuis leurs repères (déplacés, tournés et
+          //    mis à l'échelle d'après la boîte BlazeFace la plus fraîche).
           canvas.save()
           canvas.translate(item.maskCx, item.maskCy)
           if (item.maskRotation != 0f) canvas.rotate(item.maskRotation)
+          val halo = m.halo
+          val haloRect = m.haloRect
+          if (halo != null && haloRect != null) {
+            canvas.save()
+            canvas.scale(item.haloScale, item.haloScale)
+            canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
+            canvas.drawBitmap(halo, m.haloSrc, haloRect, blurPaint)
+            canvas.restore()
+          }
           canvas.scale(item.maskScale, item.maskScale)
           canvas.translate(-m.anchor.centerX(), -m.anchor.centerY())
           canvas.drawBitmap(m.sprite, m.spriteSrc, m.spriteRect, blurPaint)
@@ -134,8 +150,12 @@ internal class FaceMaskRenderer(
           landmarkAgeSum += item.landmarkAgeNs
         } else if (pixelate) {
           canvas.drawBitmap(p.pixel, null, dst, pixelPaint)
+        } else if (fx.usesLandmarks) {
+          // Repli des masques (repères absents / écartés) : toute la zone,
+          // en ellipse plumée (plus de grand rectangle flou).
+          canvas.drawBitmap(p.blurOval, null, dst, blurPaint)
         } else {
-          // Flou, et repli des masques quand les repères manquent.
+          // Flou.
           canvas.drawBitmap(p.blur, null, dst, blurPaint)
         }
       }
@@ -190,5 +210,7 @@ internal class FaceMaskRenderer(
     val FULL_BASE: Int = Color.rgb(0xEE, 0xE8, 0xDD)
     val FULL_EDGE: Int = Color.rgb(0xB9, 0xAE, 0x9C)
     val FULL_ACCENT: Int = Color.rgb(0xC8, 0x8A, 0x2E)
+    /** Relief (sourcils, nez) : sable clair, discret. */
+    val FULL_LINE: Int = Color.rgb(0xCE, 0xC4, 0xB4)
   }
 }

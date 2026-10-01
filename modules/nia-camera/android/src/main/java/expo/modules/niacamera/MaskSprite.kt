@@ -1,6 +1,7 @@
 package expo.modules.niacamera
 
 import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -31,6 +32,12 @@ internal object MaskSprite {
   const val POOL_MAX = 12
   /** Ellipse de flou : petite, agrandie avec lissage (c'est un flou). */
   const val OVAL_SIDE = 48
+  /** Plume de l'ellipse (px de la vignette) : bord doux, jamais une arête. */
+  const val OVAL_FEATHER = 3f
+  /** Halo (flou plumé épousant la silhouette) : petit, agrandi avec lissage. */
+  const val HALO_SIDE = 72
+  /** Cases du flou du halo (comme les vignettes de flou BlazeFace). */
+  const val HALO_CELLS = 5
 
   class Sprite(val bitmap: Bitmap, val src: Rect, val rect: RectF)
 
@@ -68,10 +75,17 @@ internal object MaskSprite {
     strokeJoin = Paint.Join.ROUND
   }
   private val bitmapPaint = Paint().apply { isFilterBitmap = true }
-  private val dstIn = Paint().apply {
+  /**
+   * Découpes plumées (DST_IN + flou du bord), une par fil : l'ellipse est
+   * préparée par le fil d'analyse, le halo par le fil des repères.
+   */
+  private fun featherPaint(radius: Float) = Paint().apply {
     isAntiAlias = true
+    color = Color.BLACK
     xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
+    maskFilter = BlurMaskFilter(max(0.5f, radius), BlurMaskFilter.Blur.NORMAL)
   }
+  private val ovalPaint = featherPaint(OVAL_FEATHER)
 
   /** Masque `fx` (cagoule / intégral) en sprite ; fil des repères uniquement. */
   fun render(m: FaceMask, fx: FaceMaskRenderer.Effect, pool: Pool): Sprite? {
@@ -124,28 +138,45 @@ internal object MaskSprite {
       strokePaint.strokeWidth = line * 0.02f
       c.drawPath(path, strokePaint)
     } else {
-      polygon(m.full, path)
+      // Masque intégral épousant le visage : silhouette, relief (sourcils,
+      // nez), yeux et bouche sur les vrais contours, découpés par la
+      // silhouette (de profil, rien ne dépasse du masque).
+      val outlinePath = Path()
+      polygon(m.full, outlinePath)
       fillPaint.color = FaceMaskRenderer.FULL_BASE
-      c.drawPath(path, fillPaint)
-      strokePaint.color = FaceMaskRenderer.FULL_EDGE
-      strokePaint.strokeWidth = line * 0.035f
-      c.drawPath(path, strokePaint)
+      c.drawPath(outlinePath, fillPaint)
+      c.save()
+      c.clipPath(outlinePath)
+      strokePaint.color = FaceMaskRenderer.FULL_LINE
+      strokePaint.strokeWidth = line * 0.022f
+      c.drawLines(m.features, strokePaint)
       fillPaint.color = FaceMaskRenderer.HOLE
       for (pts in arrayOf(m.leftEye, m.rightEye, m.mouth)) {
         polygon(pts, path)
         c.drawPath(path, fillPaint)
       }
       strokePaint.color = FaceMaskRenderer.FULL_ACCENT
-      strokePaint.strokeWidth = line * 0.03f
+      strokePaint.strokeWidth = line * 0.028f
       for (pts in arrayOf(m.leftEye, m.rightEye)) {
         polygon(pts, path)
         c.drawPath(path, strokePaint)
       }
+      strokePaint.color = FaceMaskRenderer.FULL_EDGE
+      strokePaint.strokeWidth = line * 0.02f
+      polygon(m.mouth, path)
+      c.drawPath(path, strokePaint)
+      c.restore()
+      strokePaint.color = FaceMaskRenderer.FULL_EDGE
+      strokePaint.strokeWidth = line * 0.03f
+      c.drawPath(outlinePath, strokePaint)
     }
     return Sprite(bmp, Rect(0, 0, bw, bh), bounds)
   }
 
-  /** Flou `blur` découpé en ellipse aux bords doux (sous les masques). */
+  /**
+   * Flou `blur` découpé en ellipse plumée (bord doux, pas d'arête) : filet
+   * de sécurité sous les masques et repli quand les repères manquent.
+   */
   fun blurOval(blur: Bitmap, rect: RectF): Bitmap {
     val aspect = if (rect.width() > 0f) rect.height() / rect.width() else 1f
     val w = if (aspect <= 1f) OVAL_SIDE else max(8, (OVAL_SIDE / aspect).toInt())
@@ -154,8 +185,42 @@ internal object MaskSprite {
     val c = Canvas(bmp)
     val r = RectF(0f, 0f, w.toFloat(), h.toFloat())
     c.drawBitmap(blur, null, r, bitmapPaint)
-    c.drawOval(r, dstIn.apply { color = Color.BLACK })
+    r.inset(OVAL_FEATHER, OVAL_FEATHER)
+    c.drawOval(r, ovalPaint)
     return bmp
+  }
+
+  /**
+   * Halo du masque : le flou de la zone, découpé à la silhouette élargie
+   * (`m.fullHalo` / `m.hoodHalo`) avec une plume douce. Posé sous le masque
+   * avec la même transformation, il couvre ses bords sans grand rectangle ni
+   * grande ellipse floue autour de la tête. Fil des repères uniquement.
+   */
+  fun renderHalo(m: FaceMask, fx: FaceMaskRenderer.Effect, buffer: Bitmap, shrink: (Rect, Int) -> Bitmap?): Sprite? {
+    val halo = if (fx == FaceMaskRenderer.Effect.SKI_MASK) m.hoodHalo else m.fullHalo
+    val bounds = boundsOf(halo) ?: return null
+    val feather = m.faceWidth * MaskGeometry.FEATHER
+    bounds.inset(-feather * 2f, -feather * 2f)
+    val crop = Rect(
+      max(0, bounds.left.toInt()), max(0, bounds.top.toInt()),
+      min(buffer.width, ceil(bounds.right).toInt()), min(buffer.height, ceil(bounds.bottom).toInt()),
+    )
+    if (crop.width() < 2 || crop.height() < 2) return null
+    val blur = shrink(crop, HALO_CELLS) ?: return null
+    val k = HALO_SIDE / max(bounds.width(), bounds.height())
+    val bw = max(2, ceil(bounds.width() * k).toInt())
+    val bh = max(2, ceil(bounds.height() * k).toInt())
+    val bmp = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    c.scale(k, k)
+    c.translate(-bounds.left, -bounds.top)
+    // Flou de la zone réellement dans l'image, étiré sur le halo.
+    c.drawBitmap(blur, null, RectF(crop), bitmapPaint)
+    blur.recycle()
+    val path = Path()
+    polygon(halo, path)
+    c.drawPath(path, featherPaint(feather))
+    return Sprite(bmp, Rect(0, 0, bw, bh), bounds)
   }
 
   private fun boundsOf(pts: FloatArray): RectF? {

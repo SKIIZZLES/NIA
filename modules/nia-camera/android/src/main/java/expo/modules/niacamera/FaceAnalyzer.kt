@@ -149,6 +149,8 @@ internal class FaceAnalyzer(
    * sans BlazeFace. Fil des repères ; lu par le fil d'analyse.
    */
   private var lastLandmarkRoi: RectF? = null
+  /** Silhouettes de la dernière passe de repères (fil des repères). */
+  private var meshTracks: List<MeshTrack> = emptyList()
   @Volatile
   private var landmarkContinuation = false
   private var landmarkOnlyStreak = 0
@@ -187,7 +189,17 @@ internal class FaceAnalyzer(
    * Un visage BlazeFace : zone agrandie (tampon), boîte brute (image
    * redressée) et inclinaison des yeux (degrés, tampon, NaN si inconnue).
    */
-  private class Detection(val bufferRect: RectF, val score: Float, val uprightBox: RectF, val roll: Float)
+  private class Detection(
+    val bufferRect: RectF,
+    val score: Float,
+    val uprightBox: RectF,
+    val roll: Float,
+    /** Zone serrée (boîte à peine élargie, tampon) : filet de sécurité sous le masque. */
+    val coreRect: RectF,
+  )
+
+  /** Visage d'une passe de repères : vitesse propre du maillage à la passe suivante. */
+  private class MeshTrack(val cx: Float, val cy: Float, val half: Float, val ts: Long)
 
   private class Pass(
     val faces: List<Detection>,
@@ -310,7 +322,7 @@ internal class FaceAnalyzer(
 
         val patches = ArrayList<FacePatch>(pass.faces.size)
         for (d in pass.faces) {
-          makePatch(buffer, d.bufferRect, w, h, d.roll)?.let { patches.add(it) }
+          makePatch(buffer, d.bufferRect, w, h, d.roll, d.coreRect)?.let { patches.add(it) }
         }
         updateTracks(ts, patches)
         val frameTiny = shrink(buffer, Rect(0, 0, w, h), FRAME_CELLS)
@@ -422,7 +434,7 @@ internal class FaceAnalyzer(
         up.toBuffer.mapPoints(pts)
         roll = Angles.lineAngle(pts[2] - pts[0], pts[3] - pts[1])
       }
-      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score, bb, roll))
+      faces.add(Detection(expandToBuffer(bb, up.toBuffer), score, bb, roll, coreToBuffer(bb, up.toBuffer)))
     }
     return Pass(faces, raw, best, detectMs)
   }
@@ -439,11 +451,27 @@ internal class FaceAnalyzer(
     return RectF(cx - hw, cy - hh, cx + hw, cy + hh).also { toBuffer.mapRect(it) }
   }
 
+  /** Zone serrée (sourcils → menton, joue → joue), ramenée au tampon. */
+  private fun coreToBuffer(bb: RectF, toBuffer: Matrix): RectF {
+    val cx = bb.centerX()
+    val cy = bb.centerY() - bb.height() * CORE_UP
+    val hw = bb.width() * CORE_W / 2f
+    val hh = bb.height() * CORE_H / 2f
+    return RectF(cx - hw, cy - hh, cx + hw, cy + hh).also { toBuffer.mapRect(it) }
+  }
+
   /** Zone + vignettes (pixels, flou, ellipse de flou) d'un visage. */
-  private fun makePatch(buffer: Bitmap, rect: RectF, w: Int, h: Int, roll: Float = Float.NaN): FacePatch? {
+  private fun makePatch(
+    buffer: Bitmap,
+    rect: RectF,
+    w: Int,
+    h: Int,
+    roll: Float = Float.NaN,
+    core: RectF? = null,
+  ): FacePatch? {
     val crop = clampRect(rect, w, h) ?: return null
     val blur = shrink(buffer, crop, BLUR_CELLS)
-    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll)
+    return FacePatch(rect, shrink(buffer, crop, PIXEL_CELLS), blur, MaskSprite.blurOval(blur, rect), roll, core)
   }
 
   /**
@@ -555,11 +583,15 @@ internal class FaceAnalyzer(
       }
       val side = max(roi.width(), roi.height()) * scale
       val cr = squareCrop(roi.centerX(), roi.centerY(), side, uw, uh) ?: return
-      val c = Bitmap.createBitmap(up.bitmap, cr.left, cr.top, cr.width(), cr.height())
+      val c = paddedCrop(up.bitmap, cr)
       crop = c
       val cw = c.width.toFloat()
       val ch = c.height.toFloat()
-      val cropToBuffer = Matrix(up.toBuffer).apply { preTranslate(cr.left.toFloat(), cr.top.toFloat()) }
+      // Recadrage (éventuellement réduit) → image redressée → tampon.
+      val cropToBuffer = Matrix(up.toBuffer).apply {
+        preTranslate(cr.left.toFloat(), cr.top.toFloat())
+        preScale(cr.width() / cw, cr.height() / ch)
+      }
       // Pas de close() : il recyclerait l'image ; recyclée ci-dessous.
       val res = try {
         lmk.detect(BitmapImageBuilder(c).build())
@@ -582,37 +614,43 @@ internal class FaceAnalyzer(
       val faces = ArrayList<LandmarkFace>()
       var rejected = 0
       var nextRoi: RectF? = null
+      val tracks = ArrayList<MeshTrack>(res.faceLandmarks().size)
       for (face in res.faceLandmarks()) {
-        if (face.size < 468) continue
-        // Zone du visage tirée des repères (ancrage, repli) : recadrage →
-        // image redressée → tampon.
-        var x0 = Float.MAX_VALUE
-        var y0 = Float.MAX_VALUE
-        var x1 = -Float.MAX_VALUE
-        var y1 = -Float.MAX_VALUE
-        for (i in MaskGeometry.FACE_OVAL) {
-          val x = face[i].x() * cw
-          val y = face[i].y() * ch
-          x0 = min(x0, x); y0 = min(y0, y); x1 = max(x1, x); y1 = max(y1, y)
+        if (face.size < MaskGeometry.MESH_POINTS) continue
+        // Masque épousant le visage (silhouette du maillage, paupières,
+        // lèvres) : recadrage → image redressée → tampon. Dégénéré : écarté.
+        val mask = MaskGeometry.build(face, cw, ch, cropToBuffer)
+        if (mask == null) {
+          rejected++
+          continue
         }
-        val hw = (x1 - x0) * LANDMARK_EXPAND_W / 2f
-        val hh = (y1 - y0) * LANDMARK_EXPAND_H / 2f
-        val cx = (x0 + x1) / 2f
-        val cy = (y0 + y1) / 2f - (y1 - y0) * LANDMARK_SHIFT_UP
-        val local = RectF(cx - hw, cy - hh, cx + hw, cy + hh)
-        val rect = RectF(local).also { cropToBuffer.mapRect(it) }
+        // Zone du visage tirée de la silhouette (ancrage, repli).
+        val sb = mask.bounds
+        val hw = sb.width() * LANDMARK_EXPAND_W / 2f
+        val hh = sb.height() * LANDMARK_EXPAND_H / 2f
+        val rect = RectF(
+          sb.centerX() - hw, sb.centerY() - sb.height() * LANDMARK_SHIFT_UP - hh,
+          sb.centerX() + hw, sb.centerY() - sb.height() * LANDMARK_SHIFT_UP + hh,
+        )
         val check = MeshCheck.of(face, cw, ch, cropToBuffer)
         if (!check.shapeOk || !matchesDetector(check, rect, dets)) {
           rejected++
           continue
         }
-        val mask = MaskGeometry.build(face, cw, ch, cropToBuffer) ?: continue
         val sprite = MaskSprite.render(mask, fx, spritePool) ?: continue
+        val halo = MaskSprite.renderHalo(mask, fx, buffer) { r, cells -> shrink(buffer, r, cells) }
+        val speed = meshSpeed(mask, ts)
+        tracks.add(MeshTrack(mask.centerX, mask.centerY, mask.halfSize, ts))
         faces.add(
-          LandmarkFace(fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h, check.roll), check.roll),
+          LandmarkFace(
+            fx, sprite.bitmap, sprite.src, sprite.rect, rect, makePatch(buffer, rect, w, h, check.roll), check.roll,
+            halo?.bitmap, halo?.src, halo?.rect, speed,
+          ),
         )
-        if (nextRoi == null) nextRoi = RectF(local).apply { offset(cr.left.toFloat(), cr.top.toFloat()) }
+        // Zone suivante (image redressée) : la zone du visage, ramenée du tampon.
+        if (nextRoi == null) nextRoi = RectF(rect).also { bufferToUpright(up).mapRect(it) }
       }
+      meshTracks = tracks
       lastLandmarkRoi = nextRoi
       landmarkContinuation = nextRoi != null && landmarkOnlyStreak < LANDMARK_ONLY_MAX
       if (closed) return
@@ -648,16 +686,68 @@ internal class FaceAnalyzer(
     return false
   }
 
-  /** Carré de côté `side` centré, ramené dans l'image (rogné si plus grand). */
+  /**
+   * Carré de côté `side` centré sur le visage, qui PEUT déborder de l'image
+   * (jalon 2d) : le visage reste centré et à la même échelle même s'il sort
+   * en partie du cadre ; le débord est complété en noir (`paddedCrop`).
+   * Avant, le carré était rogné à l'image et décalé : visage excentré au bord.
+   */
   private fun squareCrop(cx: Float, cy: Float, side: Float, w: Int, h: Int): Rect? {
-    val s = min(side, min(w, h).toFloat())
-    if (s < 32f) return null
-    var l = cx - s / 2f
-    var t = cy - s / 2f
-    l = l.coerceIn(0f, w - s)
-    t = t.coerceIn(0f, h - s)
-    val r = Rect(l.toInt(), t.toInt(), min(w, (l + s).roundToInt()), min(h, (t + s).roundToInt()))
-    return if (r.width() >= 32 && r.height() >= 32) r else null
+    val s = min(side, 2f * max(w, h)).roundToInt()
+    if (s < 32) return null
+    val l = (cx - s / 2f).roundToInt()
+    val t = (cy - s / 2f).roundToInt()
+    val r = Rect(l, t, l + s, t + s)
+    // Au moins un quart du carré dans l'image, sinon rien à chercher.
+    val inter = Rect(r)
+    if (!inter.intersect(0, 0, w, h) || inter.width() * inter.height() * 4 < s * s) return null
+    return r
+  }
+
+  /**
+   * Copie du carré `r` de `src`, bords hors image en noir, réduite à
+   * `LANDMARK_CROP_MAX` px au plus (Face Landmarker travaille en 256 px :
+   * pas de perte, et pas de grosses images de visage très proche à 17 i/s).
+   */
+  private fun paddedCrop(src: Bitmap, r: Rect): Bitmap {
+    val inside = r.left >= 0 && r.top >= 0 && r.right <= src.width && r.bottom <= src.height
+    if (inside && r.width() <= LANDMARK_CROP_MAX) {
+      return Bitmap.createBitmap(src, r.left, r.top, r.width(), r.height())
+    }
+    val side = min(r.width(), LANDMARK_CROP_MAX)
+    val out = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+    val c = android.graphics.Canvas(out)
+    c.drawColor(android.graphics.Color.BLACK)
+    c.scale(side.toFloat() / r.width(), side.toFloat() / r.height())
+    c.drawBitmap(src, -r.left.toFloat(), -r.top.toFloat(), cropPaint)
+    return out
+  }
+
+  private val cropPaint = android.graphics.Paint().apply { isFilterBitmap = true }
+
+  /** Tampon → image redressée (inverse de `up.toBuffer`). */
+  private fun bufferToUpright(up: Upright): Matrix = Matrix().also { up.toBuffer.invert(it) }
+
+  /**
+   * Vitesse propre du maillage (largeurs de visage / s) : centre et taille de
+   * la silhouette depuis la passe précédente (≈ 60 ms). Elle voit la tête
+   * qui hoche ou pivote, que la boîte BlazeFace suit mal ; elle fait grandir
+   * le halo. Visage nouveau : vitesse prudente.
+   */
+  private fun meshSpeed(m: FaceMask, ts: Long): Float {
+    var best: MeshTrack? = null
+    var bestD = m.halfSize
+    for (t in meshTracks) {
+      val d = kotlin.math.hypot(t.cx - m.centerX, t.cy - m.centerY)
+      if (d <= bestD && ts > t.ts && ts - t.ts <= MESH_TRACK_NS) {
+        bestD = d
+        best = t
+      }
+    }
+    val t = best ?: return MESH_SPEED_UNKNOWN
+    val dt = (ts - t.ts) / 1e9f
+    val v = (bestD + kotlin.math.abs(m.halfSize - t.half)) / dt / max(1f, m.faceWidth)
+    return v.coerceIn(0f, MESH_SPEED_MAX)
   }
 
   private fun createLandmarker(preferGpu: Boolean) {
@@ -807,6 +897,19 @@ internal class FaceAnalyzer(
     const val PROBE_MIN_SCORE = 0.8f
     /** Correction active : la rotation de CameraX est revérifiée 1 image sur 5. */
     const val RESET_CHECK_EVERY = 5L
+    /**
+     * Zone serrée sous le masque : boîte BlazeFace × 1,10 / 1,25, remontée de
+     * 8 % (ne dépasse plus sous le menton ; même sûreté hors ligne).
+     */
+    const val CORE_W = 1.10f
+    const val CORE_H = 1.25f
+    const val CORE_UP = 0.08f
+    /** Vitesse du maillage : passe précédente ≤ 250 ms ; inconnue → 1 largeur/s. */
+    const val MESH_TRACK_NS = 250_000_000L
+    const val MESH_SPEED_UNKNOWN = 1f
+    const val MESH_SPEED_MAX = 4f
+    /** Côté maximal du recadrage passé aux repères (px). */
+    const val LANDMARK_CROP_MAX = 384
     /** Recadrage des repères : côté = 2 × la boîte BlazeFace (1,5 × nos repères). */
     const val ROI_SCALE = 2.0f
     const val ROI_SCALE_CONTINUE = 1.4f

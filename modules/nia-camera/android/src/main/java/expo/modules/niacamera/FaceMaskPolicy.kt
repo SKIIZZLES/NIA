@@ -21,7 +21,11 @@ import kotlin.math.min
  * Dans les deux modes :
  *  - un visage sans repères frais (> 100 ms) ou qui a bougé depuis ses
  *    repères garde le flou (repli), jamais le masque seul ;
- *  - sous chaque masque, le flou elliptique de la zone du visage ;
+ *  - sous chaque masque (jalon 2d), un halo de flou plumé épousant sa
+ *    silhouette, qui grandit avec l'âge des repères et la vitesse du
+ *    maillage, plus une petite ellipse floue serrée sur la boîte BlazeFace
+ *    fraîche (filet de sécurité, cachée par le masque au repos) ;
+ *  - repli (repères absents) : ellipse de flou plumée de la zone du visage ;
  *  - visage absent des analyses depuis plus de 100 ms (ou plus aucune
  *    analyse récente) : flou plein cadre (COVER), cuit dans le fichier.
  *
@@ -52,6 +56,16 @@ internal object FaceMaskPolicy {
   const val SIZE_TOLERANCE = 0.35f
   /** Masque et visage inclinés différemment de plus de 30° : flou de repli. */
   const val MAX_ROLL_DIFF = 30f
+  /**
+   * Halo sous le masque (jalon 2d) : en plus de la croissance BlazeFace,
+   * +6 % par 100 ms d'âge des repères et + 3 × (vitesse du maillage, en
+   * largeurs de visage / s) × âge. Réglé hors ligne sur la vidéo de référence
+   * (repères de 80–115 ms, analyse de 40 ms) : fuite maximale 3–5 % de la
+   * silhouette contre 12–16 % pour le jalon 2c, flou au repos ≈ 0,7 × l'aire
+   * du masque contre ≈ 1,0.
+   */
+  const val HALO_AGE_GROWTH = 0.06f
+  const val MESH_SPEED_GROWTH = 3f
 
   enum class Kind { EXACT, NEIGHBOR, HOLD, LIVE, COVER }
 
@@ -69,6 +83,8 @@ internal object FaceMaskPolicy {
     val maskScale: Float,
     /** Rotation du masque (degrés) : inclinaison BlazeFace actuelle − celle des repères. */
     val maskRotation: Float,
+    /** Échelle du halo (même centre et rotation que le masque). */
+    val haloScale: Float,
     /** Âge des repères utilisés (ns), -1 sans masque. */
     val landmarkAgeNs: Long,
   )
@@ -158,6 +174,7 @@ internal object FaceMaskPolicy {
         val cy = p.rect.centerY() + dy
         val att = if (wantMask) attach(src, p, results, landmarks, effect) else null
         if (wantMask && att == null) fallbacks++
+        val lmAge = att?.let { max(0L, ts - it.landmarkTs) } ?: -1L
         items.add(
           Item(
             src, p, dx, dy, scale,
@@ -166,7 +183,8 @@ internal object FaceMaskPolicy {
             att?.let { it.anchorCy + (cy - p.rect.centerY()) + it.shiftY } ?: 0f,
             att?.let { it.sizeRatio * grow * (1f + (scale / grow - 1f) * 0.25f) } ?: 1f,
             att?.rotation ?: 0f,
-            att?.let { ts - it.landmarkTs } ?: -1L,
+            att?.let { it.sizeRatio * haloGrowth(scale, lmAge, it.face.meshSpeed) } ?: 1f,
+            lmAge,
           ),
         )
       }
@@ -189,6 +207,7 @@ internal object FaceMaskPolicy {
             if (ok) lf else null,
             fb.rect.centerX(), fb.rect.centerY(), 1f + (scale - 1f) * 0.25f,
             0f,
+            haloGrowth(scale, age, lf.meshSpeed),
             if (ok) age else -1L,
           ),
         )
@@ -198,6 +217,19 @@ internal object FaceMaskPolicy {
     if (items.isEmpty()) return Plan(Kind.COVER, emptyList(), latest, ts - latest.timestampNs, 0)
     val age = picks.firstOrNull()?.let { ts - it.res.timestampNs } ?: (ts - (lmFace?.timestampNs ?: ts))
     return Plan(kind, items, null, age, fallbacks)
+  }
+
+  /**
+   * Halo : croissance BlazeFace (`scale` : âge de l'analyse, déplacement
+   * prédit), plus l'âge des repères et le mouvement propre du maillage
+   * (tête qui pivote ou hoche, que la boîte BlazeFace voit mal).
+   */
+  fun haloGrowth(scale: Float, landmarkAgeNs: Long, meshSpeed: Float): Float {
+    val age = max(0L, landmarkAgeNs)
+    return min(
+      MAX_SCALE,
+      scale + HALO_AGE_GROWTH * (age / 100_000_000f) + MESH_SPEED_GROWTH * meshSpeed * (age / 1e9f),
+    )
   }
 
   private class Attach(
@@ -283,6 +315,11 @@ internal object FaceMaskPolicy {
       ratio = 1f
     }
     if (hypot(shiftX, shiftY) > MOVED_FRACTION * w || abs(ratio - 1f) > SIZE_TOLERANCE) return null
+    // Jamais plus petit que ses repères : la largeur BlazeFace tremble de
+    // ±10–15 % d'une image à l'autre (jalon 2d, vidéo de référence) et un
+    // masque rétréci découvrirait le bord du visage. Un visage qui s'éloigne
+    // garde un masque un peu grand ≤ 100 ms, sans risque.
+    val sizeRatio = max(1f, ratio)
     // Inclinaison : le masque tourne avec la tête (BlazeFace frais) ; un
     // masque qui s'écarte de plus de 30° de l'inclinaison du visage actuel
     // n'est pas posé (flou de repli).
@@ -296,7 +333,7 @@ internal object FaceMaskPolicy {
       }
       if (!f.roll.isNaN() && Angles.diff(f.roll + rotation, p.roll) > MAX_ROLL_DIFF) return null
     }
-    return Attach(f, l.timestampNs, f.anchor.centerX(), f.anchor.centerY(), shiftX, shiftY, ratio, rotation)
+    return Attach(f, l.timestampNs, f.anchor.centerX(), f.anchor.centerY(), shiftX, shiftY, sizeRatio, rotation)
   }
 
   private fun nearest(faces: List<FacePatch>, x: Float, y: Float, maxDist: Float): FacePatch? {
@@ -320,10 +357,15 @@ internal class FacePatch(
   val pixel: Bitmap,
   /** Encore moins de pixels pour le flou (agrandis avec lissage). */
   val blur: Bitmap,
-  /** Le même flou en ellipse aux bords doux (dessous des masques). */
+  /** Le même flou en ellipse plumée (repli des masques, filet de sécurité). */
   val blurOval: Bitmap,
   /** Inclinaison des yeux (BlazeFace ou repères, degrés, tampon) ; NaN si inconnue. */
   val roll: Float = Float.NaN,
+  /**
+   * Zone serrée du visage (boîte BlazeFace à peine élargie) : petite ellipse
+   * floue sous le masque, cachée par lui au repos. Null : pas de filet.
+   */
+  val core: RectF? = null,
 ) {
   /** Vitesse lissée du centre et de la largeur (px/s), fixée avant publication. */
   var vx = 0f
@@ -356,6 +398,12 @@ internal class LandmarkFace(
   val fallback: FacePatch?,
   /** Inclinaison de la ligne des yeux du maillage (degrés, tampon). */
   val roll: Float,
+  /** Halo pré-rendu (flou plumé de la silhouette), même repère que le sprite. */
+  val halo: Bitmap?,
+  val haloSrc: android.graphics.Rect?,
+  val haloRect: RectF?,
+  /** Vitesse propre du maillage depuis la passe précédente (largeurs de visage / s). */
+  val meshSpeed: Float,
 )
 
 /** Résultat Face Landmarker d'une image (pas forcément chaque image). */
