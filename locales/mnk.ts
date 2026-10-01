@@ -59,14 +59,6 @@ const mnk: TranslationKeys = {
     hintMock: 'Mode mock: session dulaa (Expo Go waraŋ env te)',
     hintMissingId: 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS) londi',
   },
-  snapchat: {
-    continue: 'Saa Snapchat la',
-    fail: 'Snapchat duŋ maŋ noo',
-    alertTitle: 'Snapchat',
-    hintMock: 'Mode mock: session dulaa (Expo Go waraŋ env te)',
-    hintMissingId: 'EXPO_PUBLIC_SNAP_CLIENT_ID londi (SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Snap Kit + function snapchat-auth londi',
-  },
   camera: {
     permissionTitle: 'Accès à la caméra',
     permissionBody: 'NIA a besoin de la caméra pour filmer ta vidéo.',

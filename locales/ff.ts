@@ -59,14 +59,6 @@ const ff: TranslationKeys = {
     hintMock: 'Modu mock: session nokkuure (Expo Go wallaa env ŋakkuɗo)',
     hintMissingId: 'Teel EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Jokku e Snapchat',
-    fail: 'Naatgol Snapchat woorii',
-    alertTitle: 'Snapchat',
-    hintMock: 'Modu mock: session nokkuure (Expo Go wallaa env ŋakkuɗo)',
-    hintMissingId: 'Teel EXPO_PUBLIC_SNAP_CLIENT_ID (yiy SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Teel Snap Kit + deploy function snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Accès à la caméra',
     permissionBody: 'NIA a besoin de la caméra pour filmer ta vidéo.',

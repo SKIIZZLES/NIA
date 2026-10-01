@@ -70,8 +70,8 @@ describe('termsOfServiceUrl', () => {
 
   it('ne renvoie jamais la même page que la politique', () => {
     // Un copier-coller entre les deux fonctions passerait le typecheck et
-    // enverrait le lecteur des CGU sur la politique — Snap comme Google
-    // refusent une URL de CGU qui pointe ailleurs.
+    // enverrait le lecteur des CGU sur la politique — les portails
+    // développeur refusent une URL de CGU qui pointe ailleurs.
     for (const locale of ['fr', 'en'] as const) {
       expect(termsOfServiceUrl(locale)).not.toBe(privacyPolicyUrl(locale));
       expect(termsOfServiceUrl(locale)).not.toBe(accountDeletionUrl(locale));
@@ -141,7 +141,7 @@ describe('contact', () => {
 });
 
 describe('isReservedSignupEmail', () => {
-  it('refuse le domaine des comptes Snapchat, quelle que soit la casse', () => {
+  it('refuse le domaine des anciens comptes Snapchat, quelle que soit la casse', () => {
     expect(isReservedSignupEmail('snapchat_123@users.nia.app')).toBe(true);
     expect(isReservedSignupEmail('  Quelqu.un@USERS.NIA.APP ')).toBe(true);
     expect(isReservedSignupEmail('x@users.nia.app.')).toBe(true);

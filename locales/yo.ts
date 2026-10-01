@@ -59,14 +59,6 @@ const yo: TranslationKeys = {
     hintMock: 'Ipo àdàkọ: ìgbà agbègbè (Expo Go tàbí env tí ó kùnà)',
     hintMissingId: 'Ṣètò EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Tẹ̀síwájú pẹ̀lú Snapchat',
-    fail: 'Ìwọlé Snapchat kùnà',
-    alertTitle: 'Snapchat',
-    hintMock: 'Ipo àdàkọ: ìgbà agbègbè (Expo Go tàbí env tí ó kùnà)',
-    hintMissingId: 'Ṣètò EXPO_PUBLIC_SNAP_CLIENT_ID (wo SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Ṣètò Snap Kit + gbé iṣẹ́ snapchat-auth kalẹ̀',
-  },
   camera: {
     permissionTitle: 'Ọ̀nà sí kamẹ́rà',
     permissionBody: 'NIA nílò kamẹ́rà láti ya fídíò rẹ.',

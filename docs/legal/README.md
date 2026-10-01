@@ -61,7 +61,7 @@ changer ce fichier — les tests le rappelleront.
 | App content → Child safety standards → Point de contact | **niaapp@outlook.com** (toi, modérateur pour l'instant) |
 | App content → Child safety standards → Mécanisme de signalement dans l'app | Oui : ⋯ → Signaler (vidéo/photo), drapeau (commentaire, profil) |
 
-Portail développeur Snapchat (client `7ea8f803-6cf0-40a0-98fe-ba9f3b3765ae`) :
+Portail développeur Snapchat (client `7ea8f803-6cf0-40a0-98fe-ba9f3b3765ae`) — **plus utilisé** : la connexion Snapchat a été retirée de l'app le 01/10/2026 ; l'app Snap Kit peut être désactivée :
 
 | Champ | Valeur |
 |---|---|
@@ -138,5 +138,5 @@ les consoles, sans migration ni déploiement :
 | Play Console → App content → Child safety standards | URL `…/legal/child-safety.html`, contact niaapp@outlook.com |
 
 L'écran d'inscription refuse déjà les adresses en `@users.nia.app` (domaine des
-comptes Snapchat), mais ce contrôle est côté client : le blocage côté serveur
+anciens comptes Snapchat), mais ce contrôle est côté client : le blocage côté serveur
 (hook Auth ou trigger) est reporté au sprint 2.

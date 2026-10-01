@@ -63,14 +63,6 @@ const sw: TranslationKeys = {
     hintMock: 'Hali ya bandia: kipindi cha ndani (Expo Go au env zinakosekana)',
     hintMissingId: 'Weka EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
-  snapchat: {
-    continue: 'Endelea na Snapchat',
-    fail: 'Kuingia kwa Snapchat kumeshindikana',
-    alertTitle: 'Snapchat',
-    hintMock: 'Hali ya bandia: kipindi cha ndani (Expo Go au env zinakosekana)',
-    hintMissingId: 'Weka EXPO_PUBLIC_SNAP_CLIENT_ID (ona SNAPCHAT_AUTH.md)',
-    hintMissingFn: 'Sanidi Snap Kit + deploy function snapchat-auth',
-  },
   camera: {
     permissionTitle: 'Ufikiaji wa kamera',
     permissionBody: 'NIA inahitaji kamera ili kurekodi video yako.',

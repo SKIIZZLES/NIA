@@ -3,7 +3,7 @@
  *
  * Affichée à un compte connecté qui n'a pas encore déclaré sa date, quand
  * BIRTHDATE_PROMPT vaut 'required' (lib/age.ts) : anciens comptes, comptes
- * Google / Snapchat, ou date d'inscription perdue. Âge minimum non atteint :
+ * Google / ex-Snapchat, ou date d'inscription perdue. Âge minimum non atteint :
  * écran de refus et déconnexion ; aucun nouvel essai immédiat sur l'appareil.
  * Sans 020 (supported: false) ou hors connexion : rien n'est affiché.
  */

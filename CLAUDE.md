@@ -79,7 +79,8 @@
 par le fondateur le 30/09/2026, identique à l'adresse de contact publique du
 dépôt).
 
-**Edge Functions déployées** : `snapchat-auth`, `purge-user-storage`,
+**Edge Functions déployées** : `snapchat-auth` (plus appelée par l'app depuis le
+retrait de la connexion Snapchat, à supprimer plus tard), `purge-user-storage`,
 `moderation-hold` (cron `nia-moderation-hold` toutes les 5 min),
 `live-token` **v4** (L2, vérification JWT active), `livekit-webhook` (L2,
 `--no-verify-jwt`, auth par signature LiveKit, vérifiée). 020 ne demande aucun
@@ -169,7 +170,7 @@ npx expo start              # dev ; -c pour vider le cache Metro
 npx expo start --web        # web
 ```
 
-Mode mock si `.env` vide ; Google, Snapchat et LiveKit exigent un build EAS
+Mode mock si `.env` vide ; Google et LiveKit exigent un build EAS
 (profils `development` / `preview` / `production` dans `eas.json`), pas Expo Go.
 
 Pour le détail, voir plutôt que dupliquer :
@@ -177,7 +178,7 @@ Pour le détail, voir plutôt que dupliquer :
 - `SUPABASE.md` — backend, migrations 001–012, bucket
 - `supabase/tests/README.md` — tests SQL locaux (013 → 020, 022)
 - `supabase/functions/*/README.md` — déploiement, secrets, cron
-- `docs/account-deletion.md`, `GOOGLE_AUTH.md`, `SNAPCHAT_AUTH.md`,
+- `docs/account-deletion.md`, `GOOGLE_AUTH.md`,
   `PRODUCT.md`, `PERF.md`, `docs/legal/README.md`
 - `docs/fonts-licenses.md` — polices de l'Habillage (Google Fonts, OFL 1.1)
 
@@ -195,3 +196,4 @@ Pour le détail, voir plutôt que dupliquer :
 | 30/09/2026 | Haby | Éditeur P0 en PR (#46) : module local `modules/nia-composer` (Media3 Transformer 1.9, Android) qui compose un MP4 H.264 720p 30 i/s + AAC < 50 Mo sur l'appareil (découpe, vitesse, musique et volumes cuits), écran d'export au premier plan avec annulation, 3 min max, bascule de caméra entre segments ; `edit_meta.baked` pour les anciens APK, iOS inchangé (stub), aucune migration. |
 | 30/09/2026 | Haby | Éditeur V1 en PR (#47) : montage multi-clips sur Android (timeline : couper, découper, déplacer, dupliquer, supprimer ; vitesse par clip 0,3x → 2x ; photos de 3 s ; import multiple de la galerie ; segments caméra = clips), mixage son original / musique / début, aperçu enchaîné avec pause au toucher, export `nia-composer` (photos fixes, cadre 720 × 1280) en un MP4 ≤ 3 min et < 50 Mo, brouillons v2 avec migration des v1 ; iOS inchangé, aucune migration. |
 | 30/09/2026 | Haby | Éditeur V2 en PR (#48) : habillage incrusté sur Android — textes et stickers capturés en PNG (`react-native-view-shot`) puis cuits par `nia-composer` (position, taille, rotation, début / fin), filtres NIA cuits (matrice Media3 = voile de l'aperçu), vérification des mots interdits de l'habillage avant export (même RPC que 018), `edit_meta` `baked` avec `overlays: null` et `filter_id` ; 7 styles de texte façon Instagram (polices Google Fonts OFL via expo-font, `docs/fonts-licenses.md`), fonds aucun / pastille / translucide, alignement, nouvelles couleurs ; iOS inchangé, aucune migration. |
+| 01/10/2026 | Haby | Connexion Snapchat retirée de l'app (bouton, flux OAuth, `lib/snapchatAuth.ts`, clés `snapchat.*` des 20 locales, `SNAPCHAT_AUTH.md`) : seuls Google et e-mail / mot de passe restent ; aucune migration, Edge Function `snapchat-auth` et ses secrets laissés en place (à supprimer plus tard). |
