@@ -56,7 +56,9 @@ export function useComposerJob() {
   );
 
   const run = useCallback(
-    async <T,>(task: (onProgress: (p: number) => void) => Promise<T>): Promise<ComposerJobOutcome<T>> => {
+    async <T,>(
+      task: (onProgress: (p: number) => void, isStopped: () => boolean) => Promise<T>,
+    ): Promise<ComposerJobOutcome<T>> => {
       if (runningRef.current) return { status: 'failed', code: 'ERR_BUSY', error: null };
       runningRef.current = true;
       leftRef.current = false;
@@ -64,7 +66,12 @@ export function useComposerJob() {
       setProgress(0);
       setRunning(true);
       try {
-        const value = await task((p) => setProgress(p));
+        // isStopped : annulé ou app quittée pendant une étape JS (V2 : capture
+        // des calques avant l'export natif).
+        const value = await task(
+          (p) => setProgress(p),
+          () => cancelledRef.current || leftRef.current,
+        );
         if (leftRef.current) return { status: 'left' };
         return { status: 'done', value };
       } catch (error) {

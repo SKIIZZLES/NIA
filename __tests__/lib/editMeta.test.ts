@@ -213,3 +213,48 @@ describe('edit_meta cuit (éditeur P0, baked)', () => {
     expect(reread).toMatchObject({ speed: 1, sound: { volume: 0 }, originalVolume: 1 });
   });
 });
+
+describe('edit_meta cuit avec habillage (éditeur V2)', () => {
+  const doc = (items: Overlay[]) => ({ v: 1 as const, aspect: 9 / 16, items });
+
+  it('calques incrustés : overlays null, filtre noté pour info', () => {
+    const meta = buildEditMeta({
+      ...base,
+      overlays: doc([text('a')]),
+      baked: true,
+      bakedLooks: true,
+      filterId: 'nia-ocre',
+    });
+    expect(meta).toMatchObject({ baked: true, overlays: null, filter_id: 'nia-ocre' });
+  });
+
+  it('sans cuisson (iOS, web) : calques gardés, pas de filter_id', () => {
+    const meta = buildEditMeta({ ...base, overlays: doc([text('a')]), bakedLooks: true, filterId: 'nia-ocre' });
+    expect(meta?.overlays?.items).toHaveLength(1);
+    expect(meta?.filter_id).toBeUndefined();
+    expect(meta?.baked).toBeUndefined();
+  });
+
+  it('cuisson P0 sans habillage : calques gardés (comportement V1)', () => {
+    const meta = buildEditMeta({ ...base, overlays: doc([text('a')]), baked: true });
+    expect(meta?.overlays?.items).toHaveLength(1);
+    expect(meta?.filter_id).toBeUndefined();
+  });
+
+  it('identifiant de filtre invalide : ignoré', () => {
+    const meta = buildEditMeta({ ...base, baked: true, bakedLooks: true, filterId: 'Pas Valide!' });
+    expect(meta?.filter_id).toBeUndefined();
+  });
+
+  it('relit filter_id seulement sur une vidéo cuite', () => {
+    expect(parseEditMeta({ baked: true, filter_id: 'nia-ocre', overlays: null })?.filter_id).toBe('nia-ocre');
+    expect(parseEditMeta({ filter_id: 'nia-ocre' })?.filter_id).toBeUndefined();
+    expect(parseEditMeta({ baked: true, filter_id: 42 })?.filter_id).toBeUndefined();
+    expect(parseEditMeta({ baked: true, filter_id: 'x'.repeat(60) })?.filter_id).toBeUndefined();
+  });
+
+  it('reste sous le plafond d’octets de 016', () => {
+    const meta = buildEditMeta({ ...base, baked: true, bakedLooks: true, filterId: 'diaspora-bridge' })!;
+    expect(editMetaBytes(meta)).toBeLessThan(MAX_EDIT_META_BYTES);
+  });
+});

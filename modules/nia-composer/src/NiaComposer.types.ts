@@ -1,5 +1,5 @@
 /**
- * Contrat JSON entre l'app et le module natif NiaComposer (P0, V1).
+ * Contrat JSON entre l'app et le module natif NiaComposer (P0, V1, V2).
  *
  * Les durées sont en millisecondes, les volumes entre 0 et 1. Les URI sont
  * des `file://` (ou chemins absolus) ; le son peut aussi être une URL https,
@@ -46,12 +46,44 @@ export type ComposerOutput = {
   audioBitrate: number;
 };
 
+/**
+ * Éditeur V2 : calque texte / sticker déjà capturé en PNG (fond transparent,
+ * sans rotation), posé sur toute la vidéo de sortie.
+ */
+export type ComposerOverlay = {
+  /** PNG capturé (file://). */
+  uri: string;
+  /** Centre du calque, 0..1 de la largeur / hauteur du cadre de sortie. */
+  x: number;
+  y: number;
+  /** Degrés, sens horaire (comme à l'écran). */
+  rotation: number;
+  /** Fenêtre d'affichage en temps de sortie ; endMs null = jusqu'à la fin. */
+  startMs: number;
+  endMs: number | null;
+};
+
+/** Éditeur V2 : filtre NIA cuit, matrice couleur 4 × 4 (colonnes d'abord). */
+export type ComposerFilter = {
+  id: string;
+  matrix: number[];
+};
+
 export type Composition = {
   clips: ComposerClip[];
   audio: ComposerAudio | null;
   /** Volume du son d'origine des clips. */
   originalVolume: number;
   output: ComposerOutput;
+  /**
+   * V2 : calques incrustés. Les PNG ont été capturés dans un cadre de
+   * `overlayFrameWidth` px : chacun est mis à l'échelle largeur de sortie /
+   * overlayFrameWidth.
+   */
+  overlays?: ComposerOverlay[];
+  overlayFrameWidth?: number;
+  /** V2 : filtre appliqué à toute l'image (sous les calques, comme l'aperçu). */
+  filter?: ComposerFilter | null;
 };
 
 export type ComposeResult = {

@@ -19,6 +19,7 @@ import { FeedProvider } from '@/context/FeedContext';
 import { I18nProvider } from '@/context/I18nContext';
 import { ThemeProvider, useColors } from '@/context/ThemeContext';
 import { Colors } from '@/constants/theme';
+import { OVERLAY_FONT_SOURCES } from '@/constants/overlayFonts';
 import { t } from '@/lib/i18n';
 
 (globalThis as typeof globalThis & { Buffer?: typeof Buffer }).Buffer ??= Buffer;
@@ -117,6 +118,9 @@ export default function RootLayout() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_700Bold,
   });
+  // Éditeur V2 : polices des textes sur la vidéo, sans retarder le démarrage
+  // (le fil et l'éditeur retombent sur la police système le temps du chargement).
+  useFonts(OVERLAY_FONT_SOURCES);
   const [fontTimedOut, setFontTimedOut] = useState(false);
 
   useEffect(() => {

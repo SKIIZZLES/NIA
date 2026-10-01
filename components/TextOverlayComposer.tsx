@@ -1,6 +1,11 @@
 /**
  * Saisie d'un texte à poser sur la vidéo (sprint S4) : police, couleur de la
- * palette NIA, fond (aucun / encadré). Aperçu en direct du style.
+ * palette NIA, fond. Aperçu en direct du style.
+ *
+ * Éditeur V2 (façon Instagram) : sept styles de police, trois fonds (aucun,
+ * pastille pleine, pastille semi-transparente), alignement gauche / centre /
+ * droite. Le rendu vient de `textOverlayLook`, comme l'aperçu et l'image
+ * incrustée dans la vidéo.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -21,12 +26,15 @@ import { useI18n } from '@/context/I18nContext';
 import { Fonts, Radii, Spacing } from '@/constants/theme';
 import {
   MAX_OVERLAY_TEXT,
+  OVERLAY_ALIGNS,
+  OVERLAY_BACKGROUNDS,
   OVERLAY_COLORS,
   OVERLAY_COLOR_IDS,
   OVERLAY_FONTS,
-  OVERLAY_FONT_IDS,
-  textOverlayColors,
+  OVERLAY_FONT_CHOICES,
+  textOverlayLook,
   truncateText,
+  type OverlayAlign,
   type OverlayBackground,
   type OverlayColorId,
   type OverlayFontId,
@@ -37,6 +45,7 @@ export type TextStyleValue = {
   font: OverlayFontId;
   color: OverlayColorId;
   bg: OverlayBackground;
+  align: OverlayAlign;
 };
 
 type Props = {
@@ -47,7 +56,38 @@ type Props = {
   onCancel: () => void;
 };
 
-const DEFAULT_VALUE: TextStyleValue = { text: '', font: 'classique', color: 'sable', bg: 'none' };
+const DEFAULT_VALUE: TextStyleValue = {
+  text: '',
+  font: 'classique',
+  color: 'sable',
+  bg: 'none',
+  align: 'center',
+};
+
+const FONT_LABEL_KEY: Record<string, string> = {
+  classique: 'habillage.fontClassique',
+  machine: 'habillage.fontMachine',
+  neon: 'habillage.fontNeon',
+  manuscrit: 'habillage.fontManuscrit',
+  condense: 'habillage.fontCondense',
+  serif: 'habillage.fontSerif',
+  arrondi: 'habillage.fontArrondi',
+};
+const BG_LABEL_KEY: Record<OverlayBackground, string> = {
+  none: 'habillage.bgNone',
+  box: 'habillage.bgBox',
+  soft: 'habillage.bgSoft',
+};
+const ALIGN_LABEL_KEY: Record<OverlayAlign, string> = {
+  center: 'habillage.alignCenter',
+  left: 'habillage.alignLeft',
+  right: 'habillage.alignRight',
+};
+
+function nextOf<T>(list: readonly T[], cur: T): T {
+  const i = list.indexOf(cur);
+  return list[(i + 1) % list.length] as T;
+}
 
 export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Props) {
   const colors = useColors();
@@ -71,7 +111,8 @@ export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Prop
     return () => sub.remove();
   }, [visible]);
 
-  const preview = textOverlayColors(value);
+  const INPUT_SIZE = 30;
+  const preview = textOverlayLook(value, INPUT_SIZE);
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -96,12 +137,12 @@ export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Prop
         },
         center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.lg },
         inputBox: { maxWidth: '100%', borderRadius: 10 },
-        input: { fontSize: 30, lineHeight: 38, textAlign: 'center', minWidth: 60, padding: 0 },
+        input: { minWidth: 60, padding: 0 },
         counter: { color: colors.textMuted, fontFamily: Fonts.regular, fontSize: 11, marginTop: 8 },
         tools: { paddingHorizontal: Spacing.md, gap: Spacing.sm },
         row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
         fontChip: {
-          paddingHorizontal: 14,
+          paddingHorizontal: 12,
           height: 34,
           borderRadius: Radii.pill,
           borderWidth: 1,
@@ -148,7 +189,12 @@ export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Prop
           style={[
             styles.inputBox,
             preview.background
-              ? { backgroundColor: preview.background, paddingHorizontal: 12, paddingVertical: 4 }
+              ? {
+                  backgroundColor: preview.background,
+                  paddingHorizontal: preview.paddingH,
+                  paddingVertical: preview.paddingV,
+                  borderRadius: preview.borderRadius,
+                }
               : null,
           ]}
         >
@@ -158,10 +204,23 @@ export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Prop
             value={value.text}
             onChangeText={(txt) => set({ text: truncateText(txt) })}
             placeholder={t('create.textPlaceholder')}
-            placeholderTextColor={preview.background ? preview.text + '99' : colors.textMuted}
+            placeholderTextColor={preview.background ? preview.color + '99' : colors.textMuted}
             style={[
               styles.input,
-              { color: preview.text, fontFamily: OVERLAY_FONTS[value.font] },
+              {
+                color: preview.color,
+                fontFamily: preview.fontFamily,
+                fontSize: preview.fontSize,
+                lineHeight: preview.lineHeight,
+                textAlign: preview.textAlign,
+              },
+              preview.shadow
+                ? {
+                    textShadowColor: preview.shadow.color,
+                    textShadowOffset: { width: preview.shadow.dx, height: preview.shadow.dy },
+                    textShadowRadius: preview.shadow.radius,
+                  }
+                : null,
             ]}
             maxLength={MAX_OVERLAY_TEXT * 2}
             accessibilityLabel={t('create.textPlaceholder')}
@@ -174,22 +233,38 @@ export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Prop
         <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
           <View style={styles.row}>
             <Pressable
-              onPress={() => set({ bg: value.bg === 'box' ? 'none' : 'box' })}
+              onPress={() => set({ bg: nextOf(OVERLAY_BACKGROUNDS, value.bg) })}
               style={[
                 styles.bgBtn,
                 {
-                  borderColor: value.bg === 'box' ? colors.or : colors.border,
-                  backgroundColor: value.bg === 'box' ? colors.or : 'transparent',
+                  borderColor: value.bg === 'none' ? colors.border : colors.or,
+                  backgroundColor:
+                    value.bg === 'box' ? colors.or : value.bg === 'soft' ? colors.or + '66' : 'transparent',
                 },
               ]}
               accessibilityRole="button"
-              accessibilityState={{ selected: value.bg === 'box' }}
-              accessibilityLabel={value.bg === 'box' ? t('create.textBgBox') : t('create.textBgNone')}
+              accessibilityLabel={t('habillage.bgA11y', { name: t(BG_LABEL_KEY[value.bg]) })}
             >
               <Ionicons name="text" size={20} color={value.bg === 'box' ? colors.noir : colors.onMedia} />
             </Pressable>
-            {OVERLAY_FONT_IDS.map((f) => {
+            <Pressable
+              onPress={() => set({ align: nextOf(OVERLAY_ALIGNS, value.align) })}
+              style={[styles.bgBtn, { borderColor: colors.border }]}
+              accessibilityRole="button"
+              accessibilityLabel={t('habillage.alignA11y', { name: t(ALIGN_LABEL_KEY[value.align]) })}
+            >
+              <View style={{ alignItems: value.align === 'left' ? 'flex-start' : value.align === 'right' ? 'flex-end' : 'center', width: 20 }}>
+                {[16, 10, 14].map((w, i) => (
+                  <View
+                    key={i}
+                    style={{ width: value.align === 'center' ? w : w + 2, height: 2, borderRadius: 1, marginVertical: 1.5, backgroundColor: colors.onMedia }}
+                  />
+                ))}
+              </View>
+            </Pressable>
+            {OVERLAY_FONT_CHOICES.map((f) => {
               const on = value.font === f;
+              const name = t(FONT_LABEL_KEY[f] ?? 'habillage.fontClassique');
               return (
                 <Pressable
                   key={f}
@@ -203,10 +278,13 @@ export function TextOverlayComposer({ visible, initial, onDone, onCancel }: Prop
                   ]}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
-                  accessibilityLabel={t('create.textFont', { font: f })}
+                  accessibilityLabel={t('habillage.fontA11y', { name })}
                 >
-                  <Text style={{ fontFamily: OVERLAY_FONTS[f], fontSize: 15, color: on ? colors.noir : colors.onMedia }}>
-                    Aa
+                  <Text
+                    style={{ fontFamily: OVERLAY_FONTS[f], fontSize: 15, color: on ? colors.noir : colors.onMedia }}
+                    numberOfLines={1}
+                  >
+                    {name}
                   </Text>
                 </Pressable>
               );

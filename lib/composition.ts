@@ -12,7 +12,7 @@
  */
 import { MAX_UPLOAD_BYTES } from '@/constants/publish';
 import { MIN_OVERLAY_SPAN_MS, sanitizeOverlayDoc, type OverlayDoc } from '@/lib/overlays';
-import type { ComposerClip, Composition } from '@/modules/nia-composer';
+import type { ComposerClip, ComposerFilter, ComposerOverlay, Composition } from '@/modules/nia-composer';
 
 /** Durée maximale d'une vidéo composée (décision du fondateur : 3 min). */
 export const MAX_COMPOSED_DURATION_MS = 180_000;
@@ -112,7 +112,19 @@ export type PublishCompositionInput = {
    * original s'applique même sans son ajouté.
    */
   clips?: ComposerClip[] | null;
+  /**
+   * Éditeur V2 : calques capturés (lib/overlayBake) et largeur du cadre de
+   * capture, filtre NIA cuit. Absents = rien d'incrusté (comme V1).
+   */
+  overlays?: ComposerOverlay[] | null;
+  overlayFrameWidth?: number | null;
+  filter?: ComposerFilter | null;
 };
+
+/** Le cadre de sortie est fixe (720 × 1280) : plusieurs clips ou une photo. */
+export function usesFixedCanvas(clips: readonly Pick<ComposerClip, 'image'>[] | null | undefined): boolean {
+  return !!clips && (clips.length > 1 || clips.some((c) => c.image));
+}
 
 /** Durée finale d'une liste de clips (null si l'une est inconnue). */
 export function clipsDurationMs(clips: readonly ComposerClip[]): number | null {
@@ -176,7 +188,7 @@ export function buildPublishComposition(input: PublishCompositionInput): {
       maxHeight: OUTPUT_MAX_HEIGHT,
       fps: OUTPUT_FPS,
       // Un seul clip vidéo garde son format (paysage compris, comme en P0).
-      ...(montage && (clips.length > 1 || clips.some((c) => c.image)) ? { fixedCanvas: true } : {}),
+      ...(montage && usesFixedCanvas(clips) ? { fixedCanvas: true } : {}),
       // Durée inconnue : on vise le pire cas (3 min).
       videoBitrate: videoBitrateFor(
         expectedDurationMs ?? MAX_COMPOSED_DURATION_MS,
@@ -186,6 +198,11 @@ export function buildPublishComposition(input: PublishCompositionInput): {
       audioBitrate: AUDIO_BITRATE,
     },
   };
+  if (input.overlays && input.overlays.length > 0 && input.overlayFrameWidth && input.overlayFrameWidth > 0) {
+    composition.overlays = input.overlays;
+    composition.overlayFrameWidth = Math.round(input.overlayFrameWidth);
+  }
+  if (input.filter && input.filter.matrix.length === 16) composition.filter = input.filter;
   return { composition, expectedDurationMs };
 }
 

@@ -38,7 +38,16 @@ export type EditMeta = {
    * migration.
    */
   baked?: true;
+  /**
+   * Éditeur V2 : filtre NIA cuit dans l'image, pour information seulement
+   * (les calques aussi sont cuits : `overlays` vaut alors null). Aucun
+   * lecteur ne rejoue ni le filtre ni les calques d'une vidéo cuite, anciens
+   * APK compris (ils ne lisent pas cette clé et ne voient aucun calque).
+   */
+  filter_id?: string;
 };
+
+const FILTER_ID_RE = /^[a-z0-9][a-z0-9-]{0,47}$/;
 
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null;
@@ -109,6 +118,9 @@ export function parseEditMeta(raw: unknown): EditMeta | undefined {
     originalVolume: clamp(num(r.originalVolume) ?? 1, 0, 1),
     overlays,
     ...(r.baked === true ? { baked: true as const } : {}),
+    ...(r.baked === true && typeof r.filter_id === 'string' && FILTER_ID_RE.test(r.filter_id)
+      ? { filter_id: r.filter_id }
+      : {}),
   };
 }
 
@@ -141,6 +153,12 @@ export function buildEditMeta(input: {
   isVideo: boolean;
   /** Le fichier publié sort de l'export NiaComposer (vitesse et son déjà dedans). */
   baked?: boolean;
+  /**
+   * Éditeur V2 : calques et filtre incrustés par l'export (Android). Seulement
+   * avec `baked` : `overlays` devient null et `filter_id` est noté pour info.
+   */
+  bakedLooks?: boolean;
+  filterId?: string | null;
 }): EditMeta | null {
   const baked = input.baked === true && input.isVideo;
   const rawOverlays =
@@ -181,6 +199,11 @@ export function buildEditMeta(input: {
     meta.sound = input.hasSound ? { offsetMs: 0, volume: 0 } : null;
     meta.originalVolume = 1;
     meta.baked = true;
+    if (input.bakedLooks === true) {
+      // V2 : les calques sont dans l'image ; les redessiner ferait doublon.
+      meta.overlays = null;
+      if (input.filterId && FILTER_ID_RE.test(input.filterId)) meta.filter_id = input.filterId;
+    }
   }
   while (meta.overlays && editMetaBytes(meta) > MAX_EDIT_META_BYTES) {
     const items = meta.overlays.items.slice(0, -1);
