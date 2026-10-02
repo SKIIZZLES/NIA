@@ -104,9 +104,7 @@ export default function WelcomeScreen() {
         />
         <GoogleSignInButton />
         <LanguageToggle compact />
-        <Text style={styles.mockHint}>
-          {isMockAuth ? t('welcome.mockHint') : t('welcome.supabaseHint')}
-        </Text>
+        {isMockAuth ? <Text style={styles.mockHint}>{t('welcome.mockHint')}</Text> : null}
       </View>
     </SafeAreaView>
   );

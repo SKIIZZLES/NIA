@@ -55,16 +55,11 @@ function LoginScreenBody() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View
-        style={[
-          styles.badgeWrap,
-          { backgroundColor: isMockAuth ? Colors.terre : Colors.vert },
-        ]}
-      >
-        <Text style={styles.badge}>
-          {isMockAuth ? t('auth.authMockBadge') : t('auth.authSupabaseBadge')}
-        </Text>
-      </View>
+      {isMockAuth ? (
+        <View style={[styles.badgeWrap, { backgroundColor: Colors.terre }]}>
+          <Text style={styles.badge}>{t('auth.authMockBadge')}</Text>
+        </View>
+      ) : null}
       <Text style={styles.hint}>
         {isMockAuth ? t('auth.mockLoginHint') : t('auth.supabaseLoginHint')}
       </Text>
