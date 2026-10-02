@@ -1,0 +1,8 @@
+{
+  "name": "nia-camera",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NIA — caméra à effets visage cuits dans le fichier (CameraX CameraEffect + MediaPipe, Android). Module Expo local.",
+  "main": "index.ts",
+  "license": "MIT"
+}

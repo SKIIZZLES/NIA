@@ -1,0 +1,36 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'app.nia.camera'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.niacamera"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  // Le modèle MediaPipe doit rester lisible tel quel (mmap) : pas de compression.
+  androidResources {
+    noCompress 'tflite', 'task'
+  }
+}
+
+// Même version que expo-camera (SDK 57) : une seule CameraX dans l'APK.
+def cameraxVersion = "1.6.0"
+
+dependencies {
+  implementation "androidx.camera:camera-core:${cameraxVersion}"
+  implementation "androidx.camera:camera-camera2:${cameraxVersion}"
+  implementation "androidx.camera:camera-lifecycle:${cameraxVersion}"
+  implementation "androidx.camera:camera-video:${cameraxVersion}"
+  implementation "androidx.camera:camera-view:${cameraxVersion}"
+  // OverlayEffect : dessin appliqué à l'aperçu ET à l'enregistrement.
+  implementation "androidx.camera:camera-effects:${cameraxVersion}"
+  // Détection de visage sur l'appareil (Apache 2.0). Aucun envoi réseau.
+  implementation "com.google.mediapipe:tasks-vision:1.0.0"
+  // @OptIn(ExperimentalCamera2Interop) : horloge capteur, mesure HAL.
+  implementation "androidx.annotation:annotation-experimental:1.4.1"
+}
