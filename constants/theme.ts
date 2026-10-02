@@ -47,7 +47,3 @@ export const Fonts = {
 
 export const Tagline = 'VIDÉOS · CULTURES · TALENTS · SANS FRONTIÈRES';
 
-export const HeroLines = {
-  primary: 'ICI, LES TALENTS AFRICAINS VONT PLUS LOIN',
-  secondary: 'PLUS QUE DES VIDÉOS UNE AFRIQUE QUI SE RACONTE',
-} as const;
