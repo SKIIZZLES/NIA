@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { Colors, Fonts } from '@/constants/theme';
 import { t } from '@/lib/i18n';
+import { useColors } from '@/context/ThemeContext';
 
 type Props = {
   size?: number;
@@ -19,6 +20,8 @@ export function NiaWordmark({
   useImage = true,
 }: Props) {
   const tagline = t('brand.tagline');
+  // Couleur du thème actif (sinon crème illisible sur le fond clair d'Apparence « Clair »).
+  const taglineColor = useColors().textSecondary;
 
   if (useImage) {
     return (
@@ -29,7 +32,7 @@ export function NiaWordmark({
           resizeMode="contain"
           accessibilityLabel="NIA"
         />
-        {showTagline ? <Text style={styles.tagline}>{tagline}</Text> : null}
+        {showTagline ? <Text style={[styles.tagline, { color: taglineColor }]}>{tagline}</Text> : null}
       </View>
     );
   }
@@ -55,7 +58,7 @@ export function NiaWordmark({
         </View>
         <Text style={[styles.letter, { fontSize: size, lineHeight: size * 1.1 }]}>A</Text>
       </View>
-      {showTagline ? <Text style={styles.tagline}>{tagline}</Text> : null}
+      {showTagline ? <Text style={[styles.tagline, { color: taglineColor }]}>{tagline}</Text> : null}
     </View>
   );
 }

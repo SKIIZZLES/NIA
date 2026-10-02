@@ -16,8 +16,7 @@ const es: TranslationKeys = {
   },
   brand: {
     tagline: 'VIDEOS · CULTURAS · TALENTOS · SIN FRONTERAS',
-    heroPrimary: 'AQUÍ, LOS TALENTOS AFRICANOS VAN MÁS LEJOS',
-    heroSecondary: 'MÁS QUE VIDEOS — UN ÁFRICA QUE CUENTA SU HISTORIA',
+    heroSecondary: 'Más que videos — un África que cuenta su historia',
   },
   tabs: {
     home: 'Inicio',
@@ -46,7 +45,7 @@ const es: TranslationKeys = {
     mockLoginHint:
       'Acepta cualquier correo / contraseña. Sesión guardada localmente (AsyncStorage). Define EXPO_PUBLIC_SUPABASE_* en .env para activar Supabase.',
     supabaseLoginHint:
-      'Correo / contraseña vía Supabase Auth. Crea una cuenta en la pantalla de Registro.',
+      'Inicia sesión con tu correo y tu contraseña. Crea una cuenta en la pantalla de Registro.',
     mockRegisterHint:
       'Formulario stub — sin validación en el servidor. Crea una sesión local.',
     supabaseRegisterHint:

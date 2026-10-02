@@ -19,7 +19,6 @@ const arMA: TranslationKeys = {
   },
   brand: {
     tagline: 'فيديوات · ثقافات · مواهب · بلا حدود',
-    heroPrimary: 'هنا، المواهب ديال أفريقيا كيمشيو بعيد',
     heroSecondary: 'أكثر من فيديوات — أفريقيا كاتحكي على راسها',
   },
   tabs: {
@@ -49,7 +48,7 @@ const arMA: TranslationKeys = {
     mockLoginHint:
       'كيتقبل أي إيميل / كلمة سر. الجلسة محفوظة محلياً (AsyncStorage). حط EXPO_PUBLIC_SUPABASE_* فـ .env باش تفعّل Supabase.',
     supabaseLoginHint:
-      'إيميل / كلمة سر عبر Supabase Auth. أنشئ كونط من شاشة التسجيل.',
+      'إيميل / كلمة سر. أنشئ كونط من شاشة التسجيل.',
     mockRegisterHint:
       'فورم تجريبي — بلا تحقق من السيرفر. كينشئ جلسة محلية.',
     supabaseRegisterHint:

@@ -16,8 +16,7 @@ const zu: TranslationKeys = {
   },
   brand: {
     tagline: 'AMAVIDIYO · AMASIKO · AMATHALENTE · NGAPHANDLE KWEMINGCELE',
-    heroPrimary: 'LAPHA, AMATHALENTE ASE-AFRIKA AYA PHAMBILI',
-    heroSecondary: 'NGAPHEZU KWAMAVIDIYWO — I-AFRIKA EXOXA INDLABA YAYO',
+    heroSecondary: 'Ngaphezu kwamavidiywo — i-Afrika exoxa indaba yayo',
   },
   tabs: {
     home: 'Ikhaya',
@@ -43,7 +42,7 @@ const zu: TranslationKeys = {
     loginFail: 'Ayikwazanga ukungena',
     registerFail: 'Ayikwazanga ukubhalisa',
     mockLoginHint: 'Yamukela noma iyiphi i-imeyili / iphasiwedi. Iseshini igcinwa endaweni (AsyncStorage). Setha EXPO_PUBLIC_SUPABASE_* ku-.env ukuze unike amandla i-Supabase.',
-    supabaseLoginHint: 'I-imeyili / iphasiwedi nge-Supabase Auth. Dala i-akhawunti esikrinini Sokubhalisa.',
+    supabaseLoginHint: 'I-imeyili / iphasiwedi. Dala i-akhawunti esikrinini Sokubhalisa.',
     mockRegisterHint: 'Ifomu elilinganisiwe — akukho ukuqinisekiswa kweseva. Idala iseshini yendawo.',
     supabaseRegisterHint:
       'Singakuthumelela i-imeyili yokuqinisekisa: vula isixhumanisi esikuyo, bese ungena.',

@@ -14,8 +14,7 @@ const fr = {
   },
   brand: {
     tagline: 'VIDÉOS · CULTURES · TALENTS · SANS FRONTIÈRES',
-    heroPrimary: 'ICI, LES TALENTS AFRICAINS VONT PLUS LOIN',
-    heroSecondary: 'PLUS QUE DES VIDÉOS UNE AFRIQUE QUI SE RACONTE',
+    heroSecondary: 'Plus que des vidéos une Afrique qui se raconte',
   },
   tabs: {
     home: 'Accueil',
@@ -44,7 +43,7 @@ const fr = {
     mockLoginHint:
       'Accepte n’importe quel email / mot de passe. Session stockée localement (AsyncStorage). Remplissez EXPO_PUBLIC_SUPABASE_* dans .env pour activer Supabase.',
     supabaseLoginHint:
-      'Connexion email / mot de passe via Supabase Auth. Créez un compte sur l’écran Inscription.',
+      'Connectez-vous avec votre e-mail et votre mot de passe. Créez un compte sur l’écran Inscription.',
     mockRegisterHint:
       'Formulaire stub — aucune validation serveur. Créera une session locale.',
     supabaseRegisterHint:

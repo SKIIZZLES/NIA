@@ -16,8 +16,7 @@ const dyo: TranslationKeys = {
   },
   brand: {
     tagline: 'WIDEO · AADA · TALENT · BUTEMBURE TE',
-    heroPrimary: 'BUKE, TALENT AFRIKA MAN DEM KA KANAM',
-    heroSecondary: 'WIDEO BA — AFRIKA MAN WAX A BOPA',
+    heroSecondary: 'Wideo ba — Afrika man wax a bopa',
   },
   tabs: {
     home: 'Élup',
@@ -46,7 +45,7 @@ const dyo: TranslationKeys = {
     mockLoginHint:
       'Nangu na bépp email / kafuken suuru. Session bi dañu koy denc ci lokal (AsyncStorage). Defar EXPO_PUBLIC_SUPABASE_* ci .env ngir ubbi Supabase.',
     supabaseLoginHint:
-      'Email / kafuken suuru ci Supabase Auth. Kajeken kont ci seetukaayu Bindu.',
+      'Email / kafuken suuru. Kajeken kont ci seetukaayu Bindu.',
     mockRegisterHint:
       'Formulaire mock — amul kontrollu serveur. Dafay def session bu lokal.',
     supabaseRegisterHint:

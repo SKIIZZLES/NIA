@@ -16,8 +16,7 @@ const ln: TranslationKeys = {
   },
   brand: {
     tagline: 'BAVIDÉO · BAMILÚKU · BATALENT · SANS FRONTIÈRE',
-    heroPrimary: 'AWA, BATALENT YA AFRIKA BAKOKEYI LIBOSO',
-    heroSecondary: 'KOLEKA BAVIDÉO — AFRIKA OYO EZALI KOLOBÁ LISOLÓ NA YE',
+    heroSecondary: 'Koleka bavidéo — Afrika oyo ezali kolobá lisoló na ye',
   },
   tabs: {
     home: 'Ndako',
@@ -43,7 +42,7 @@ const ln: TranslationKeys = {
     loginFail: 'Ekoki te kokɔta',
     registerFail: 'Ekoki te koenregistrer',
     mockLoginHint: 'Endimaka email / mot ya sekele nyonso. Session ebombami na local (AsyncStorage). Tya EXPO_PUBLIC_SUPABASE_* na .env mpo na koactiver Supabase.',
-    supabaseLoginHint: 'Email / mot ya sekele na Supabase Auth. Sala compte na écran ya Enregistrement.',
+    supabaseLoginHint: 'Email / mot ya sekele. Sala compte na écran ya Enregistrement.',
     mockRegisterHint: 'Formulaire mock — vérification ya serveur ezali te. Esali session ya local.',
     supabaseRegisterHint:
       'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',

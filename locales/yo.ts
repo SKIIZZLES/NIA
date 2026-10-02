@@ -16,8 +16,7 @@ const yo: TranslationKeys = {
   },
   brand: {
     tagline: 'FÍDÍÒ · ÀṢÀ · Ẹ̀BUN · LÁÌNÍ ÀÀLÀ',
-    heroPrimary: 'NÍHÍN-ÍN, ÀWỌN Ẹ̀BUN AFIRIKA Ń LỌ SÍWÁJÚ',
-    heroSecondary: 'JU FÍDÍÒ LỌ — AFIRIKA TÍ Ń SỌ ÌTÀN RẸ̀',
+    heroSecondary: 'Ju fídíò lọ — Afirika tí ń sọ ìtàn rẹ̀',
   },
   tabs: {
     home: 'Ilé',
@@ -43,7 +42,7 @@ const yo: TranslationKeys = {
     loginFail: 'Kò le wọlé',
     registerFail: 'Kò le forúkọsílẹ̀',
     mockLoginHint: 'Gba ímeèlì / ọ̀rọ̀ ìgbaniwọlé eyikeyi. A fi ìgbà náà pamọ́ lórí ẹ̀rọ (AsyncStorage). Ṣètò EXPO_PUBLIC_SUPABASE_* nínú .env láti mu Supabase ṣiṣẹ́.',
-    supabaseLoginHint: 'Ímeèlì / ọ̀rọ̀ ìgbaniwọlé nípasẹ̀ Supabase Auth. Ṣẹ̀dá àkántì lórí ojú ìwé Ìforúkọsílẹ̀.',
+    supabaseLoginHint: 'Ímeèlì / ọ̀rọ̀ ìgbaniwọlé. Ṣẹ̀dá àkántì lórí ojú ìwé Ìforúkọsílẹ̀.',
     mockRegisterHint: 'Fọ́ọ̀mù àdàkọ — kò sí ìfidájú sẹ́fá. Ó ń ṣẹ̀dá ìgbà agbègbè.',
     supabaseRegisterHint:
       'A lè fi ímeèlì ìjẹ́rìísí ránṣẹ́ sí ọ: ṣí ìjápọ̀ tó wà nínú rẹ̀, lẹ́yìn náà wọlé.',
