@@ -103,7 +103,7 @@ export default function CreateStyleStep() {
         },
         coverPreview: {
           width: 96,
-          height: 128,
+          aspectRatio: 9 / 16,
           borderRadius: Radii.md,
           marginTop: Spacing.sm,
           backgroundColor: colors.noirSoft,

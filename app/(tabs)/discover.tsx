@@ -1,4 +1,5 @@
 import { MediaThumb } from '@/components/MediaThumb';
+import { NiaWordmark } from '@/components/NiaWordmark';
 import { LiveNowStrip } from '@/components/live/LiveNowStrip';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -28,7 +29,8 @@ import { fetchVideosFromSupabase } from '@/lib/videos';
  * recherche, raccourcis Lives/Événements, puces d'univers, puis grille de vidéos.
  */
 
-const GRID_GAP = 2;
+const GRID_GAP = 6;
+const GRID_INSET = Spacing.md;
 const COLUMNS = 3;
 
 export default function DiscoverScreen() {
@@ -41,8 +43,8 @@ export default function DiscoverScreen() {
   const [remoteByCategory, setRemoteByCategory] = useState<VideoItem[]>([]);
   const [loadingRemote, setLoadingRemote] = useState(false);
 
-  const tileW = (width - GRID_GAP * (COLUMNS - 1)) / COLUMNS;
-  const tileH = Math.round(tileW * 1.4);
+  const tileW = (width - GRID_INSET * 2 - GRID_GAP * (COLUMNS - 1)) / COLUMNS;
+  const tileH = Math.round(tileW * 16 / 9);
 
   const loadCategoryVideos = useCallback(async (categoryId: CategoryId) => {
     if (!isSupabaseConfigured) {
@@ -100,20 +102,24 @@ export default function DiscoverScreen() {
       StyleSheet.create({
         safe: { flex: 1, backgroundColor: colors.noir },
         header: { paddingHorizontal: Spacing.md, paddingTop: Spacing.sm },
+        titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: Spacing.md },
         title: {
           color: colors.sable,
           fontFamily: Fonts.bold,
           fontSize: 24,
-          marginBottom: Spacing.md,
+          flexShrink: 1,
         },
         searchBox: {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
-          height: 46,
+          minHeight: 48,
           backgroundColor: colors.noirSoft,
-          borderRadius: Radii.md,
+          borderRadius: Radii.pill,
+          borderWidth: 1,
+          borderColor: colors.borderStrong,
           paddingHorizontal: 14,
+          paddingVertical: 12,
         },
         searchText: {
           flex: 1,
@@ -128,20 +134,21 @@ export default function DiscoverScreen() {
         },
         shortcut: {
           flex: 1,
-          flexDirection: 'row',
+          flexDirection: width < 360 ? 'column' : 'row',
           alignItems: 'center',
           gap: 10,
-          height: 56,
-          paddingHorizontal: 12,
-          borderRadius: Radii.md,
+          minHeight: 72,
+          paddingHorizontal: 14,
+          paddingVertical: 14,
+          borderRadius: Radii.lg,
           backgroundColor: colors.noirElevated,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
         },
         shortcutIcon: {
-          width: 32,
-          height: 32,
-          borderRadius: 16,
+          width: 36,
+          height: 36,
+          borderRadius: Radii.md,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.noirSoft,
@@ -158,6 +165,7 @@ export default function DiscoverScreen() {
           borderColor: colors.noirElevated,
         },
         shortcutLabel: {
+          flexShrink: 1,
           color: colors.sable,
           fontFamily: Fonts.bold,
           fontSize: 14,
@@ -171,7 +179,8 @@ export default function DiscoverScreen() {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
-          height: 36,
+          minHeight: 44,
+          paddingVertical: 10,
           paddingHorizontal: 14,
           borderRadius: Radii.pill,
           backgroundColor: colors.noirSoft,
@@ -183,8 +192,8 @@ export default function DiscoverScreen() {
           fontSize: 13,
         },
         chipLabelActive: { color: colors.onAccent, fontFamily: Fonts.bold },
-        tile: { width: tileW, height: tileH },
-        tileThumb: { width: tileW, height: tileH, borderRadius: 0 },
+        tile: { width: tileW, height: tileH, borderRadius: Radii.md, overflow: 'hidden', backgroundColor: colors.noirSoft },
+        tileThumb: { width: tileW, height: tileH, borderRadius: Radii.md },
         tileMeta: {
           position: 'absolute',
           left: 6,
@@ -192,6 +201,10 @@ export default function DiscoverScreen() {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 3,
+          backgroundColor: colors.mediaScrimStrong,
+          paddingHorizontal: 6,
+          paddingVertical: 3,
+          borderRadius: Radii.pill,
         },
         tileCount: {
           color: colors.onMedia,
@@ -201,7 +214,7 @@ export default function DiscoverScreen() {
           textShadowOffset: { width: 0, height: 1 },
           textShadowRadius: 3,
         },
-        row: { gap: GRID_GAP },
+        row: { gap: GRID_GAP, paddingHorizontal: GRID_INSET },
         rowSpacer: { height: GRID_GAP },
         empty: {
           alignItems: 'center',
@@ -218,13 +231,16 @@ export default function DiscoverScreen() {
           lineHeight: 18,
         },
       }),
-    [colors, tileW, tileH],
+    [colors, tileW, tileH, width],
   );
 
   const header = (
     <View>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('discover.title')}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{t('discover.title')}</Text>
+          <NiaWordmark size={20} />
+        </View>
         <Pressable
           style={styles.searchBox}
           onPress={() => router.push('/search')}
@@ -280,6 +296,7 @@ export default function DiscoverScreen() {
               onPress={() => setSelected(c.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
+              aria-pressed={active}
             >
               <Ionicons
                 name={c.icon}
