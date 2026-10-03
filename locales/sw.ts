@@ -16,8 +16,7 @@ const sw: TranslationKeys = {
   },
   brand: {
     tagline: 'VIDEO · TAMADUNI · VIPAJI · BILA MIPOAKA',
-    heroPrimary: 'HAPA, VIPAJI VYA AFRIKA VINAENDA MBALI ZAIDI',
-    heroSecondary: 'ZAIDI YA VIDEO — AFRIKA INAYOJIELEZA',
+    heroSecondary: 'Zaidi ya video — Afrika inayojieleza',
   },
   tabs: {
     home: 'Nyumbani',
@@ -46,7 +45,7 @@ const sw: TranslationKeys = {
     mockLoginHint:
       'Inakubali barua pepe / nenosiri lolote. Kipindi kinahifadhiwa ndani (AsyncStorage). Weka EXPO_PUBLIC_SUPABASE_* katika .env ili kuwezesha Supabase.',
     supabaseLoginHint:
-      'Barua pepe / nenosiri kupitia Supabase Auth. Fungua akaunti kwenye skrini ya Usajili.',
+      'Barua pepe / nenosiri. Fungua akaunti kwenye skrini ya Usajili.',
     mockRegisterHint:
       'Fomu ya majaribio — hakuna uthibitishaji wa seva. Inaunda kipindi cha ndani.',
     supabaseRegisterHint:

@@ -26,8 +26,10 @@ export default function WelcomeScreen() {
           paddingHorizontal: Spacing.lg,
         },
         top: {
-          marginTop: Spacing.xxl,
+          flex: 1,
           alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: Spacing.lg,
         },
         badge: {
           marginTop: Spacing.md,
@@ -41,24 +43,14 @@ export default function WelcomeScreen() {
           fontSize: 11,
           letterSpacing: 0.6,
         },
-        hero: {
-          flex: 1,
-          justifyContent: 'center',
-          paddingVertical: Spacing.xl,
-        },
-        heroPrimary: {
+        subtitle: {
+          marginTop: Spacing.lg,
+          maxWidth: 320,
           color: colors.sable,
-          fontFamily: Fonts.bold,
-          fontSize: 28,
-          lineHeight: 36,
-          letterSpacing: -0.3,
-        },
-        heroSecondary: {
-          marginTop: Spacing.md,
-          color: colors.textSecondary,
           fontFamily: Fonts.medium,
-          fontSize: 15,
-          lineHeight: 22,
+          fontSize: 16,
+          lineHeight: 24,
+          textAlign: 'center',
         },
         actions: {
           paddingBottom: Spacing.xl,
@@ -78,16 +70,12 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.top}>
         <NiaWordmark size={72} showTagline />
+        <Text style={styles.subtitle}>{t('brand.heroSecondary')}</Text>
         {isMockAuth ? (
           <View style={[styles.badge, { backgroundColor: colors.terre }]}>
             <Text style={styles.badgeText}>{t('welcome.authMockBadge')}</Text>
           </View>
         ) : null}
-      </View>
-
-      <View style={styles.hero}>
-        <Text style={styles.heroPrimary}>{t('brand.heroPrimary')}</Text>
-        <Text style={styles.heroSecondary}>{t('brand.heroSecondary')}</Text>
       </View>
 
       <View style={styles.actions}>

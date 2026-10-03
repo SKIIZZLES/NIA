@@ -16,8 +16,7 @@ const bm: TranslationKeys = {
   },
   brand: {
     tagline: 'VIDÉOW · LADAMUW · TALENTUW · DANA TƐ',
-    heroPrimary: 'YAN, AFIRIKI TALENTUW BƐ TA A YƐRƐ LA',
-    heroSecondary: 'VIDÉOW KƆRƆ — AFIRIKI MIN BƐ A KA KOFO DON',
+    heroSecondary: 'Vidéow kɔrɔ — Afiriki min bɛ a ka kofo don',
   },
   tabs: {
     home: 'So',
@@ -43,7 +42,7 @@ const bm: TranslationKeys = {
     loginFail: 'A ma se ka don',
     registerFail: 'A ma se ka sɛbɛn',
     mockLoginHint: 'A bɛ email / gundo bɛɛ sɔn. Session bɛ mara yɔrɔ la (AsyncStorage). EXPO_PUBLIC_SUPABASE_* sigi .env kɔnɔ walasa Supabase ye.',
-    supabaseLoginHint: 'Email / gundo Supabase Auth fɛ. Konto da Sɛbɛn yeelen kan.',
+    supabaseLoginHint: 'Email / gundo. Konto da Sɛbɛn yeelen kan.',
     mockRegisterHint: 'Formulaire mock — serveur sɛgɛsɛgɛli tɛ. A bɛ session yɔrɔ da.',
     supabaseRegisterHint:
       'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',

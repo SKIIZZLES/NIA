@@ -16,8 +16,7 @@ const ff: TranslationKeys = {
   },
   brand: {
     tagline: 'WIDEEWOOJEE · AADA · TALAŊKEEJEE · ALAA KEEROL',
-    heroPrimary: 'DOO, TALAŊKEEJI AFRIK INA NJAARA YEE',
-    heroSecondary: 'KO ƁURI WIDEEWOOJEE — AFRIK YELLITOYTOO DAARTOL MUM',
+    heroSecondary: 'Ko ɓuri wideewoojee — Afrik yellitoytoo daartol mum',
   },
   tabs: {
     home: 'Galle',
@@ -43,7 +42,7 @@ const ff: TranslationKeys = {
     loginFail: 'Waawaa naatde',
     registerFail: 'Waawaa winnditaade',
     mockLoginHint: 'Jaɓata kala iimeel / finnde. Session mooftete e nokku (AsyncStorage). Teel EXPO_PUBLIC_SUPABASE_* e .env ngam huutoraade Supabase.',
-    supabaseLoginHint: 'Iimeel / finnde e Supabase Auth. Taggu konte e yaynirde Winnditagol.',
+    supabaseLoginHint: 'Iimeel / finnde. Taggu konte e yaynirde Winnditagol.',
     mockRegisterHint: 'Formulaire mock — alaa ƴeewndo serveur. Ina tagga session nokkuure.',
     supabaseRegisterHint:
       'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',

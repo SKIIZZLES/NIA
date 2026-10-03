@@ -16,8 +16,7 @@ const mnk: TranslationKeys = {
   },
   brand: {
     tagline: 'WIDEOW · AADALU · TALENTOLU · DANA TE',
-    heroPrimary: 'JAŊ, AFIRIKA TALENTOLU BE TAARA LA',
-    heroSecondary: 'WIDEOW KOORE — AFIRIKA MEŊ BE A LA KUWO FO LA',
+    heroSecondary: 'Wideow koore — Afirika meŋ be a la kuwo fo la',
   },
   tabs: {
     home: 'Suwo',
@@ -43,7 +42,7 @@ const mnk: TranslationKeys = {
     loginFail: 'A maŋ duŋ noo',
     registerFail: 'A maŋ safee noo',
     mockLoginHint: 'A ka email / kuloo bee soŋ. Session be maabo la dulaa to (AsyncStorage). EXPO_PUBLIC_SUPABASE_* londi .env kono ka Supabase wuli.',
-    supabaseLoginHint: 'Email / kuloo Supabase Auth la. Kontoo daa Safee yeeleno to.',
+    supabaseLoginHint: 'Email / kuloo. Kontoo daa Safee yeeleno to.',
     mockRegisterHint: 'Formulaire mock — serveur ñaatonkoo te. A ka session dulaa daa.',
     supabaseRegisterHint:
       'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',

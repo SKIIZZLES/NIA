@@ -16,8 +16,7 @@ const ak: TranslationKeys = {
   },
   brand: {
     tagline: 'VIDEO · AMAMMERƐ · ADWINNIM · NNI HYƐ',
-    heroPrimary: 'ƐHA, AFRIKA ADWINNIM KƆ ANIM',
-    heroSecondary: 'SEN VIDEO — AFRIKA A ƐREKA N\'ASƐM',
+    heroSecondary: 'Sen video — Afrika a ɛreka n\'asɛm',
   },
   tabs: {
     home: 'Fie',
@@ -43,7 +42,7 @@ const ak: TranslationKeys = {
     loginFail: 'Antumi ankɔ mu',
     registerFail: 'Antumi ankyerɛw din',
     mockLoginHint: 'Ɛgye email / password biara. Session no wɔ local (AsyncStorage). Fa EXPO_PUBLIC_SUPABASE_* hyɛ .env mu na woanya Supabase.',
-    supabaseLoginHint: 'Email / password fa Supabase Auth so. Yɛ account wɔ Kyerɛw din scrin so.',
+    supabaseLoginHint: 'Email / password. Yɛ account wɔ Kyerɛw din scrin so.',
     mockRegisterHint: 'Form mock — server nnyɛ nhwehwɛmu. Ɛyɛ local session.',
     supabaseRegisterHint:
       'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',

@@ -16,8 +16,7 @@ const ha: TranslationKeys = {
   },
   brand: {
     tagline: 'BIDIYO · AL’ADU · BASIRA · BA DOKOKI',
-    heroPrimary: 'ANAN, BASIRAR AFIRKA TA KARA TAFIYA',
-    heroSecondary: 'FIYE DA BIDIYO — AFIRKA DA KE BA DA LABARINTA',
+    heroSecondary: 'Fiye da bidiyo — Afirka da ke ba da labarinta',
   },
   tabs: {
     home: 'Gida',
@@ -46,7 +45,7 @@ const ha: TranslationKeys = {
     mockLoginHint:
       'Yana karɓar kowace imel / kalmar sirri. Ana adana zama a cikin na’ura (AsyncStorage). Saita EXPO_PUBLIC_SUPABASE_* a .env don kunna Supabase.',
     supabaseLoginHint:
-      'Imel / kalmar sirri ta Supabase Auth. Ƙirƙiri asusu a allon Rajista.',
+      'Imel / kalmar sirri. Ƙirƙiri asusu a allon Rajista.',
     mockRegisterHint:
       'Fom na gwaji — babu tabbatarwa ta uwar garken. Yana ƙirƙirar zama na gida.',
     supabaseRegisterHint:

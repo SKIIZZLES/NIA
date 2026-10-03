@@ -16,8 +16,7 @@ const wo: TranslationKeys = {
   },
   brand: {
     tagline: 'WIDEO · AADA · TALENT · TE AMUL FRONTIÈRE',
-    heroPrimary: 'FI, TALENTU AFRIK DAÑUY DEM CI KANAM',
-    heroSecondary: 'LU ËPP WIDEO — AFRIK BUY NETTALI BOPPAM',
+    heroSecondary: 'Lu ëpp wideo — Afrik buy nettali boppam',
   },
   tabs: {
     home: 'Kër',
@@ -43,7 +42,7 @@ const wo: TranslationKeys = {
     loginFail: 'Mënuloo dugg',
     registerFail: 'Mënuloo bindu',
     mockLoginHint: 'Nangu na bépp email / baatu jàll. Session bi dañu koy denc ci lokal (AsyncStorage). Defar EXPO_PUBLIC_SUPABASE_* ci .env ngir ubbi Supabase.',
-    supabaseLoginHint: 'Email / baatu jàll ci Supabase Auth. Sos ab kont ci seetukaayu Bindu.',
+    supabaseLoginHint: 'Email / baatu jàll. Sos ab kont ci seetukaayu Bindu.',
     mockRegisterHint: 'Formulaire mock — amul kontrollu serveur. Dafay sos session bu lokal.',
     supabaseRegisterHint:
       'Un e-mail de confirmation peut vous être envoyé : ouvrez le lien qu\'il contient, puis connectez-vous.',

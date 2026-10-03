@@ -16,7 +16,6 @@ const arEG: TranslationKeys = {
   },
   brand: {
     tagline: 'فيديوهات · ثقافات · مواهب · من غير حدود',
-    heroPrimary: 'هنا، مواهب أفريقيا بتروح أبعد',
     heroSecondary: 'أكتر من فيديوهات — أفريقيا بتحكي قصتها',
   },
   tabs: {
@@ -43,7 +42,7 @@ const arEG: TranslationKeys = {
     loginFail: 'مقدرناش نسجّل دخول',
     registerFail: 'مقدرناش نسجّل',
     mockLoginHint: 'بيقبل أي إيميل / كلمة سر. الجلسة متخزنة محليًا (AsyncStorage). حط EXPO_PUBLIC_SUPABASE_* في .env عشان تفعّل Supabase.',
-    supabaseLoginHint: 'إيميل / كلمة سر عن طريق Supabase Auth. اعمل حساب من شاشة التسجيل.',
+    supabaseLoginHint: 'إيميل / كلمة سر. اعمل حساب من شاشة التسجيل.',
     mockRegisterHint: 'فورم تجريبي — مفيش تحقق من السيرفر. بيعمل جلسة محلية.',
     supabaseRegisterHint:
       'ممكن نبعتلك إيميل تأكيد: افتح اللينك اللي فيه، وبعدين سجّل دخول.',

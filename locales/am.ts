@@ -16,7 +16,6 @@ const am: TranslationKeys = {
   },
   brand: {
     tagline: 'ቪዲዮዎች · ባህሎች · ተሰጥኦዎች · ያለ ድንበር',
-    heroPrimary: 'እዚህ፣ የአፍሪካ ተሰጥኦዎች ይራመዳሉ',
     heroSecondary: 'ከቪዲዮ በላይ — ታሪኳን የምትናገር አፍሪካ',
   },
   tabs: {
@@ -43,7 +42,7 @@ const am: TranslationKeys = {
     loginFail: 'መግባት አልተቻለም',
     registerFail: 'መመዝገብ አልተቻለም',
     mockLoginHint: 'ማንኛውንም ኢሜይል / የይለፍ ቃል ይቀበላል። ክፍለ ጊዜ በአካባቢ ይቀመጣል (AsyncStorage)። Supabaseን ለማንቃት EXPO_PUBLIC_SUPABASE_* በ.env ያዘጋጁ።',
-    supabaseLoginHint: 'ኢሜይል / የይለፍ ቃል በSupabase Auth። በምዝገባ ማያ ላይ መለያ ይፍጠሩ።',
+    supabaseLoginHint: 'ኢሜይል / የይለፍ ቃል። በምዝገባ ማያ ላይ መለያ ይፍጠሩ።',
     mockRegisterHint: 'የሞክ ቅጽ — የአገልጋይ ማረጋገጫ የለም። የአካባቢ ክፍለ ጊዜ ይፈጥራል።',
     supabaseRegisterHint:
       'የማረጋገጫ ኢሜይል ሊላክልዎ ይችላል፦ ውስጡ ያለውን ሊንክ ይክፈቱ፣ ከዚያ ይግቡ።',

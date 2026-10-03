@@ -18,7 +18,6 @@ const arSD: TranslationKeys = {
   },
   brand: {
     tagline: 'فيديوهات · ثقافات · مواهب · بدون حدود',
-    heroPrimary: 'هنا، مواهب أفريقيا بتمشي بعيد',
     heroSecondary: 'أكثر من فيديوهات — أفريقيا بتحكي قصتها',
   },
   tabs: {
@@ -48,7 +47,7 @@ const arSD: TranslationKeys = {
     mockLoginHint:
       'بيقبل أي إيميل / باسورد. الجلسة محفوظة محلياً (AsyncStorage). حط EXPO_PUBLIC_SUPABASE_* في .env عشان تفعّل Supabase.',
     supabaseLoginHint:
-      'إيميل / باسورد عبر Supabase Auth. افتح حساب من شاشة التسجيل.',
+      'إيميل / باسورد. افتح حساب من شاشة التسجيل.',
     mockRegisterHint:
       'فورم تجريبي — ما فيه تحقق من السيرفر. بيعمل جلسة محلية.',
     supabaseRegisterHint:

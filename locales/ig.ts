@@ -16,8 +16,7 @@ const ig: TranslationKeys = {
   },
   brand: {
     tagline: 'VIDIYO · OMENALA · NKÀ · ENWEGHỊ ÓKÈ',
-    heroPrimary: 'EBE A, NKÀ AFRỊKA NA-AGA N\'IHU',
-    heroSecondary: 'KARIA VIDIYO — AFRỊKA NA-AKỌ AKỤKỌ YA',
+    heroSecondary: 'Karia vidiyo — Afrịka na-akọ akụkọ ya',
   },
   tabs: {
     home: 'Ụlọ',
@@ -43,7 +42,7 @@ const ig: TranslationKeys = {
     loginFail: 'Enweghị ike ịbanye',
     registerFail: 'Enweghị ike ịdebanye aha',
     mockLoginHint: 'Nabata ozi-e / okwuntughe ọ bụla. A na-echekwa nnọkọ n\'obere (AsyncStorage). Tọọ EXPO_PUBLIC_SUPABASE_* na .env iji mee ka Supabase rụọ ọrụ.',
-    supabaseLoginHint: 'Ozi-e / okwuntughe site na Supabase Auth. Mepụta akaụntụ na ihuenyo Debanye aha.',
+    supabaseLoginHint: 'Ozi-e / okwuntughe. Mepụta akaụntụ na ihuenyo Debanye aha.',
     mockRegisterHint: 'Fọọmụ mock — enweghị nkwado sava. Ọ na-emepụta nnọkọ mpaghara.',
     supabaseRegisterHint:
       'Anyị nwere ike iziga gị ozi-e nkwenye: mepee njikọ dị n\'ime ya, wee banye.',
