@@ -9,7 +9,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { useI18n } from '@/context/I18nContext';
 
@@ -36,11 +36,16 @@ export function CreateStepHeader({ step, title, disabled = false }: Props) {
           alignItems: 'center',
           gap: Spacing.xs,
           marginTop: Spacing.sm,
+          padding: Spacing.sm,
+          backgroundColor: colors.noirElevated,
+          borderRadius: Radii.lg,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
         },
         title: {
           color: colors.sable,
           fontFamily: Fonts.bold,
-          fontSize: 26,
+          fontSize: 24,
           flex: 1,
         },
         step: {
@@ -48,8 +53,11 @@ export function CreateStepHeader({ step, title, disabled = false }: Props) {
           fontFamily: Fonts.medium,
           fontSize: 12,
           letterSpacing: 0.3,
-          marginBottom: Spacing.md,
+          marginTop: Spacing.sm,
         },
+        back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+        track: { flexDirection: 'row', gap: 6, marginTop: 10, marginBottom: Spacing.md },
+        marker: { flex: 1, height: 3, borderRadius: Radii.pill, backgroundColor: colors.borderStrong },
       }),
     [colors],
   );
@@ -64,19 +72,23 @@ export function CreateStepHeader({ step, title, disabled = false }: Props) {
             router.canGoBack() ? router.back() : router.replace('/(tabs)')
           }
           disabled={disabled}
-          hitSlop={10}
-          style={disabled ? { opacity: 0.55 } : null}
+          style={styles.back}
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
           accessibilityState={{ disabled }}
         >
-          <Ionicons name="chevron-back" size={26} color={colors.sable} />
+          <Ionicons name="chevron-back" size={26} color={disabled ? colors.textDisabled : colors.sable} />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
       </View>
       <Text style={styles.step}>
         {t('create.stepOf', { n: step, total: CREATE_STEP_COUNT })}
       </Text>
+      <View style={styles.track} aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {Array.from({ length: CREATE_STEP_COUNT }, (_, index) => (
+          <View key={index} style={[styles.marker, index < step && { backgroundColor: colors.or }]} />
+        ))}
+      </View>
     </View>
   );
 }

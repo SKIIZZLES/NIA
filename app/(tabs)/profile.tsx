@@ -310,8 +310,15 @@ export default function ProfileScreen() {
   },
   stats: {
     flexDirection: 'row',
-    gap: 28,
+    alignSelf: 'stretch',
+    gap: 8,
     marginTop: Spacing.lg,
+    backgroundColor: colors.noirElevated,
+    borderRadius: Radii.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 18,
   },
   stat: { alignItems: 'center' },
   statValue: {
@@ -329,9 +336,12 @@ export default function ProfileScreen() {
     position: 'absolute',
     top: Spacing.sm,
     right: Spacing.md,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: Radii.pill,
+    backgroundColor: colors.noirElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -400,7 +410,7 @@ export default function ProfileScreen() {
     alignSelf: 'stretch',
     flexDirection: 'row',
     backgroundColor: colors.noirSoft,
-    borderRadius: Radii.md,
+    borderRadius: Radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     padding: 3,
@@ -408,16 +418,18 @@ export default function ProfileScreen() {
   },
   segmentItem: {
     flex: 1,
+    minHeight: 48,
     paddingVertical: 10,
     paddingHorizontal: 4,
-    borderRadius: Radii.sm,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   segmentItemActive: {
     backgroundColor: colors.noirElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(209, 127, 42, 0.55)',
+    borderColor: colors.or,
   },
   segmentLabel: {
     color: colors.textMuted,
@@ -641,10 +653,10 @@ export default function ProfileScreen() {
                 style={[styles.segmentItem, active && styles.segmentItemActive]}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: active }}
+                aria-selected={active}
               >
                 <Text
                   style={[styles.segmentLabel, active && styles.segmentLabelActive]}
-                  numberOfLines={1}
                 >
                   {tab.label}
                 </Text>
@@ -993,6 +1005,7 @@ function Chip({
         gap: 6,
         paddingHorizontal: 12,
         paddingVertical: 7,
+        minHeight: 44,
         borderRadius: Radii.pill,
         borderWidth: StyleSheet.hairlineWidth,
         borderColor: colors.border,
@@ -1013,12 +1026,12 @@ function Chip({
 function Stat({ label, value }: { label: string; value: string }) {
   const colors = useColors();
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View style={{ flex: 1, alignItems: 'center' }}>
       <Text
         style={{
           color: colors.sable,
           fontFamily: Fonts.bold,
-          fontSize: 16,
+          fontSize: 20,
         }}
       >
         {value}
@@ -1029,6 +1042,7 @@ function Stat({ label, value }: { label: string; value: string }) {
           fontFamily: Fonts.regular,
           fontSize: 11,
           marginTop: 2,
+          textAlign: 'center',
         }}
       >
         {label}

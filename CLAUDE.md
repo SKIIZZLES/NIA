@@ -64,6 +64,13 @@ avec logo et voile sombre, navigation harmonisée, miniatures dans Apparence.
 Les sept choix et la persistance restent en place. Quatre tests de lecture de
 fichiers normalisent désormais les chemins Windows. Aucune migration.
 
+**Suite design — branche `haby/nia-ecrans-culturels`, après la PR #57** :
+direction « fidèle à la planche » choisie par le fondateur. Découvrir : cartes
+arrondies, grille verticale 9:16, contrôles de 44 px ; Profil : bloc de
+statistiques, onglets et actions harmonisés ; création : en-tête d’étapes,
+champs de publication et couverture 9:16. Parcours caméra et traitements des
+filtres inchangés. Changements visuels uniquement, aucune migration.
+
 **Migrations appliquées en prod** (`supabase/migrations/`) :
 
 | N° | Objet |
@@ -194,6 +201,7 @@ Pour le détail, voir plutôt que dupliquer :
 
 | Date | Auteur | Changement |
 |---|---|---|
+| 03/10/2026 | Haby (Codex) | Suite fidèle à la planche choisie : Découvrir, Profil et création harmonisés, sur une branche distincte basée sur la PR #57. Parcours caméra, traitement des médias et règles de modération conservés. |
 | 03/10/2026 | Haby (Codex) | Premier lot identité et thèmes validé : palette Original rapprochée de la planche, logo et accueil, navigation et aperçu des sept choix ; chemins de quatre tests rendus compatibles Windows. Proposition sur branche dédiée, sans changement de base. |
 | 30/09/2026 | Haby | Haby : création du fichier |
 | 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |

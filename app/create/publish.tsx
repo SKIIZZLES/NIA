@@ -533,9 +533,9 @@ export default function CreatePublishStep() {
         },
         input: {
           minHeight: 96,
-          borderRadius: Radii.md,
+          borderRadius: Radii.lg,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: colors.borderStrong,
           backgroundColor: colors.noirSoft,
           color: colors.sable,
           fontFamily: Fonts.regular,
@@ -569,6 +569,8 @@ export default function CreatePublishStep() {
           marginTop: Spacing.sm,
         },
         catChip: {
+          minHeight: 44,
+          justifyContent: 'center',
           borderRadius: Radii.pill,
           borderWidth: 1,
           borderColor: colors.border,
@@ -578,14 +580,14 @@ export default function CreatePublishStep() {
         },
         catChipOn: {
           borderColor: colors.or,
-          backgroundColor: colors.or + '1A',
+          backgroundColor: colors.or,
         },
         catText: {
           color: colors.textSecondary,
           fontFamily: Fonts.medium,
           fontSize: 13,
         },
-        catTextOn: { color: colors.sable },
+        catTextOn: { color: colors.onAccent, fontFamily: Fonts.bold },
         progressBlock: { marginTop: Spacing.xl },
         actionsRow: { flexDirection: 'row', gap: Spacing.sm },
         actionDraft: { flex: 1 },
