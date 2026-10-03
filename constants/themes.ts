@@ -12,6 +12,7 @@
 export const THEME_STORAGE_KEY = '@nia/theme';
 
 export type ThemeId =
+  | 'gallery'
   | 'original'
   | 'sable'
   | 'terre'
@@ -21,6 +22,7 @@ export type ThemeId =
   | 'auto';
 
 export const THEME_IDS: readonly ThemeId[] = [
+  'gallery',
   'original',
   'sable',
   'terre',
@@ -263,9 +265,34 @@ export const CLAIR_COLORS: ThemeColors = {
 };
 
 /** Resolved palette ids (excludes `auto`) */
+/** Galerie vivante — papier ivoire, encre cacao, terre cuite et or décoratif. */
+export const GALLERY_COLORS: ThemeColors = {
+  ...CLAIR_COLORS,
+  noir: '#F6EFE3',
+  noirElevated: '#FFFAF2',
+  noirSoft: '#EADBC7',
+  terre: '#A14129',
+  terreLight: '#BC6245',
+  or: '#923A25',
+  orSoft: '#AA5032',
+  ocre: '#923A25',
+  sable: '#30231D',
+  sableMuted: '#514035',
+  textPrimary: '#30231D',
+  textSecondary: '#5B463A',
+  textMuted: '#645044',
+  textDisabled: '#786452',
+  border: '#D7C3A9',
+  borderStrong: '#89725C',
+  danger: '#963126',
+  onAccent: '#FFF7EB',
+  overlay: 'rgba(48,35,29,0.45)',
+};
+
 export type ResolvedThemeId = Exclude<ThemeId, 'auto'>;
 
 export const THEME_PALETTES: Record<ResolvedThemeId, ThemeColors> = {
+  gallery: GALLERY_COLORS,
   original: ORIGINAL_COLORS,
   sable: SABLE_COLORS,
   terre: TERRE_COLORS,
@@ -276,6 +303,13 @@ export const THEME_PALETTES: Record<ResolvedThemeId, ThemeColors> = {
 
 export function isThemeId(value: string | null | undefined): value is ThemeId {
   return typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value);
+}
+
+/** Roll out the chosen identity once, while preserving explicitly selected variants. */
+export function restoredThemeId(stored: string | null, galleryIntroduced: boolean): ThemeId {
+  if (!isThemeId(stored)) return 'gallery';
+  if (!galleryIntroduced && stored === 'original') return 'gallery';
+  return stored;
 }
 
 export function resolveThemeColors(

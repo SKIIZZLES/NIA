@@ -743,6 +743,7 @@ const arSD: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'المظهر',
     subtitle: 'خصّص ألوان الواجهة بتاعة الحساب دا. دا ما بيغيّر محتوى المنشورات.',
     original: 'NIA Original',

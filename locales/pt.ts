@@ -741,6 +741,7 @@ const pt: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Aparência',
     subtitle: 'Personalize as cores da interface para esta conta. Não altera o conteúdo das publicações.',
     original: 'NIA Original',

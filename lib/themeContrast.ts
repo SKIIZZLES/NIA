@@ -77,6 +77,7 @@ function mediaRows(theme: string, c: ThemeColors): ContrastRow[] {
 }
 
 const LABELS: Record<ThemeId, string> = {
+  gallery: 'Galerie vivante',
   original: 'NIA Original',
   sable: 'Sable',
   terre: 'Terre',

@@ -736,6 +736,7 @@ const arEG: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'المظهر',
     subtitle: 'خصّص ألوان الواجهة بتاعة الحساب ده. ده مش بيغيّر محتوى المنشورات.',
     original: 'NIA Original',

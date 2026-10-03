@@ -736,6 +736,7 @@ const ig: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Ọdịdị',
     subtitle: 'Gbanwee agba nke ihuenyo maka akaụntụ a. Ọ naghị agbanwe ọdịnaya nke mbipụta.',
     original: 'NIA Original',

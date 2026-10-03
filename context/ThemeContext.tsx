@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ORIGINAL_COLORS,
   THEME_STORAGE_KEY,
-  isThemeId,
+  restoredThemeId,
   mediaPalette,
   resolveThemeColors,
   type ThemeColors,
@@ -29,6 +29,7 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+const GALLERY_INTRODUCED_KEY = '@nia/gallery-introduced';
 
 function schemeFromAppearance(scheme: ColorSchemeName | null | undefined): 'light' | 'dark' | null {
   if (scheme === 'light' || scheme === 'dark') return scheme;
@@ -36,7 +37,7 @@ function schemeFromAppearance(scheme: ColorSchemeName | null | undefined): 'ligh
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themeId, setThemeIdState] = useState<ThemeId>('original');
+  const [themeId, setThemeIdState] = useState<ThemeId>('gallery');
   const [systemScheme, setSystemScheme] = useState<'light' | 'dark' | null>(() =>
     schemeFromAppearance(Appearance.getColorScheme()),
   );
@@ -46,9 +47,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const stored = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-        if (!cancelled && isThemeId(stored)) {
-          setThemeIdState(stored);
+        const [stored, introduced] = await Promise.all([
+          AsyncStorage.getItem(THEME_STORAGE_KEY),
+          AsyncStorage.getItem(GALLERY_INTRODUCED_KEY),
+        ]);
+        // Introduce the founder-approved identity once; other choices survive.
+        // Original remains selectable afterwards, including across restarts.
+        const next = restoredThemeId(stored, introduced === '1');
+        if (!cancelled) {
+          setThemeIdState(next);
+          await AsyncStorage.multiSet([[THEME_STORAGE_KEY, next], [GALLERY_INTRODUCED_KEY, '1']]);
         }
       } catch {
         // keep default

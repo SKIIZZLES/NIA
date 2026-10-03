@@ -55,7 +55,9 @@
 10. **Avant de rendre** : `npx tsc --noEmit` = 0 erreur et `npx jest` tout vert
     (la CI joue aussi `expo export` iOS / Android / web).
 
-## 3. État actuel (au 30/09/2026)
+## 3. État actuel (au 03/10/2026)
+
+**Galerie vivante — branche haby/nia-galerie-vivante, après #58** : direction 1 validée après retour sur APK. Nouveau thème ivoire / terre cuite / cacao ; anciens thèmes conservés. Introduction unique sur les installations restées sur Original, choix alternatifs conservés, retour à Original ensuite persistant. Apparence présente des affiches graphiques, Découvrir et Profil reprennent cette composition. Logo détouré thémable (icône officielle inchangée), bandeau uniforme du fil remplacé par un dégradé transparent. La palette média sombre reste indépendante. Nom propre « Galerie vivante » dans les 20 langues. Aucune migration de base.
 
 **Design — 03/10/2026, branche `haby/nia-identite-themes`** : premier lot validé
 par le fondateur, proposé sans fusion : palette Original noir/sable/or,
@@ -201,6 +203,7 @@ Pour le détail, voir plutôt que dupliquer :
 
 | Date | Auteur | Changement |
 |---|---|---|
+| 03/10/2026 | Haby (Codex) | Galerie vivante choisie après test APK : nouvelle apparence éditoriale ivoire/terre cuite, logo sans carré noir, en-tête du fil fondu ; anciens thèmes sélectionnables et choix persistants. Aucune migration. |
 | 03/10/2026 | Haby (Grok) | Textes : vouvoiement dans tout le français (création, caméra, modération, onglet « Pour vous »), virgule du sous-titre d’accueil, « ou » de Google et sélecteur de langue aux couleurs du thème (l’ocre fixe tombait à ~2:1 sur Clair), indices techniques Google retirés de l’interface, textes du mode démo et messages Supabase/migrations remplacés par des formulations neutres dans les vingt langues ; test `userFacingTone`. Aucune migration. |
 | 03/10/2026 | Haby (Codex) | Suite fidèle à la planche choisie : Découvrir, Profil et création harmonisés, sur une branche distincte basée sur la PR #57. Parcours caméra, traitement des médias et règles de modération conservés. |
 | 03/10/2026 | Haby (Codex) | Premier lot identité et thèmes validé : palette Original rapprochée de la planche, logo et accueil, navigation et aperçu des sept choix ; chemins de quatre tests rendus compatibles Windows. Proposition sur branche dédiée, sans changement de base. |

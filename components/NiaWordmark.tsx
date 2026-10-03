@@ -8,16 +8,18 @@ type Props = {
   size?: number;
   style?: ViewStyle;
   showTagline?: boolean;
-  /** Prefer official PNG logo (default true). Set false for text-only wordmark. */
+  /** Prefer the transparent brand wordmark. Set false for the text fallback. */
   useImage?: boolean;
+  onMedia?: boolean;
 };
 
-/** Official NIA logo (image) with text fallback approximating the mark. */
+/** Transparent wordmark, themed ink and gold dot; app icon remains unchanged. */
 export function NiaWordmark({
   size = 64,
   style,
   showTagline,
   useImage = true,
+  onMedia = false,
 }: Props) {
   const { t } = useI18n();
   const colors = useColors();
@@ -28,19 +30,21 @@ export function NiaWordmark({
   if (useImage) {
     return (
       <View style={[styles.wrap, style]}>
+        <View style={{ width: size * 2.35, height: size }}>
         <Image
-          source={require('@/assets/brand/nia-logo-official.png')}
+          source={require('@/assets/brand/nia-wordmark-transparent.png')}
           style={{
-            width: size * 2.2,
-            height: size * 2.2,
-            borderRadius: size * 0.45,
-            backgroundColor: '#090A09',
-            borderWidth: colors.isDark ? 0 : 1,
-            borderColor: colors.border,
+            width: size * 2.35,
+            height: size,
+            tintColor: onMedia ? colors.onMedia : colors.textPrimary,
           }}
           resizeMode="contain"
           accessibilityLabel="NIA"
         />
+        <View pointerEvents="none" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+          style={{ position: 'absolute', top: size * 0.005, left: size * 1.02, width: size * 0.25,
+            height: size * 0.25, borderRadius: size, backgroundColor: '#D99B3D' }} />
+        </View>
         {showTagline ? <Text style={[styles.tagline, { color: taglineColor }]}>{tagline}</Text> : null}
       </View>
     );

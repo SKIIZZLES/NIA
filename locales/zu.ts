@@ -736,6 +736,7 @@ const zu: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Ukubukeka',
     subtitle: 'Lungisa imibala yesikhombisi kule akhawunti. Akushintshi okuqukethwe kokushicilelwe.',
     original: 'NIA Original',

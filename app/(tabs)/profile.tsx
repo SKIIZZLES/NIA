@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GalleryArtwork } from '@/components/GalleryArtwork';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/Button';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -333,6 +334,7 @@ export default function ProfileScreen() {
     marginTop: 2,
   },
   menuBtn: {
+    zIndex: 2,
     position: 'absolute',
     top: Spacing.sm,
     right: Spacing.md,
@@ -571,6 +573,9 @@ export default function ProfileScreen() {
 
   const header = (
     <View style={styles.header}>
+      <View style={{ alignSelf: 'stretch', height: 100, marginBottom: -32, overflow: 'hidden', borderTopLeftRadius: 48, borderBottomRightRadius: 48 }}>
+        <GalleryArtwork palette={colors} variant={1} />
+      </View>
       <Pressable
         style={styles.menuBtn}
         onPress={() => setMenuOpen(true)}

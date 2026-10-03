@@ -736,6 +736,7 @@ const yo: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Ìrísí',
     subtitle: 'Ṣàtúnṣe àwọn àwọ̀ ojú-ìwé fún àkántì yìí. Kò yí àkóónú àwọn ìtẹ̀jáde padà.',
     original: 'NIA Original',
