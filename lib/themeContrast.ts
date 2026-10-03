@@ -51,6 +51,10 @@ function paletteRows(theme: string, c: ThemeColors): ContrastRow[] {
   rows.push({ theme, pair: 'onAccent / or', ratio: contrastRatio(c.onAccent, c.or), min: AA_TEXT });
   // Puce de filtre active : libellé principal sur teinte ocre 18 % (FilterCarousel).
   rows.push({ theme, pair: 'textPrimary / puce active (or 18 % sur noirSoft)', ratio: contrastRatio(c.textPrimary, c.noirSoft, [c.or + '2E']), min: AA_TEXT });
+  // Sélecteur de langue (LanguageToggle) : libellé ocre sur teinte ocre 8 % du fond,
+  // et séparateur « ou » de GoogleSignInButton.
+  rows.push({ theme, pair: 'or / sélecteur de langue (or 8 % sur noir)', ratio: contrastRatio(c.or, c.noir, [c.or + '14']), min: AA_TEXT });
+  rows.push({ theme, pair: 'or / langue choisie (or 10 % sur noirElevated)', ratio: contrastRatio(c.or, c.noirElevated, [c.or + '1A']), min: AA_TEXT });
   // Bouton désactivé (Button) : libellé et contour sur noirSoft.
   rows.push({ theme, pair: 'textDisabled / bouton désactivé (noirSoft)', ratio: contrastRatio(c.textDisabled, c.noirSoft), min: AA_LARGE });
   return rows;

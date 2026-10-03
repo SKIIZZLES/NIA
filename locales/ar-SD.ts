@@ -30,9 +30,7 @@ const arSD: TranslationKeys = {
   welcome: {
     createAccount: 'افتح حساب',
     signIn: 'ادخل',
-    mockHint:
-      'Expo Go الأصلي = مصادقة وهمية · Supabase كامل عبر الويب أو البناء الأصلي',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'وضع تجريبي',
   },
   auth: {
     loginTitle: 'ادخل',
@@ -45,22 +43,19 @@ const arSD: TranslationKeys = {
     loginFail: 'ما قدرنا ندخلك',
     registerFail: 'ما قدرنا نسجلك',
     mockLoginHint:
-      'بيقبل أي إيميل / باسورد. الجلسة محفوظة محلياً (AsyncStorage). حط EXPO_PUBLIC_SUPABASE_* في .env عشان تفعّل Supabase.',
+      'وضع تجريبي: أي إيميل وباسورد بيشتغلوا. بياناتك بتقعد في الجهاز دا.',
     supabaseLoginHint:
       'إيميل / باسورد. افتح حساب من شاشة التسجيل.',
     mockRegisterHint:
-      'فورم تجريبي — ما فيه تحقق من السيرفر. بيعمل جلسة محلية.',
+      'وضع تجريبي: حسابك بيتعمل في الجهاز دا بس.',
     supabaseRegisterHint:
       'ممكن نرسل ليك إيميل تأكيد: افتح الرابط الفيهو، وبعدين سجّل دخول.',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'وضع تجريبي',
   },
   google: {
     continue: 'كمّل مع Google',
     fail: 'الدخول بـ Google فشل',
     alertTitle: 'Google',
-    hintWeb: 'Google الأصلي = بناء EAS لـ Android/iOS',
-    hintMock: 'وضع وهمي: جلسة محلية (Expo Go أو env ناقصة)',
-    hintMissingId: 'حط EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
   camera: {
     permissionTitle: 'الوصول للكاميرا',
@@ -478,7 +473,7 @@ const arSD: TranslationKeys = {
     catOther: 'أخرى',
     empty: 'ما في فعاليات لسة',
     emptyHint: 'كن أول واحد يفتح واحدة لمجتمعك.',
-    mockHint: 'وصّل Supabase وطبّق migration 009 للفعاليات.',
+    mockHint: 'الفعاليات ما متاحة في الوضع التجريبي.',
     loadFail: 'ما قدرنا نحمّل الفعاليات.',
     notFound: 'الفعالية ما لقيناها.',
     attend: 'شارك',
@@ -538,10 +533,10 @@ const arSD: TranslationKeys = {
       'دا بيسجل بث مباشر مجدول (بيانات وصفية بس). ما في WebRTC ولا Mux لسة — المشغّل الحقيقي حيجي بعدين.',
     placeholderBody:
       'مزوّد البث لسة ما متوصّل. الصفحة دي بتعرض معلومات البث — ما مشغّل فيديو مزيّف.',
-    emptyLive: 'ما في زول مباشر الحين. بصراحة: ما في بث مزيّف.',
+    emptyLive: 'ما في زول مباشر الحين.',
     emptyScheduled: 'ما في بث مجدول لسة.',
     emptyPopular: 'ما في بثوث مشهورة لسة.',
-    mockHint: 'وصّل Supabase وطبّق migration 010 للبثوث.',
+    mockHint: 'البثوث ما متاحة في الوضع التجريبي.',
     loadFail: 'ما قدرنا نحمّل البثوث.',
     notFound: 'البث ما لقيناهو.',
     statusLive: 'مباشر',
@@ -576,7 +571,7 @@ const arSD: TranslationKeys = {
     catOther: 'أخرى',
     publish: 'اجدول البث',
     publishSuccess: 'البث اتجدول',
-    publishSuccessBody: 'اتسجل. الإرسال الحقيقي حيجي وقت البنية التحتية بتاعة البث تتوصّل.',
+    publishSuccessBody: 'اتسجل.',
     publishFail: 'ما قدرنا نجدول البث',
     titleRequired: 'ادي عنوان للبث.',
     categoryRequired: 'اختار فئة.',
@@ -688,7 +683,7 @@ const arSD: TranslationKeys = {
     sectionEvents: 'الفعاليات',
     sectionHashtags: 'Hashtags',
     emptyTitle: 'ما في نتائج',
-    emptyBody: 'جرّب كلمة تانية. تطابق نصي بسيط — من غير ترتيب حسب الأهمية.',
+    emptyBody: 'جرّب كلمة تانية.',
     loadFail: 'ما قدرنا نبدأ البحث.',
     noCaption: 'بدون تعليق',
     hashtagHint: 'شوف المنشورات',
@@ -715,7 +710,7 @@ const arSD: TranslationKeys = {
     titleRequired: 'ادي عنوان للسلسلة.',
     loginRequiredTitle: 'لازم تسجّل دخول',
     loginRequiredCreate: 'سجّل دخول عشان تفتح سلسلة.',
-    mockHint: 'وصّل Supabase وطبّق migration 011 للسلاسل.',
+    mockHint: 'السلاسل ما متاحة في الوضع التجريبي.',
     notFound: 'السلسلة ما لقيناها.',
     loadFail: 'ما قدرنا نحمّل السلسلة.',
     emptyEpisodes: 'ما في حلقات لسة. زيد فيديو من قائمة «…».',

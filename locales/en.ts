@@ -28,9 +28,7 @@ const en: TranslationKeys = {
   welcome: {
     createAccount: 'Create an account',
     signIn: 'Sign in',
-    mockHint:
-      'Native Expo Go = mock auth · Full Supabase via web or native build',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'DEMO MODE',
   },
   auth: {
     loginTitle: 'Sign in',
@@ -43,22 +41,19 @@ const en: TranslationKeys = {
     loginFail: 'Could not sign in',
     registerFail: 'Could not register',
     mockLoginHint:
-      'Accepts any email / password. Session stored locally (AsyncStorage). Set EXPO_PUBLIC_SUPABASE_* in .env to enable Supabase.',
+      'Demo mode: any email and password work. Your data stays on this device.',
     supabaseLoginHint:
       'Sign in with your email and password. Create an account on the Sign up screen.',
     mockRegisterHint:
-      'Stub form — no server validation. Creates a local session.',
+      'Demo mode: your account is created on this device only.',
     supabaseRegisterHint:
       'We may send you a confirmation email: open the link inside, then sign in.',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'DEMO MODE',
   },
   google: {
     continue: 'Continue with Google',
     fail: 'Google sign-in failed',
     alertTitle: 'Google',
-    hintWeb: 'Native Google = EAS Android/iOS build',
-    hintMock: 'Mock mode: local session (Expo Go or missing env)',
-    hintMissingId: 'Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
   camera: {
     permissionTitle: 'Camera access',
@@ -477,7 +472,7 @@ const en: TranslationKeys = {
     catOther: 'Other',
     empty: 'No events yet',
     emptyHint: 'Be the first to create one for your community.',
-    mockHint: 'Connect Supabase and run migration 009 for events.',
+    mockHint: 'Events are not available in demo mode.',
     loadFail: 'Could not load events.',
     notFound: 'Event not found.',
     attend: 'Attend',
@@ -537,10 +532,10 @@ const en: TranslationKeys = {
       'This saves a scheduled live (metadata only). No WebRTC / Mux broadcast yet — the real player comes later.',
     placeholderBody:
       'The streaming provider is not connected yet. This page shows live info — not a fake video player.',
-    emptyLive: 'Nobody is live right now. Honest: no fake stream.',
+    emptyLive: 'Nobody is live right now.',
     emptyScheduled: 'No scheduled lives yet.',
     emptyPopular: 'No popular lives yet.',
-    mockHint: 'Connect Supabase and run migration 010 for lives.',
+    mockHint: 'Lives are not available in demo mode.',
     loadFail: 'Could not load lives.',
     notFound: 'Live not found.',
     statusLive: 'LIVE',
@@ -575,7 +570,7 @@ const en: TranslationKeys = {
     catOther: 'Other',
     publish: 'Schedule live',
     publishSuccess: 'Live scheduled',
-    publishSuccessBody: 'Saved. Real broadcasting arrives when live infra is wired.',
+    publishSuccessBody: 'Your live is scheduled and will appear in “Scheduled”.',
     publishFail: 'Could not schedule the live',
     titleRequired: 'Give your live a title.',
     categoryRequired: 'Choose a category.',
@@ -687,7 +682,7 @@ const en: TranslationKeys = {
     sectionEvents: 'Events',
     sectionHashtags: 'Hashtags',
     emptyTitle: 'No results',
-    emptyBody: 'Try another keyword. Simple text match — no ranking.',
+    emptyBody: 'Try another keyword.',
     loadFail: 'Could not run search.',
     noCaption: 'No caption',
     hashtagHint: 'See posts',
@@ -715,7 +710,7 @@ const en: TranslationKeys = {
     titleRequired: 'Give the series a title.',
     loginRequiredTitle: 'Sign in required',
     loginRequiredCreate: 'Sign in to create a series.',
-    mockHint: 'Connect Supabase and apply migration 011 for series.',
+    mockHint: 'Series are not available in demo mode.',
     notFound: 'Series not found.',
     loadFail: 'Could not load series.',
     emptyEpisodes: 'No episodes yet. Add a video from the “…” menu.',
