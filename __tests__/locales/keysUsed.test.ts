@@ -30,7 +30,7 @@ declare const __filename: string;
 const fs = require('fs') as FsMinimal;
 
 /** `__tests__/locales/` → racine du dépôt. Les chemins restent en POSIX. */
-const RACINE = __filename.replace(/\/__tests__\/locales\/[^/]+$/, '');
+const RACINE = __filename.replace(/\\/g, '/').replace(/\/__tests__\/locales\/[^/]+$/, '');
 const DOSSIERS = ['app', 'components', 'context'];
 
 /**

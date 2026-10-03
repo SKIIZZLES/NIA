@@ -19,7 +19,7 @@ export default function TabsLayout() {
         tabBar: {
           backgroundColor: colors.noir,
           // Filet ocre discret : signature NIA en haut de la barre
-          borderTopColor: colors.or + '55',
+          borderTopColor: colors.border,
           borderTopWidth: StyleSheet.hairlineWidth,
           // Respecte la barre système (iPhone récents, Android gestuel)
           height: TAB_BAR_BASE_HEIGHT + insets.bottom,
@@ -31,13 +31,14 @@ export default function TabsLayout() {
           fontSize: 10,
         },
         createBtn: {
-          width: 48,
-          height: 36,
+          width: 46,
+          height: 44,
           borderRadius: Radii.create,
           backgroundColor: colors.or,
           alignItems: 'center',
           justifyContent: 'center',
-          marginTop: 4,
+          borderWidth: 1,
+          borderColor: colors.orSoft,
         },
       }),
     [colors, insets.bottom],
@@ -57,8 +58,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t('tabs.home'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -66,8 +67,8 @@ export default function TabsLayout() {
         name="discover"
         options={{
           title: t('tabs.discover'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'compass' : 'compass-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -75,6 +76,7 @@ export default function TabsLayout() {
         name="create"
         options={{
           title: t('tabs.create'),
+          tabBarAccessibilityLabel: t('tabs.create'),
           tabBarLabel: () => null,
           tabBarIcon: () => (
             <View style={styles.createBtn}>
@@ -96,8 +98,8 @@ export default function TabsLayout() {
         name="notifications"
         options={{
           title: t('tabs.notifications'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -105,8 +107,8 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: t('tabs.profile'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
           ),
         }}
       />

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,7 +13,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedPager } from '@/components/FeedPager';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
-import { Colors, Fonts, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
+import { Fonts, MEDIA_TOKENS, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
+import { NiaWordmark } from '@/components/NiaWordmark';
 import { VideoItem } from '@/data/mockVideos';
 
 type FeedTab = 'pour-toi' | 'abonnements' | 'afrique';
@@ -46,6 +49,7 @@ function filterVideos(
 
 export default function HomeScreen() {
   const router = useRouter();
+  const colors = useColors();
   const { t } = useI18n();
   const { videos, followingIds } = useFeed();
   const insets = useSafeAreaInsets();
@@ -60,16 +64,27 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={[styles.root, { height }]}>
+    <View style={[styles.root, { height, backgroundColor: colors.noir }]}>
       <FeedPager videos={data} bottomInset={bottomInset} />
 
       <View style={[styles.topTabs, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
-        <View style={styles.tabsRow} pointerEvents="box-none">
-          <View style={styles.tabsSpacer} />
+        <View style={styles.brandRow}>
+          <NiaWordmark size={20} />
+          <Pressable
+            style={styles.searchBtn}
+            onPress={() => router.push('/search')}
+            accessibilityRole="button"
+            accessibilityLabel={t('search.openA11y')}
+          >
+            <Ionicons name="search-outline" size={22} color={MEDIA_TOKENS.onMedia} />
+          </Pressable>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow}>
           {TABS.map((t) => {
             const active = t.key === tab;
             return (
-              <Pressable key={t.key} onPress={() => setTab(t.key)} style={styles.tabItem}>
+              <Pressable key={t.key} onPress={() => setTab(t.key)} style={styles.tabItem}
+                accessibilityRole="tab" accessibilityState={{ selected: active }} aria-selected={active}>
                 <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
                   {t.label}
                 </Text>
@@ -77,16 +92,7 @@ export default function HomeScreen() {
               </Pressable>
             );
           })}
-          <Pressable
-            style={styles.searchBtn}
-            onPress={() => router.push('/search')}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t('search.openA11y')}
-          >
-            <Ionicons name="search" size={22} color={Colors.sable} />
-          </Pressable>
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -95,7 +101,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.noir,
   },
   topTabs: {
     position: 'absolute',
@@ -103,29 +108,33 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+    backgroundColor: MEDIA_TOKENS.mediaScrimStrong,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
   },
   tabsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 8,
-  },
-  tabsSpacer: {
-    width: 36,
+    gap: 24,
+    paddingHorizontal: 20,
   },
   searchBtn: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabItem: {
     alignItems: 'center',
     paddingVertical: 8,
+    minHeight: 44,
   },
   tabLabel: {
-    color: Colors.textSecondary,
+    color: MEDIA_TOKENS.onMediaMuted,
     fontFamily: Fonts.medium,
     fontSize: 15,
     textShadowColor: 'rgba(0,0,0,0.45)',
@@ -133,14 +142,14 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   tabLabelActive: {
-    color: Colors.sable,
+    color: MEDIA_TOKENS.onMedia,
     fontFamily: Fonts.bold,
   },
   underline: {
     marginTop: 4,
     height: 2,
     width: 22,
-    backgroundColor: Colors.or,
+    backgroundColor: MEDIA_TOKENS.onMediaAccent,
     borderRadius: 1,
   },
 });

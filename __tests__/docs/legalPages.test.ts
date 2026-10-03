@@ -25,7 +25,7 @@ declare function require(id: string): unknown;
 declare const __filename: string;
 const fs = require('fs') as FsMinimal;
 
-const DOSSIER = __filename.replace(/\/__tests__\/docs\/[^/]+$/, '') + '/docs/legal';
+const DOSSIER = __filename.replace(/\\/g, '/').replace(/\/__tests__\/docs\/[^/]+$/, '') + '/docs/legal';
 const lire = (nom: string) => fs.readFileSync(`${DOSSIER}/${nom}`, 'utf8');
 const texte = (nom: string) =>
   lire(nom)

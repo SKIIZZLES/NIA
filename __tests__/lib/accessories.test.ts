@@ -27,7 +27,7 @@ type FsMinimal = {
 declare function require(id: string): unknown;
 declare const __filename: string;
 const fs = require('fs') as FsMinimal;
-const ROOT = __filename.replace(/\/__tests__\/lib\/[^/]+$/, '');
+const ROOT = __filename.replace(/\\/g, '/').replace(/\/__tests__\/lib\/[^/]+$/, '');
 const KT = `${ROOT}/modules/nia-camera/android/src/main/java/expo/modules/niacamera/Accessories.kt`;
 const drawablePath = (id: string) =>
   `${ROOT}/modules/nia-camera/android/src/main/res/drawable/nia_acc_${id.replace(/-/g, '_')}.xml`;

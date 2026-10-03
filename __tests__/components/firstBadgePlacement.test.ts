@@ -7,7 +7,7 @@ type FsMinimal = { readFileSync(chemin: string, encodage: 'utf8'): string };
 declare function require(id: string): unknown;
 declare const __filename: string;
 const fs = require('fs') as FsMinimal;
-const RACINE = __filename.replace(/\/__tests__\/components\/[^/]+$/, '');
+const RACINE = __filename.replace(/\\/g, '/').replace(/\/__tests__\/components\/[^/]+$/, '');
 
 const ATTENDU: Array<[fichier: string, occurrences: number, variante: 'dark' | 'theme']> = [
   ['app/(tabs)/profile.tsx', 1, 'theme'],
