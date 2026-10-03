@@ -21,7 +21,7 @@ import { VideoItem } from '@/data/mockVideos';
 type FeedTab = 'pour-toi' | 'abonnements' | 'afrique';
 
 const TABS: { key: FeedTab; label: string }[] = [
-  { key: 'pour-toi', label: 'Pour toi' },
+  { key: 'pour-toi', label: 'Pour vous' },
   { key: 'abonnements', label: 'Abonnements' },
   { key: 'afrique', label: 'Afrique' },
 ];

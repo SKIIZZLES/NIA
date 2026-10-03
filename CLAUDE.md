@@ -201,6 +201,7 @@ Pour le détail, voir plutôt que dupliquer :
 
 | Date | Auteur | Changement |
 |---|---|---|
+| 03/10/2026 | Haby (Grok) | Textes : vouvoiement dans tout le français (création, caméra, modération, onglet « Pour vous »), virgule du sous-titre d’accueil, « ou » de Google et sélecteur de langue aux couleurs du thème (l’ocre fixe tombait à ~2:1 sur Clair), indices techniques Google retirés de l’interface, textes du mode démo et messages Supabase/migrations remplacés par des formulations neutres dans les vingt langues ; test `userFacingTone`. Aucune migration. |
 | 03/10/2026 | Haby (Codex) | Suite fidèle à la planche choisie : Découvrir, Profil et création harmonisés, sur une branche distincte basée sur la PR #57. Parcours caméra, traitement des médias et règles de modération conservés. |
 | 03/10/2026 | Haby (Codex) | Premier lot identité et thèmes validé : palette Original rapprochée de la planche, logo et accueil, navigation et aperçu des sept choix ; chemins de quatre tests rendus compatibles Windows. Proposition sur branche dédiée, sans changement de base. |
 | 30/09/2026 | Haby | Haby : création du fichier |

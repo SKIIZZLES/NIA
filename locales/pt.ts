@@ -28,9 +28,7 @@ const pt: TranslationKeys = {
   welcome: {
     createAccount: 'Criar uma conta',
     signIn: 'Entrar',
-    mockHint:
-      'Expo Go nativo = auth mock · Supabase completo via web ou build nativo',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'MODO DEMO',
   },
   auth: {
     loginTitle: 'Entrar',
@@ -43,22 +41,19 @@ const pt: TranslationKeys = {
     loginFail: 'Não foi possível entrar',
     registerFail: 'Não foi possível registar',
     mockLoginHint:
-      'Aceita qualquer email / senha. Sessão salva localmente (AsyncStorage). Defina EXPO_PUBLIC_SUPABASE_* no .env para ativar o Supabase.',
+      'Modo demo: qualquer e-mail e senha funcionam. Os seus dados ficam neste dispositivo.',
     supabaseLoginHint:
       'Entre com o seu email e a sua senha. Crie uma conta na tela de Registro.',
     mockRegisterHint:
-      'Formulário stub — sem validação no servidor. Cria uma sessão local.',
+      'Modo demo: a sua conta é criada apenas neste dispositivo.',
     supabaseRegisterHint:
       'Poderá receber um e-mail de confirmação: abra a ligação e depois inicie sessão.',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'MODO DEMO',
   },
   google: {
     continue: 'Continuar com Google',
     fail: 'Falha ao fazer login com Google',
     alertTitle: 'Google',
-    hintWeb: 'Google nativo = build EAS Android/iOS',
-    hintMock: 'Modo mock: sessão local (Expo Go ou env ausente)',
-    hintMissingId: 'Defina EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
   camera: {
     permissionTitle: 'Acesso à câmera',
@@ -476,7 +471,7 @@ const pt: TranslationKeys = {
     catOther: 'Outros',
     empty: 'Ainda não há eventos',
     emptyHint: 'Seja a primeira pessoa a criar um para a sua comunidade.',
-    mockHint: 'Conecte o Supabase e aplique a migração 009 para os eventos.',
+    mockHint: 'Os eventos não estão disponíveis no modo demo.',
     loadFail: 'Não foi possível carregar os eventos.',
     notFound: 'Evento não encontrado.',
     attend: 'Participar',
@@ -536,10 +531,10 @@ const pt: TranslationKeys = {
       'Isto salva um live agendado (apenas os dados). Ainda não há transmissão WebRTC / Mux — o player real chega mais tarde.',
     placeholderBody:
       'O fornecedor de streaming ainda não está conectado. Esta página mostra as informações do live — não um player de vídeo falso.',
-    emptyLive: 'Ninguém ao vivo agora. Honesto: sem stream falso.',
+    emptyLive: 'Ninguém ao vivo agora.',
     emptyScheduled: 'Ainda não há lives agendados.',
     emptyPopular: 'Ainda não há lives populares.',
-    mockHint: 'Conecte o Supabase e aplique a migração 010 para os lives.',
+    mockHint: 'Os lives não estão disponíveis no modo demo.',
     loadFail: 'Não foi possível carregar os lives.',
     notFound: 'Live não encontrado.',
     statusLive: 'AO VIVO',
@@ -574,7 +569,7 @@ const pt: TranslationKeys = {
     catOther: 'Outros',
     publish: 'Agendar o live',
     publishSuccess: 'Live agendado',
-    publishSuccessBody: 'Salvo. A transmissão real chega quando a infraestrutura live estiver conectada.',
+    publishSuccessBody: 'Salvo.',
     publishFail: 'Não foi possível agendar o live',
     titleRequired: 'Dê um título ao seu live.',
     categoryRequired: 'Escolha uma categoria.',
@@ -686,7 +681,7 @@ const pt: TranslationKeys = {
     sectionEvents: 'Eventos',
     sectionHashtags: 'Hashtags',
     emptyTitle: 'Sem resultados',
-    emptyBody: 'Tente outra palavra-chave. Correspondência de texto simples — sem ordenação por relevância.',
+    emptyBody: 'Tente outra palavra-chave.',
     loadFail: 'Não foi possível fazer a pesquisa.',
     noCaption: 'Sem legenda',
     hashtagHint: 'Ver as publicações',
@@ -713,7 +708,7 @@ const pt: TranslationKeys = {
     titleRequired: 'Dê um título à série.',
     loginRequiredTitle: 'Login necessário',
     loginRequiredCreate: 'Faça login para criar uma série.',
-    mockHint: 'Conecte o Supabase e aplique a migração 011 para as séries.',
+    mockHint: 'As séries não estão disponíveis no modo demo.',
     notFound: 'Série não encontrada.',
     loadFail: 'Não foi possível carregar a série.',
     emptyEpisodes: 'Ainda não há episódios. Adicione um vídeo a partir do menu «…».',

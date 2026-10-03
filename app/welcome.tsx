@@ -57,13 +57,6 @@ export default function WelcomeScreen() {
         actions: {
           paddingBottom: Spacing.xl,
         },
-        mockHint: {
-          marginTop: Spacing.md,
-          textAlign: 'center',
-          color: colors.textMuted,
-          fontFamily: Fonts.regular,
-          fontSize: 11,
-        },
       }),
     [colors],
   );
@@ -96,7 +89,6 @@ export default function WelcomeScreen() {
           />
           <GoogleSignInButton />
           <LanguageToggle compact />
-          {isMockAuth ? <Text style={styles.mockHint}>{t('welcome.mockHint')}</Text> : null}
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -31,9 +31,7 @@ const arMA: TranslationKeys = {
   welcome: {
     createAccount: 'أنشئ كونط',
     signIn: 'دخل',
-    mockHint:
-      'Expo Go أصلي = مصادقة وهمية · Supabase كامل عبر الويب ولا البناء الأصلي',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'وضع تجريبي',
   },
   auth: {
     loginTitle: 'دخل',
@@ -46,22 +44,19 @@ const arMA: TranslationKeys = {
     loginFail: 'ما قدرناش ندخلوك',
     registerFail: 'ما قدرناش نسجّلوك',
     mockLoginHint:
-      'كيتقبل أي إيميل / كلمة سر. الجلسة محفوظة محلياً (AsyncStorage). حط EXPO_PUBLIC_SUPABASE_* فـ .env باش تفعّل Supabase.',
+      'وضع تجريبي: أي إيميل وكلمة سر غادي يخدمو. المعطيات ديالك كتبقى فهاد الجهاز.',
     supabaseLoginHint:
       'إيميل / كلمة سر. أنشئ كونط من شاشة التسجيل.',
     mockRegisterHint:
-      'فورم تجريبي — بلا تحقق من السيرفر. كينشئ جلسة محلية.',
+      'وضع تجريبي: الحساب ديالك كيتصاوب غير فهاد الجهاز.',
     supabaseRegisterHint:
       'يمكن نصيفطو ليك إيميل ديال التأكيد: حل الرابط اللي فيه، ومن بعد دخل.',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'وضع تجريبي',
   },
   google: {
     continue: 'كمّل مع Google',
     fail: 'الدخول بـ Google ما نجحش',
     alertTitle: 'Google',
-    hintWeb: 'Google أصلي = بناء EAS ديال Android/iOS',
-    hintMock: 'وضع وهمي: جلسة محلية (Expo Go ولا env ناقصة)',
-    hintMissingId: 'حط EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
   camera: {
     permissionTitle: 'الوصول للكاميرا',
@@ -479,7 +474,7 @@ const arMA: TranslationKeys = {
     catOther: 'أخرى',
     empty: 'ما كاينة حتى فعالية دابا',
     emptyHint: 'كون الأول اللي ينشئ وحدة للمجتمع ديالك.',
-    mockHint: 'وصل Supabase وطبّق migration 009 للفعاليات.',
+    mockHint: 'الفعاليات ما متوفراش فالوضع التجريبي.',
     loadFail: 'ما قدرناش نحمّلو الفعاليات.',
     notFound: 'ما لقيناش الفعالية.',
     attend: 'شارك',
@@ -539,10 +534,10 @@ const arMA: TranslationKeys = {
       'هاد الشي كيسجل بث مباشر مبرمج (بيانات وصفية فقط). ما كاين لا WebRTC لا Mux دابا — المشغّل الحقيقي غادي يجي من بعد.',
     placeholderBody:
       'مزوّد البث مازال ما متّصلش. هاد الصفحة كتعرض معلومات البث — ماشي مشغّل فيديو مزوّر.',
-    emptyLive: 'ما كاين حتى شي واحد مباشر دابا. بصراحة: ما كاينش بث مزوّر.',
+    emptyLive: 'ما كاين حتى شي واحد مباشر دابا.',
     emptyScheduled: 'ما كاين حتى بث مبرمج دابا.',
     emptyPopular: 'ما كاينش بثوث مشهورة دابا.',
-    mockHint: 'وصل Supabase وطبّق migration 010 للبثوث.',
+    mockHint: 'البثوث ما متوفراش فالوضع التجريبي.',
     loadFail: 'ما قدرناش نحمّلو البثوث.',
     notFound: 'ما لقيناش البث.',
     statusLive: 'مباشر',
@@ -577,7 +572,7 @@ const arMA: TranslationKeys = {
     catOther: 'أخرى',
     publish: 'برمج البث',
     publishSuccess: 'تبرمج البث',
-    publishSuccessBody: 'تسجل. الإرسال الحقيقي غادي يجي منين تتوصل البنية التحتية ديال البث.',
+    publishSuccessBody: 'تسجل.',
     publishFail: 'ما قدرناش نبرمجو البث',
     titleRequired: 'عطي عنوان للبث.',
     categoryRequired: 'ختار فئة.',
@@ -689,7 +684,7 @@ const arMA: TranslationKeys = {
     sectionEvents: 'الفعاليات',
     sectionHashtags: 'Hashtags',
     emptyTitle: 'ما كاين حتى نتيجة',
-    emptyBody: 'جرّب كلمة أخرى. تطابق نصي بسيط — بلا ترتيب حسب الأهمية.',
+    emptyBody: 'جرّب كلمة أخرى.',
     loadFail: 'ما قدرناش نطلقو البحث.',
     noCaption: 'بلا تعليق',
     hashtagHint: 'شوف المنشورات',
@@ -716,7 +711,7 @@ const arMA: TranslationKeys = {
     titleRequired: 'عطي عنوان للسلسلة.',
     loginRequiredTitle: 'خاصك تدخل',
     loginRequiredCreate: 'دخل باش تنشئ سلسلة.',
-    mockHint: 'وصل Supabase وطبّق migration 011 للسلاسل.',
+    mockHint: 'السلاسل ما متوفراش فالوضع التجريبي.',
     notFound: 'ما لقيناش السلسلة.',
     loadFail: 'ما قدرناش نحمّلو السلسلة.',
     emptyEpisodes: 'ما كاينة حتى حلقة دابا. زيد فيديو من قائمة «…».',

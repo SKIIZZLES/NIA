@@ -28,9 +28,7 @@ const sw: TranslationKeys = {
   welcome: {
     createAccount: 'Fungua akaunti',
     signIn: 'Ingia',
-    mockHint:
-      'Expo Go asilia = auth ya bandia · Supabase kamili kupitia wavuti au build asilia',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'MAJARIBIO',
   },
   auth: {
     loginTitle: 'Ingia',
@@ -43,22 +41,19 @@ const sw: TranslationKeys = {
     loginFail: 'Imeshindikana kuingia',
     registerFail: 'Imeshindikana kujiandikisha',
     mockLoginHint:
-      'Inakubali barua pepe / nenosiri lolote. Kipindi kinahifadhiwa ndani (AsyncStorage). Weka EXPO_PUBLIC_SUPABASE_* katika .env ili kuwezesha Supabase.',
+      'Hali ya majaribio: barua pepe na nenosiri lolote vinafanya kazi. Data yako inabaki kwenye kifaa hiki.',
     supabaseLoginHint:
       'Barua pepe / nenosiri. Fungua akaunti kwenye skrini ya Usajili.',
     mockRegisterHint:
-      'Fomu ya majaribio — hakuna uthibitishaji wa seva. Inaunda kipindi cha ndani.',
+      'Hali ya majaribio: akaunti yako inaundwa kwenye kifaa hiki pekee.',
     supabaseRegisterHint:
       'Tunaweza kukutumia barua pepe ya uthibitisho: fungua kiungo kilichomo, kisha uingie.',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'MAJARIBIO',
   },
   google: {
     continue: 'Endelea na Google',
     fail: 'Kuingia kwa Google kumeshindikana',
     alertTitle: 'Google',
-    hintWeb: 'Google asilia = build ya EAS Android/iOS',
-    hintMock: 'Hali ya bandia: kipindi cha ndani (Expo Go au env zinakosekana)',
-    hintMissingId: 'Weka EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
   camera: {
     permissionTitle: 'Ufikiaji wa kamera',
@@ -476,7 +471,7 @@ const sw: TranslationKeys = {
     catOther: 'Mengine',
     empty: 'Hakuna tukio bado',
     emptyHint: 'Kuwa wa kwanza kuunda tukio kwa jamii yako.',
-    mockHint: 'Unganisha Supabase na utumie migration 009 kwa matukio.',
+    mockHint: 'Matukio hayapatikani katika hali ya majaribio.',
     loadFail: 'Haikuwezekana kupakia matukio.',
     notFound: 'Tukio halipatikani.',
     attend: 'Hudhuria',
@@ -536,10 +531,10 @@ const sw: TranslationKeys = {
       'Hii inahifadhi Live iliyopangwa (data tu). Hakuna utangazaji wa WebRTC / Mux bado — kichezaji halisi kinakuja baadaye.',
     placeholderBody:
       'Mtoa huduma ya utangazaji hajaunganishwa bado. Ukurasa huu unaonyesha taarifa za Live — sio kichezaji cha video cha kuigiza.',
-    emptyLive: 'Hakuna mtu kwenye Live sasa. Kwa uwazi: hakuna utangazaji wa kuigiza.',
+    emptyLive: 'Hakuna mtu kwenye Live sasa.',
     emptyScheduled: 'Hakuna Live iliyopangwa bado.',
     emptyPopular: 'Hakuna Live maarufu bado.',
-    mockHint: 'Unganisha Supabase na utumie migration 010 kwa Live.',
+    mockHint: 'Live hazipatikani katika hali ya majaribio.',
     loadFail: 'Haikuwezekana kupakia Live.',
     notFound: 'Live haipatikani.',
     statusLive: 'LIVE',
@@ -574,7 +569,7 @@ const sw: TranslationKeys = {
     catOther: 'Mengine',
     publish: 'Panga Live',
     publishSuccess: 'Live imepangwa',
-    publishSuccessBody: 'Imehifadhiwa. Utangazaji halisi utakuja miundombinu ya Live itakapounganishwa.',
+    publishSuccessBody: 'Imehifadhiwa.',
     publishFail: 'Haikuwezekana kupanga Live',
     titleRequired: 'Ipe Live yako kichwa.',
     categoryRequired: 'Chagua kategoria.',
@@ -686,7 +681,7 @@ const sw: TranslationKeys = {
     sectionEvents: 'Matukio',
     sectionHashtags: 'Hashtags',
     emptyTitle: 'Hakuna matokeo',
-    emptyBody: 'Jaribu neno lingine. Ulinganishaji wa maandishi rahisi — hakuna upangaji wa matokeo.',
+    emptyBody: 'Jaribu neno lingine.',
     loadFail: 'Haikuwezekana kufanya utafutaji.',
     noCaption: 'Hakuna maelezo',
     hashtagHint: 'Ona machapisho',
@@ -713,7 +708,7 @@ const sw: TranslationKeys = {
     titleRequired: 'Ipe mfululizo kichwa.',
     loginRequiredTitle: 'Ingia inahitajika',
     loginRequiredCreate: 'Ingia ili kuunda mfululizo.',
-    mockHint: 'Unganisha Supabase na utumie migration 011 kwa mifululizo.',
+    mockHint: 'Mfululizo haupatikani katika hali ya majaribio.',
     notFound: 'Mfululizo haupatikani.',
     loadFail: 'Haikuwezekana kupakia mfululizo.',
     emptyEpisodes: 'Hakuna kipindi bado. Ongeza video kutoka kwenye menyu «…».',

@@ -28,9 +28,7 @@ const ha: TranslationKeys = {
   welcome: {
     createAccount: 'Ƙirƙiri asusu',
     signIn: 'Shiga',
-    mockHint:
-      'Expo Go na asali = auth na kwaikwayo · Cikakken Supabase ta yanar gizo ko ginin asali',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'GWAJI',
   },
   auth: {
     loginTitle: 'Shiga',
@@ -43,22 +41,19 @@ const ha: TranslationKeys = {
     loginFail: 'An kasa shiga',
     registerFail: 'An kasa yin rajista',
     mockLoginHint:
-      'Yana karɓar kowace imel / kalmar sirri. Ana adana zama a cikin na’ura (AsyncStorage). Saita EXPO_PUBLIC_SUPABASE_* a .env don kunna Supabase.',
+      'Yanayin gwaji: kowace imel da kalmar sirri za su yi aiki. Bayananka suna nan a wannan na’ura.',
     supabaseLoginHint:
       'Imel / kalmar sirri. Ƙirƙiri asusu a allon Rajista.',
     mockRegisterHint:
-      'Fom na gwaji — babu tabbatarwa ta uwar garken. Yana ƙirƙirar zama na gida.',
+      'Yanayin gwaji: ana ƙirƙirar asusunka a wannan na’ura kawai.',
     supabaseRegisterHint:
       'Za mu iya aiko maka da imel na tabbatarwa: buɗe mahaɗin da ke ciki, sannan ka shiga.',
-    authMockBadge: 'AUTH MOCK MVP',
+    authMockBadge: 'GWAJI',
   },
   google: {
     continue: 'Ci gaba da Google',
     fail: 'Shiga da Google ya gaza',
     alertTitle: 'Google',
-    hintWeb: 'Google na asali = ginin EAS Android/iOS',
-    hintMock: 'Yanayin kwaikwayo: zama na gida (Expo Go ko env ƙasa)',
-    hintMissingId: 'Saita EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID (EAS)',
   },
   camera: {
     permissionTitle: 'Shiga kamara',
@@ -476,7 +471,7 @@ const ha: TranslationKeys = {
     catOther: 'Sauran',
     empty: 'Babu taro a yanzu',
     emptyHint: 'Ka zama na farko da zai ƙirƙira ɗaya don al’ummarka.',
-    mockHint: 'Haɗa Supabase sannan ka yi amfani da migration 009 don taruka.',
+    mockHint: 'Babu taruka a yanayin gwaji.',
     loadFail: 'An kasa ɗora taruka.',
     notFound: 'Ba a sami taron ba.',
     attend: 'Halarta',
@@ -536,10 +531,10 @@ const ha: TranslationKeys = {
       'Wannan yana adana Live da aka tsara (bayanai kawai). Babu watsawa ta WebRTC / Mux tukuna — player na gaske zai zo daga baya.',
     placeholderBody:
       'Ba a haɗa mai ba da watsawa tukuna ba. Wannan shafin yana nuna bayanan Live — ba player na ƙarya ba.',
-    emptyLive: 'Babu wanda ke kai tsaye a yanzu. A bayyane: babu watsawa ta ƙarya.',
+    emptyLive: 'Babu wanda ke kai tsaye a yanzu.',
     emptyScheduled: 'Babu Live da aka tsara a yanzu.',
     emptyPopular: 'Babu Live shahararru tukuna.',
-    mockHint: 'Haɗa Supabase sannan ka yi amfani da migration 010 don Live.',
+    mockHint: 'Babu Live a yanayin gwaji.',
     loadFail: 'An kasa ɗora Live.',
     notFound: 'Ba a sami Live ba.',
     statusLive: 'KAI TSAYE',
@@ -574,7 +569,7 @@ const ha: TranslationKeys = {
     catOther: 'Sauran',
     publish: 'Tsara Live',
     publishSuccess: 'An tsara Live',
-    publishSuccessBody: 'An adana. Watsawa ta gaske za ta zo lokacin da aka haɗa tsarin Live.',
+    publishSuccessBody: 'An adana.',
     publishFail: 'An kasa tsara Live',
     titleRequired: 'Bada take ga Live.',
     categoryRequired: 'Zaɓi rukuni.',
@@ -686,7 +681,7 @@ const ha: TranslationKeys = {
     sectionEvents: 'Taruka',
     sectionHashtags: 'Hashtags',
     emptyTitle: 'Babu sakamako',
-    emptyBody: 'Gwada wata kalma. Daidaitawar rubutu mai sauƙi — babu tsarin matsayi.',
+    emptyBody: 'Gwada wata kalma.',
     loadFail: 'An kasa fara nema.',
     noCaption: 'Babu rubutu',
     hashtagHint: 'Duba wallafe-wallafe',
@@ -713,7 +708,7 @@ const ha: TranslationKeys = {
     titleRequired: 'Bada take ga silsila.',
     loginRequiredTitle: 'Shiga yana da bukata',
     loginRequiredCreate: 'Shiga don ƙirƙirar silsila.',
-    mockHint: 'Haɗa Supabase sannan ka yi amfani da migration 011 don silsiloli.',
+    mockHint: 'Babu silsiloli a yanayin gwaji.',
     notFound: 'Ba a sami silsila ba.',
     loadFail: 'An kasa ɗora silsila.',
     emptyEpisodes: 'Babu kashi tukuna. Ƙara bidiyo daga menu «…».',

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { useAuth } from '@/context/AuthContext';
 import { useI18n } from '@/context/I18nContext';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { useColors } from '@/context/ThemeContext';
 import { isGoogleAuthConfigured } from '@/lib/googleAuth';
 
 type Props = {
@@ -21,6 +22,34 @@ export function GoogleSignInButton({ showDivider = true, style }: Props) {
   const { t } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const colors = useColors();
+  // Couleurs du thème actif : le séparateur « ou » reste lisible dans les sept
+  // choix d'Apparence (textMuted ≥ 4.5:1 sur noir, cf. themeContrast.test.ts).
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        wrap: {
+          marginTop: Spacing.md,
+        },
+        dividerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginBottom: Spacing.md,
+        },
+        line: {
+          flex: 1,
+          height: StyleSheet.hairlineWidth,
+          backgroundColor: colors.borderStrong,
+        },
+        ou: {
+          marginHorizontal: 12,
+          color: colors.textMuted,
+          fontFamily: Fonts.medium,
+          fontSize: 12,
+        },
+      }),
+    [colors],
+  );
 
   const onPress = async () => {
     setLoading(true);
@@ -38,14 +67,18 @@ export function GoogleSignInButton({ showDivider = true, style }: Props) {
     }
   };
 
-  const hint =
-    Platform.OS === 'web'
-      ? t('google.hintWeb')
-      : isMockAuth
-        ? t('google.hintMock')
-        : !isGoogleAuthConfigured()
-          ? t('google.hintMissingId')
-          : null;
+  // Informations de configuration réservées aux développeurs : jamais affichées
+  // dans l'interface, seulement dans la console en développement.
+  useEffect(() => {
+    if (!__DEV__) return;
+    if (Platform.OS === 'web') {
+      console.info('[NIA] Google natif : disponible uniquement dans un build EAS Android/iOS.');
+    } else if (isMockAuth) {
+      console.info('[NIA] Google : mode démo (session locale, variables Supabase absentes).');
+    } else if (!isGoogleAuthConfigured()) {
+      console.info('[NIA] Google : EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID manquant (EAS).');
+    }
+  }, [isMockAuth]);
 
   return (
     <View style={[styles.wrap, style]}>
@@ -62,36 +95,6 @@ export function GoogleSignInButton({ showDivider = true, style }: Props) {
         loading={loading}
         onPress={onPress}
       />
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    marginTop: Spacing.md,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  line: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.border,
-  },
-  ou: {
-    marginHorizontal: 12,
-    color: Colors.textMuted,
-    fontFamily: Fonts.medium,
-    fontSize: 12,
-  },
-  hint: {
-    marginTop: Spacing.sm,
-    textAlign: 'center',
-    color: Colors.textMuted,
-    fontFamily: Fonts.regular,
-    fontSize: 11,
-  },
-});
