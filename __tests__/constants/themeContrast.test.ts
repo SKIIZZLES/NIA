@@ -34,9 +34,9 @@ describe('thèmes — contraste AA', () => {
     console.log(contrastTableMarkdown(rows));
   }
 
-  it('couvre les 7 thèmes (Auto clair et sombre)', () => {
+  it('couvre les 8 thèmes (Auto clair et sombre)', () => {
     const themes = new Set(rows.map((r) => r.theme));
-    expect(themes.size).toBe(8);
+    expect(themes.size).toBe(9);
     expect(rows.length).toBeGreaterThan(150);
   });
 

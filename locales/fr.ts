@@ -742,6 +742,7 @@ const fr = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Apparence',
     subtitle: 'Personnalisez les couleurs de l’interface pour ce compte. Cela ne change pas le contenu des publications.',
     original: 'NIA Original',

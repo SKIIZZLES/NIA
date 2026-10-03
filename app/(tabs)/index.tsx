@@ -16,6 +16,9 @@ import { useI18n } from '@/context/I18nContext';
 import { Fonts, MEDIA_TOKENS, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { NiaWordmark } from '@/components/NiaWordmark';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { VideoItem } from '@/data/mockVideos';
 
 type FeedTab = 'pour-toi' | 'abonnements' | 'afrique';
@@ -55,6 +58,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [tab, setTab] = useState<FeedTab>('pour-toi');
+  useFocusEffect(React.useCallback(() => {
+    setStatusBarStyle('light');
+    return () => setStatusBarStyle(colors.isDark ? 'light' : 'dark');
+  }, [colors.isDark]));
   // Doit correspondre exactement à la barre d'onglets, sinon le paging se décale
   const bottomInset = TAB_BAR_BASE_HEIGHT + insets.bottom;
 
@@ -68,8 +75,14 @@ export default function HomeScreen() {
       <FeedPager videos={data} bottomInset={bottomInset} />
 
       <View style={[styles.topTabs, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
+        <LinearGradient
+          colors={['rgba(24,17,12,0.68)', 'rgba(24,17,12,0.58)', 'transparent']}
+          locations={[0, 0.72, 1]}
+          style={[StyleSheet.absoluteFill, { bottom: -36 }]}
+          pointerEvents="none"
+        />
         <View style={styles.brandRow}>
-          <NiaWordmark size={20} />
+          <NiaWordmark size={28} onMedia />
           <Pressable
             style={styles.searchBtn}
             onPress={() => router.push('/search')}
@@ -108,7 +121,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
-    backgroundColor: MEDIA_TOKENS.mediaScrimStrong,
   },
   brandRow: {
     flexDirection: 'row',

@@ -741,6 +741,7 @@ const ha: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Kamanni',
     subtitle: 'Keɓance launukan aikace-aikacen don wannan asusun. Ba ya canza abin da ke cikin wallafe-wallafe.',
     original: 'NIA Original',

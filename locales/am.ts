@@ -736,6 +736,7 @@ const am: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'መልክ',
     subtitle: 'ለዚህ መለያ የበይነገጹን ቀለማት ያብጁ። የልጥፎችን ይዘት አይለውጥም።',
     original: 'NIA Original',

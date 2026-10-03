@@ -744,6 +744,7 @@ const arMA: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'المظهر',
     subtitle: 'خصّص ألوان الواجهة ديال هاد الحساب. هادشي ما كيبدّلش محتوى المنشورات.',
     original: 'NIA Original',

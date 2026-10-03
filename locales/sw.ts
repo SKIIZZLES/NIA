@@ -741,6 +741,7 @@ const sw: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Mwonekano',
     subtitle: 'Badilisha rangi za kiolesura kwa akaunti hii. Haibadilishi maudhui ya machapisho.',
     original: 'NIA Original',

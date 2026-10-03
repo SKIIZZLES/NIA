@@ -743,6 +743,7 @@ const en: TranslationKeys = {
     catNia: 'NIA Originals',
   },
   appearance: {
+    gallery: 'Galerie vivante',
     title: 'Appearance',
     subtitle: 'Customize interface colors for this account. This does not restyle other people’s posts.',
     original: 'NIA Original',

@@ -1,5 +1,6 @@
 import { MediaThumb } from '@/components/MediaThumb';
 import { NiaWordmark } from '@/components/NiaWordmark';
+import { GalleryArtwork } from '@/components/GalleryArtwork';
 import { LiveNowStrip } from '@/components/live/LiveNowStrip';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -106,7 +107,9 @@ export default function DiscoverScreen() {
         title: {
           color: colors.sable,
           fontFamily: Fonts.bold,
-          fontSize: 24,
+          fontSize: 32,
+          letterSpacing: -1.2,
+          marginTop: 10,
           flexShrink: 1,
         },
         searchBox: {
@@ -238,8 +241,13 @@ export default function DiscoverScreen() {
     <View>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{t('discover.title')}</Text>
-          <NiaWordmark size={20} />
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <NiaWordmark size={22} />
+            <Text style={styles.title}>{t('discover.title')}</Text>
+          </View>
+          <View style={{ width: 104, height: 100, borderTopLeftRadius: 48, overflow: 'hidden' }}>
+            <GalleryArtwork palette={colors} />
+          </View>
         </View>
         <Pressable
           style={styles.searchBox}
