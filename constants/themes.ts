@@ -114,20 +114,20 @@ const SHARED = {
   onAccent: '#0B0B0B',
 } as const;
 
-/** NIA Original — Noir #0B0B0B · Ocre #D17F2A · Sable #F5E6D3 */
+/** NIA Original — Noir #090A09 · Or #D99B3D · Sable #F3E8D8 */
 export const ORIGINAL_COLORS: ThemeColors = {
   ...SHARED,
-  noir: '#0B0B0B',
-  noirElevated: '#141414',
-  noirSoft: '#1C1C1C',
-  terre: '#6B3E26',
-  terreLight: '#8B5A2B',
-  or: '#D17F2A',
-  orSoft: '#E09A4F',
-  ocre: '#D17F2A',
-  sable: '#F5E6D3',
+  noir: '#090A09',
+  noirElevated: '#141512',
+  noirSoft: '#1D1E1A',
+  terre: '#805032',
+  terreLight: '#A3704C',
+  or: '#D99B3D',
+  orSoft: '#E8B867',
+  ocre: '#D99B3D',
+  sable: '#F3E8D8',
   sableMuted: '#E8D9C4',
-  textPrimary: '#F5E6D3',
+  textPrimary: '#F3E8D8',
   textSecondary: 'rgba(245, 230, 211, 0.72)',
   textMuted: 'rgba(245, 230, 211, 0.6)',
   border: 'rgba(245, 230, 211, 0.18)',
@@ -135,6 +135,9 @@ export const ORIGINAL_COLORS: ThemeColors = {
   textDisabled: 'rgba(245, 230, 211, 0.44)',
   borderStrong: 'rgba(245, 230, 211, 0.42)',
   danger: '#E5705F',
+  vert: '#07372D',
+  vertDeep: '#062B24',
+  vertBaobab: '#07372D',
   isDark: true,
 };
 

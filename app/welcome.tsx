@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NiaWordmark } from '@/components/NiaWordmark';
@@ -31,6 +31,8 @@ export default function WelcomeScreen() {
           justifyContent: 'center',
           paddingVertical: Spacing.lg,
         },
+        content: { flexGrow: 1, width: '100%', maxWidth: 440, alignSelf: 'center' },
+        signature: { width: 28, height: 3, borderRadius: 2, backgroundColor: colors.or, marginTop: Spacing.lg },
         badge: {
           marginTop: Spacing.md,
           paddingHorizontal: 12,
@@ -45,8 +47,8 @@ export default function WelcomeScreen() {
         },
         subtitle: {
           marginTop: Spacing.lg,
-          maxWidth: 320,
-          color: colors.sable,
+          maxWidth: 280,
+          color: colors.textSecondary,
           fontFamily: Fonts.medium,
           fontSize: 16,
           lineHeight: 24,
@@ -68,32 +70,35 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.top}>
-        <NiaWordmark size={72} showTagline />
-        <Text style={styles.subtitle}>{t('brand.heroSecondary')}</Text>
-        {isMockAuth ? (
-          <View style={[styles.badge, { backgroundColor: colors.terre }]}>
-            <Text style={styles.badgeText}>{t('welcome.authMockBadge')}</Text>
-          </View>
-        ) : null}
-      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.top}>
+          <NiaWordmark size={84} showTagline />
+          <View style={styles.signature} />
+          <Text style={styles.subtitle}>{t('brand.heroSecondary')}</Text>
+          {isMockAuth ? (
+            <View style={[styles.badge, { backgroundColor: colors.terre }]}>
+              <Text style={styles.badgeText}>{t('welcome.authMockBadge')}</Text>
+            </View>
+          ) : null}
+        </View>
 
-      <View style={styles.actions}>
-        <Button
-          title={t('welcome.createAccount')}
-          variant="filled"
-          onPress={() => router.push('/(auth)/register')}
-        />
-        <Button
-          title={t('welcome.signIn')}
-          variant="outline"
-          onPress={() => router.push('/(auth)/login')}
-          style={{ marginTop: Spacing.md }}
-        />
-        <GoogleSignInButton />
-        <LanguageToggle compact />
-        {isMockAuth ? <Text style={styles.mockHint}>{t('welcome.mockHint')}</Text> : null}
-      </View>
+        <View style={styles.actions}>
+          <Button
+            title={t('welcome.createAccount')}
+            variant="filled"
+            onPress={() => router.push('/(auth)/register')}
+          />
+          <Button
+            title={t('welcome.signIn')}
+            variant="outline"
+            onPress={() => router.push('/(auth)/login')}
+            style={{ marginTop: Spacing.md }}
+          />
+          <GoogleSignInButton />
+          <LanguageToggle compact />
+          {isMockAuth ? <Text style={styles.mockHint}>{t('welcome.mockHint')}</Text> : null}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

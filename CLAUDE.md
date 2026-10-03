@@ -57,6 +57,13 @@
 
 ## 3. État actuel (au 30/09/2026)
 
+**Design — 03/10/2026, branche `haby/nia-identite-themes`** : premier lot validé
+par le fondateur, proposé sans fusion : palette Original noir/sable/or,
+logo officiel encadré selon le thème, accueil sobre défilable, en-tête du fil
+avec logo et voile sombre, navigation harmonisée, miniatures dans Apparence.
+Les sept choix et la persistance restent en place. Quatre tests de lecture de
+fichiers normalisent désormais les chemins Windows. Aucune migration.
+
 **Migrations appliquées en prod** (`supabase/migrations/`) :
 
 | N° | Objet |
@@ -187,6 +194,7 @@ Pour le détail, voir plutôt que dupliquer :
 
 | Date | Auteur | Changement |
 |---|---|---|
+| 03/10/2026 | Haby (Codex) | Premier lot identité et thèmes validé : palette Original rapprochée de la planche, logo et accueil, navigation et aperçu des sept choix ; chemins de quatre tests rendus compatibles Windows. Proposition sur branche dédiée, sans changement de base. |
 | 30/09/2026 | Haby | Haby : création du fichier |
 | 30/09/2026 | Claude | Deux défauts de la suppression définitive de vidéo (#25) inscrits dans « État actuel » ; aucun code modifié |
 | 30/09/2026 | Haby | Live L2 en PR : direct instantané façon Instagram, statut réel via `livekit-webhook` + migration 019, bande « En direct » dans Découvrir, signalement sur l'écran spectateur. |
