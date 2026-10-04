@@ -10,6 +10,8 @@
  * tableau : `CONTRAST_TABLE=1 npx jest themeContrast`.
  */
 import {
+  FEED_TOP_FADE,
+  MEDIA_OVERLAY,
   THEME_IDS,
   mediaPalette,
   resolveThemeColors,
@@ -34,6 +36,8 @@ const LARGE_TOKENS = ['textDisabled', 'borderStrong'] as const;
 
 /** Pire fond sous un voile sombre : blanc pur. */
 const WORST_MEDIA = '#FFFFFF';
+/** Vidéo sombre (fond de VideoCard). */
+const DARK_MEDIA = '#0B0B0B';
 
 function paletteRows(theme: string, c: ThemeColors): ContrastRow[] {
   const rows: ContrastRow[] = [];
@@ -73,7 +77,32 @@ function mediaRows(theme: string, c: ThemeColors): ContrastRow[] {
     // Panneaux de l'éditeur (palette média, surface élevée à 95 %).
     { theme, pair: 'média : textSecondary / panneau sur blanc', ratio: contrastRatio(m.textSecondary, WORST_MEDIA, [m.noirElevated + 'F2']), min: AA_TEXT },
     { theme, pair: 'média : textMuted / panneau sur blanc', ratio: contrastRatio(m.textMuted, WORST_MEDIA, [m.noirElevated + 'F2']), min: AA_TEXT },
+    ...feedOverlayRows(theme, c),
   ];
+}
+
+/**
+ * Fil (app/(tabs)/index.tsx + VideoCard) : couleurs fixes sur la vidéo,
+ * mesurées sur une vidéo blanche et sur une vidéo sombre.
+ */
+function feedOverlayRows(theme: string, c: ThemeColors): ContrastRow[] {
+  const fade = [FEED_TOP_FADE.weakestUnderTabs];
+  const chip = [MEDIA_OVERLAY.chipBackdrop];
+  const rows: ContrastRow[] = [];
+  for (const [bg, label] of [[WORST_MEDIA, 'blanc'], [DARK_MEDIA, 'sombre']] as const) {
+    rows.push(
+      // En-tête du fil : logo + onglet actif, onglets inactifs, soulignement.
+      { theme, pair: `fil : onMedia (logo, onglet actif) / fondu haut sur ${label}`, ratio: contrastRatio(c.onMedia, bg, fade), min: AA_TEXT },
+      { theme, pair: `fil : onMediaMuted (onglets) / fondu haut sur ${label}`, ratio: contrastRatio(c.onMediaMuted, bg, fade), min: AA_TEXT },
+      { theme, pair: `fil : onMediaAccent (soulignement) / fondu haut sur ${label}`, ratio: contrastRatio(c.onMediaAccent, bg, fade), min: AA_LARGE },
+      // VideoCard : pays / lieu, badges (18+, filtre, IA) et note de musique.
+      { theme, pair: `vidéo : pays et lieu / puce sur ${label}`, ratio: contrastRatio(MEDIA_OVERLAY.label, bg, chip), min: AA_TEXT },
+      { theme, pair: `vidéo : texte et icône des badges / puce sur ${label}`, ratio: contrastRatio(MEDIA_OVERLAY.accent, bg, chip), min: AA_TEXT },
+      // Rail : « J'aime » et « Enregistré » actifs (icônes), sans aucun voile derrière.
+      { theme, pair: `vidéo : j'aime / enregistré actifs (icône) / ${label}, sans voile`, ratio: contrastRatio(MEDIA_OVERLAY.activeIcon, bg), min: AA_LARGE },
+    );
+  }
+  return rows;
 }
 
 const LABELS: Record<ThemeId, string> = {

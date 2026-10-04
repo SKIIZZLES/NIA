@@ -8,7 +8,7 @@
 export { ORIGINAL_COLORS as Colors } from '@/constants/themes';
 import { MEDIA_TOKENS } from '@/constants/themes';
 
-export { MEDIA_TOKENS, mediaPalette } from '@/constants/themes';
+export { FEED_TOP_FADE, MEDIA_OVERLAY, MEDIA_TOKENS, mediaPalette } from '@/constants/themes';
 export type { ThemeColors, ThemeId } from '@/constants/themes';
 
 /** Ombre des libellés posés sur un média (barre d'outils, caméra). */

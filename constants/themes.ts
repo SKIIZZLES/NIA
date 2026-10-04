@@ -105,6 +105,39 @@ export const MEDIA_TOKENS = {
   mediaTextShadow: 'rgba(0, 0, 0, 0.75)',
 } as const;
 
+/**
+ * Fondu sombre sous l'en-tête du fil (logo + onglets « Pour vous »…).
+ * `band` couvre toute la zone logo + onglets : son opacité la plus faible
+ * (bas de la rangée d'onglets) reste ≥ 0.72 pour garder ≥ 4.5:1 sur une
+ * vidéo blanche. `tail` prolonge le fondu jusqu'à transparent sous les onglets.
+ * Vérifié par `lib/themeContrast.ts` (lignes « fil »).
+ */
+export const FEED_TOP_FADE = {
+  band: ['rgba(24, 17, 12, 0.82)', 'rgba(24, 17, 12, 0.74)'] as const,
+  tail: ['rgba(24, 17, 12, 0.74)', 'rgba(24, 17, 12, 0)'] as const,
+  tailHeight: 40,
+  /** Couche la plus claire derrière les libellés des onglets. */
+  weakestUnderTabs: 'rgba(24, 17, 12, 0.74)',
+} as const;
+
+/**
+ * Couleurs fixes posées sur la vidéo (VideoCard), identiques dans tous les
+ * thèmes : la vidéo reste sombre ou claire quel que soit le thème choisi.
+ */
+export const MEDIA_OVERLAY = {
+  /** Pays et lieu sous le pseudo (texte et icône). */
+  label: MEDIA_TOKENS.onMediaMuted,
+  /** Fond des puces (pays, lieu, badges) : voile fort. */
+  chipBackdrop: MEDIA_TOKENS.mediaScrimStrong,
+  /** Texte et icônes d'accent des badges (18+, filtre, IA, son). */
+  accent: MEDIA_TOKENS.onMediaAccent,
+  /**
+   * « J'aime » et « Enregistré » actifs sur le rail (sans voile derrière) :
+   * teinte moyenne ≥ 3:1 à la fois sur une vidéo blanche et sur une vidéo noire.
+   */
+  activeIcon: '#C25E1C',
+} as const;
+
 const SHARED = {
   ...MEDIA_TOKENS,
   white: '#FFFFFF',
