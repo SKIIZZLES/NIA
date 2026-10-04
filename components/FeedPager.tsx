@@ -47,6 +47,7 @@ export function FeedPager({ videos, bottomInset = 80 }: Props) {
         item={item}
         isActive={item.id === activeId}
         bottomInset={bottomInset}
+        muteBesideHandle
         onOpenComments={openComments}
       />
     ),
