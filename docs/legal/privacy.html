@@ -13,7 +13,7 @@
 <header>
   <div class="marque">NIA</div>
   <h1>Privacy Policy</h1>
-  <p class="maj">Android app <code>app.nia.mobile</code> — last updated: 1 October 2026</p>
+  <p class="maj">Android app <code>app.nia.mobile</code> — last updated: 7 October 2026</p>
 </header>
 
 <div class="encadre">
@@ -33,6 +33,7 @@
   <tr><td>Age</td><td>Date of birth, “Show 18+ content” choice</td><td>To apply the minimum age of 13 and keep 18+ content for adults who chose it. The date stays private: it never appears on your profile and no other account can read it.</td></tr>
   <tr><td>Profile</td><td>Username, display name, bio, profile picture</td><td>To identify you publicly inside the app.</td></tr>
   <tr><td>Content</td><td>Videos, images, captions, hashtags, the category and region you declare</td><td>To publish and distribute what you create.</td></tr>
+  <tr><td>Live streams</td><td>Audio and video broadcast by the host, account identifier and live stream identifier</td><td>To broadcast live and identify participants connected to the LiveKit server.</td></tr>
   <tr><td>Interactions</td><td>Likes, comments, follows, reposts, saves, notifications</td><td>To make the feed and social features work.</td></tr>
   <tr><td>Moderation</td><td>Reports (reason, target) and blocks</td><td>To handle abuse and let you block someone.</td></tr>
   <tr><td>Technical</td><td>Device language</td><td>To show the interface in your language. Read locally, never sent to a server.</td></tr>
@@ -62,7 +63,8 @@
 <p>A mask lowers the risk of being recognised but does not remove it: your voice, the background or tattoos can still identify you. Lives are not masked.</p>
 
 <h2>5. Where your data lives, and who can reach it</h2>
-<p>Your data is hosted with <strong>Supabase</strong> (PostgreSQL database and file storage), our only technical subprocessor for hosting. We pass your data to no other third party.</p>
+<p>Accounts, application data and published files are hosted with <strong>Supabase</strong> (PostgreSQL database and file storage).</p>
+<p>Live streams use a <strong>LiveKit</strong> server to transport live audio and video. When you start or join a live stream, this server receives your account identifier, the live stream identifier and a temporary connection token. The host's audio and video pass through this server to reach authorised viewers. The current NIA code does not initiate recording of the live stream.</p>
 <p>If you choose to sign in with Google, Google sends us the minimal identification details you authorise. This sign-in method is optional; email and password always remains available.</p>
 <p><strong>Public</strong> in the app: your username, display name, bio, profile picture, published videos and comments. <strong>Private</strong>: your email address, archived videos, saves, blocks and reports.</p>
 
