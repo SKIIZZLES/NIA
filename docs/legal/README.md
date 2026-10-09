@@ -78,7 +78,7 @@ les migrations et les écrans.
 | L'app collecte-t-elle des données ? | Oui | `auth.users`, `profiles`, `videos` |
 | Les données sont-elles chiffrées en transit ? | Oui | HTTPS/TLS vers Supabase |
 | L'utilisateur peut-il demander la suppression ? | Oui | Profil → Supprimer mon compte, + page web |
-| Données partagées avec des tiers ? | Non | Supabase est un sous-traitant d'hébergement, pas un destinataire tiers au sens du formulaire |
+| Données partagées avec des tiers ? | À vérifier selon les traitements et contrats des prestataires | Supabase héberge les données ; le serveur LiveKit transporte les lives. La présence d'un sous-traitant ne suffit pas à déterminer seule la réponse du formulaire. |
 
 **Types de données à cocher comme collectées :**
 
@@ -86,9 +86,18 @@ les migrations et les écrans.
 |---|---|---|---|
 | Adresse e-mail | Oui | Non | Gestion du compte |
 | Nom d'utilisateur, nom affiché | Oui | Non | Fonctionnalité de l'app |
+| Identifiant de compte | Oui | Non | Authentification et identification des participants aux lives |
+| Date de naissance et préférence de contenus 18+ | Oui | Selon le parcours d'âge | Contrôle de l'âge et filtrage des contenus |
 | Biographie, photo de profil | Oui | Oui | Fonctionnalité de l'app |
 | Photos et vidéos | Oui | Oui | Fonctionnalité de l'app |
 | Autre contenu généré (légendes, commentaires) | Oui | Oui | Fonctionnalité de l'app |
+| Audio des lives et sons publiés | Oui | Oui | Fonctionnalité de l'app |
+| Interactions (j'aime, abonnements, sauvegardes, republications) | Oui | Oui | Fonctionnalités sociales |
+
+Ces lignes inventorient le code ; elles ne remplacent pas la classification
+exacte du formulaire Play Console. La durée de traitement des flux LiveKit,
+les journaux des prestataires et les éventuelles exemptions de sous-traitance
+doivent être vérifiés sur la configuration et les contrats réels.
 
 **Types à NE PAS cocher**, vérifiés absents du code :
 

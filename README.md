@@ -271,6 +271,8 @@ data/mockVideos.ts        # Feed démo (fallback)
 
 ## EAS (stores)
 
+Préparation Google Play et contrôles avant publication : **[docs/play-store-release.md](docs/play-store-release.md)**.
+
 Fichier : `eas.json` (profil **preview** → APK Android `buildType: apk`).  
 `app.json` : `"owner": "nia-corp"` ; `extra.eas.projectId` est un placeholder — lancer `eas init` pour le lier (ne pas inventer d’UUID).
 

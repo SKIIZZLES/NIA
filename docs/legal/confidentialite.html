@@ -13,7 +13,7 @@
 <header>
   <div class="marque">NIA</div>
   <h1>Politique de confidentialité</h1>
-  <p class="maj">Application Android <code>app.nia.mobile</code> — dernière mise à jour : 1er octobre 2026</p>
+  <p class="maj">Application Android <code>app.nia.mobile</code> — dernière mise à jour : 7 octobre 2026</p>
 </header>
 
 <div class="encadre">
@@ -33,6 +33,7 @@
   <tr><td>Âge</td><td>Date de naissance, choix « Afficher les contenus 18+ »</td><td>Appliquer l'âge minimum de 13 ans et réserver les contenus 18+ aux adultes qui l'ont choisi. La date reste privée : elle n'apparaît jamais sur votre profil et aucun autre compte ne peut la lire.</td></tr>
   <tr><td>Profil</td><td>Nom d'utilisateur, nom affiché, biographie, photo de profil</td><td>Vous identifier publiquement dans l'application.</td></tr>
   <tr><td>Contenus</td><td>Vidéos, images, légendes, hashtags, catégorie et région que vous déclarez</td><td>Publier et diffuser ce que vous créez.</td></tr>
+  <tr><td>Lives</td><td>Audio et vidéo diffusés par l'hôte, identifiant de compte et identifiant du live</td><td>Permettre la diffusion en direct et identifier les participants connectés au serveur LiveKit.</td></tr>
   <tr><td>Interactions</td><td>J'aime, commentaires, abonnements, republications, enregistrements, notifications</td><td>Faire fonctionner le fil et les interactions sociales.</td></tr>
   <tr><td>Modération</td><td>Signalements (motif, contenu visé) et blocages</td><td>Traiter les abus et vous permettre de bloquer quelqu'un.</td></tr>
   <tr><td>Technique</td><td>Langue de l'appareil</td><td>Afficher l'interface dans votre langue. Lue localement, jamais envoyée à un serveur.</td></tr>
@@ -62,7 +63,8 @@
 <p>Un masque réduit le risque d'être reconnu sans le supprimer : votre voix, le décor ou des tatouages peuvent encore vous identifier. Les lives ne sont pas masqués.</p>
 
 <h2>5. Où vos données sont stockées, et qui y a accès</h2>
-<p>Vos données sont hébergées chez <strong>Supabase</strong> (base de données PostgreSQL et stockage de fichiers), notre unique sous-traitant technique pour l'hébergement. Nous ne transmettons vos données à aucun autre tiers.</p>
+<p>Les comptes, les données de l'application et les fichiers publiés sont hébergés chez <strong>Supabase</strong> (base de données PostgreSQL et stockage de fichiers).</p>
+<p>Les lives utilisent un serveur <strong>LiveKit</strong> pour transporter l'audio et la vidéo en direct. Quand vous lancez ou rejoignez un live, ce serveur reçoit votre identifiant de compte, l'identifiant du live et un jeton de connexion temporaire. L'audio et la vidéo de l'hôte passent par ce serveur pour être diffusés aux spectateurs autorisés. Le code actuel de NIA ne déclenche pas d'enregistrement du live.</p>
 <p>Si vous choisissez de vous connecter avec Google, Google nous transmet les informations minimales d'identification que vous autorisez. Cette connexion est facultative ; la connexion par e-mail et mot de passe reste toujours disponible.</p>
 <p>Ce qui est <strong>public</strong> dans l'application : votre nom d'utilisateur, votre nom affiché, votre biographie, votre photo de profil, vos vidéos publiées et vos commentaires. Ce qui reste <strong>privé</strong> : votre adresse e-mail, vos vidéos archivées, vos enregistrements, vos blocages et vos signalements.</p>
 
