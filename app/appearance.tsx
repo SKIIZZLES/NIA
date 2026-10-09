@@ -55,7 +55,15 @@ export default function AppearanceScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.list}>
         <View style={styles.intro}>
-          <Text style={styles.eyebrow}>NIA / 01</Text>
+          {/* Repère graphique (numéro d'affiche), décoratif : masqué aux lecteurs d'écran. */}
+          <Text
+            style={styles.eyebrow}
+            aria-hidden
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            NIA / 01
+          </Text>
           <Text style={styles.title}>{t('appearance.title')}</Text>
           <Text style={styles.subtitle}>{t('appearance.subtitle')}</Text>
         </View>

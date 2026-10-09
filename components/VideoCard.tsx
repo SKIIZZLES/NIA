@@ -13,7 +13,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Fonts, Radii } from '@/constants/theme';
+import { Colors, Fonts, MEDIA_OVERLAY, Radii } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { formatCount, VideoItem } from '@/data/mockVideos';
 import { useFeed } from '@/context/FeedContext';
@@ -502,7 +502,7 @@ function VideoCardInner({
         </View>
         <RailAction
           icon={liked ? 'heart' : 'heart-outline'}
-          color={liked ? colors.or : chrome}
+          color={liked ? MEDIA_OVERLAY.activeIcon : chrome}
           label={formatCount(item.likes)}
           onPress={() => toggleLike(item.id)}
         />
@@ -515,7 +515,7 @@ function VideoCardInner({
         />
         <RailAction
           icon={saved ? 'bookmark' : 'bookmark-outline'}
-          color={saved ? colors.or : chrome}
+          color={saved ? MEDIA_OVERLAY.activeIcon : chrome}
           label={formatCount(saveCount)}
           onPress={onSave}
           accessibilityLabel={t('feed.save')}
@@ -566,8 +566,8 @@ function VideoCardInner({
           ) : null}
           {item.country ? (
             <View style={styles.countryChip}>
-              <Ionicons name="location-outline" size={12} color={colors.sableMuted} />
-              <Text style={[styles.country, { color: colors.sableMuted }]}>
+              <Ionicons name="location-outline" size={12} color={MEDIA_OVERLAY.label} />
+              <Text style={styles.country}>
                 {item.country}
               </Text>
             </View>
@@ -581,15 +581,15 @@ function VideoCardInner({
         </Text>
         {item.locationText ? (
           <View style={styles.placeRow}>
-            <Ionicons name="location" size={13} color={colors.sableMuted} />
-            <Text style={[styles.placeText, { color: colors.sableMuted }]} numberOfLines={1}>
+            <Ionicons name="location" size={13} color={MEDIA_OVERLAY.label} />
+            <Text style={styles.placeText} numberOfLines={1}>
               {item.locationText}
             </Text>
           </View>
         ) : null}
         {item.soundId ? (
           <Pressable onPress={openSound} hitSlop={6} style={styles.soundRow}>
-            <Ionicons name="musical-notes" size={14} color={colors.or} />
+            <Ionicons name="musical-notes" size={14} color={MEDIA_OVERLAY.accent} />
             <Text style={styles.soundText} numberOfLines={1}>
               {item.soundTitle
                 ? item.soundCreatorHandle
@@ -606,20 +606,20 @@ function VideoCardInner({
             {/* 020 : contenu réservé aux adultes ayant choisi de le voir. */}
             {item.isMature ? (
               <View style={styles.filterBadge} accessibilityLabel={t('age.badgeA11y')}>
-                <Ionicons name="eye-off-outline" size={12} color={colors.or} />
+                <Ionicons name="eye-off-outline" size={12} color={MEDIA_OVERLAY.accent} />
                 <Text style={styles.filterBadgeText}>{t('age.badge')}</Text>
               </View>
             ) : null}
             {item.filterId ? (
               <View style={styles.filterBadge}>
-                <Ionicons name="color-filter-outline" size={12} color={colors.or} />
+                <Ionicons name="color-filter-outline" size={12} color={MEDIA_OVERLAY.accent} />
                 <Text style={styles.filterBadgeText}>{t('filter.feedBadge')}</Text>
               </View>
             ) : null}
             {/* Label obligatoire des contenus générés par IA (016). */}
             {item.aiGenerated ? (
               <View style={styles.filterBadge}>
-                <Ionicons name="sparkles-outline" size={12} color={colors.or} />
+                <Ionicons name="sparkles-outline" size={12} color={MEDIA_OVERLAY.accent} />
                 <Text style={styles.filterBadgeText}>{t('feed.aiLabel')}</Text>
               </View>
             ) : null}
@@ -817,6 +817,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radii.pill,
+    backgroundColor: MEDIA_OVERLAY.chipBackdrop,
   },
   caption: {
     color: Colors.textPrimary,
@@ -837,13 +841,24 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   country: {
-    color: Colors.sableMuted,
+    color: MEDIA_OVERLAY.label,
     fontFamily: Fonts.medium,
     fontSize: 12,
   },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  placeText: { fontFamily: Fonts.medium, fontSize: 12, flexShrink: 1 },
+  placeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    marginTop: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radii.pill,
+    backgroundColor: MEDIA_OVERLAY.chipBackdrop,
+    maxWidth: '100%',
+  },
+  placeText: { color: MEDIA_OVERLAY.label, fontFamily: Fonts.medium, fontSize: 12, flexShrink: 1 },
   filterBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -852,12 +867,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: Radii.pill,
-    backgroundColor: 'rgba(11, 11, 11, 0.55)',
+    backgroundColor: MEDIA_OVERLAY.chipBackdrop,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(209, 127, 42, 0.45)',
   },
   filterBadgeText: {
-    color: Colors.or,
+    color: MEDIA_OVERLAY.accent,
     fontFamily: Fonts.medium,
     fontSize: 11,
   },

@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedPager } from '@/components/FeedPager';
 import { useFeed } from '@/context/FeedContext';
 import { useI18n } from '@/context/I18nContext';
-import { Fonts, MEDIA_TOKENS, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
+import { FEED_TOP_FADE, Fonts, MEDIA_TOKENS, TAB_BAR_BASE_HEIGHT } from '@/constants/theme';
 import { useColors } from '@/context/ThemeContext';
 import { NiaWordmark } from '@/components/NiaWordmark';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -75,10 +75,16 @@ export default function HomeScreen() {
       <FeedPager videos={data} bottomInset={bottomInset} />
 
       <View style={[styles.topTabs, { paddingTop: insets.top + 4 }]} pointerEvents="box-none">
+        {/* Fondu ≥ 0.72 derrière tout le logo et les onglets, puis traîne jusqu'à transparent :
+            lisible même sur une vidéo blanche (voir lib/themeContrast.ts, lignes « fil »). */}
         <LinearGradient
-          colors={['rgba(24,17,12,0.68)', 'rgba(24,17,12,0.58)', 'transparent']}
-          locations={[0, 0.72, 1]}
-          style={[StyleSheet.absoluteFill, { bottom: -36 }]}
+          colors={FEED_TOP_FADE.band}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={FEED_TOP_FADE.tail}
+          style={styles.fadeTail}
           pointerEvents="none"
         />
         <View style={styles.brandRow}>
@@ -121,6 +127,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  fadeTail: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '100%',
+    height: FEED_TOP_FADE.tailHeight,
   },
   brandRow: {
     flexDirection: 'row',
