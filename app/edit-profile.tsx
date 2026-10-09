@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -17,6 +19,9 @@ import { checkTexts } from '@/lib/textFilter';
 import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { PaletteScope } from '@/context/ThemeContext';
 import { ORIGINAL_COLORS } from '@/constants/themes';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadAvatar } from '@/lib/avatar';
+import { useBlockBackWhile } from '@/hooks/useBlockBackWhile';
 
 /**
  * Écran encore dessiné avec les couleurs statiques de NIA Original : ses
@@ -37,8 +42,27 @@ function EditProfileScreenBody() {
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [busy, setBusy] = useState(false);
+  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [picking, setPicking] = useState(false);
+  useBlockBackWhile(busy);
+
+  const pickPhoto = async () => {
+    if (busy || picking) return;
+    setPicking(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) setPhoto(result.assets[0]);
+    } catch (e) {
+      Alert.alert('Erreur', e instanceof Error ? e.message : 'Impossible d’ouvrir la galerie.');
+    } finally {
+      setPicking(false);
+    }
+  };
 
   const save = async () => {
+    if (busy || picking) return;
     if (!user) {
       Alert.alert('Connexion requise', 'Connectez-vous pour modifier le profil.');
       return;
@@ -52,7 +76,8 @@ function EditProfileScreenBody() {
         { text: bio.trim() !== user.bio ? bio : '', field: 'bio' },
       ]);
       if (verdict === 'held' && !(await confirmSendAnyway())) return;
-      const result = await updateProfile({ displayName, bio });
+      const avatarUrl = photo ? await uploadAvatar(user.id, photo) : undefined;
+      const result = await updateProfile({ displayName, bio, avatarUrl });
       if (result.pending) {
         Alert.alert(t('textFilter.heldTitle'), t('textFilter.heldProfile'));
       } else if (result.masked) {
@@ -88,14 +113,25 @@ function EditProfileScreenBody() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
+        <Pressable disabled={busy} onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={26} color={Colors.sable} />
         </Pressable>
         <Text style={styles.topTitle}>Modifier le profil</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <View style={styles.form}>
+      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        <Pressable
+          onPress={pickPhoto}
+          disabled={busy || picking}
+          style={styles.photoButton}
+          accessibilityRole="button"
+          accessibilityLabel="Changer la photo de profil"
+          accessibilityState={{ disabled: busy || picking }}
+        >
+          <Image source={{ uri: photo?.uri || user?.avatarUrl || 'https://i.pravatar.cc/200?u=nia' }} style={styles.avatar} />
+          <Text style={styles.photoLabel}>Changer la photo</Text>
+        </Pressable>
         <Text style={styles.label}>Nom affiché</Text>
         <TextInput
           style={styles.input}
@@ -104,6 +140,7 @@ function EditProfileScreenBody() {
           placeholder="Votre nom"
           placeholderTextColor={Colors.textMuted}
           autoCapitalize="words"
+          editable={!busy}
         />
 
         <Text style={styles.label}>Bio</Text>
@@ -114,6 +151,7 @@ function EditProfileScreenBody() {
           placeholder="Parlez de votre univers créatif…"
           placeholderTextColor={Colors.textMuted}
           multiline
+          editable={!busy}
         />
 
         <Text style={styles.hint}>
@@ -124,10 +162,11 @@ function EditProfileScreenBody() {
           title="Enregistrer"
           variant="gold"
           loading={busy}
+          disabled={picking}
           onPress={save}
           style={{ marginTop: Spacing.lg }}
         />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -148,7 +187,10 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     fontSize: 16,
   },
-  form: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+  form: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.xxl },
+  photoButton: { alignSelf: 'center', alignItems: 'center', padding: Spacing.sm },
+  avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 2, borderColor: Colors.or },
+  photoLabel: { marginTop: Spacing.sm, color: Colors.or, fontFamily: Fonts.medium, fontSize: 14 },
   label: {
     marginTop: Spacing.md,
     marginBottom: 6,
