@@ -184,7 +184,7 @@ export async function fetchVideosByUserId(
 
 export async function updateProfile(
   userId: string,
-  patch: { display_name?: string; bio?: string },
+  patch: { display_name?: string; bio?: string; avatar_url?: string },
 ): Promise<ProfileRow | null> {
   const sb = getSupabase();
   if (!sb || !isSupabaseConfigured || userId.startsWith('mock_')) {
@@ -196,6 +196,7 @@ export async function updateProfile(
     .update({
       ...(patch.display_name !== undefined ? { display_name: patch.display_name } : {}),
       ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
+      ...(patch.avatar_url !== undefined ? { avatar_url: patch.avatar_url } : {}),
     })
     .eq('id', userId)
     .select('*')

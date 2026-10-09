@@ -585,12 +585,19 @@ export default function ProfileScreen() {
       >
         <Ionicons name="menu" size={26} color={colors.sable} />
       </Pressable>
-      <Image
-        source={{
-          uri: user?.avatarUrl || 'https://i.pravatar.cc/200?u=nia',
-        }}
-        style={styles.avatar}
-      />
+      <Pressable
+        onPress={() => router.push('/edit-profile')}
+        disabled={!user}
+        accessibilityRole="button"
+        accessibilityLabel="Changer la photo de profil"
+      >
+        <Image
+          source={{
+            uri: user?.avatarUrl || 'https://i.pravatar.cc/200?u=nia',
+          }}
+          style={styles.avatar}
+        />
+      </Pressable>
       <Text style={styles.displayName}>
         {user?.displayName || user?.username || t('common.guest')}
       </Text>

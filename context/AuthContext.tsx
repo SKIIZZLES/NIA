@@ -53,7 +53,7 @@ type AuthContextValue = {
    * peut masquer des mots ou garder l'ancienne valeur le temps d'une
    * vérification ; le résultat le dit, l'état local suit le serveur.
    */
-  updateProfile: (patch: { displayName?: string; bio?: string }) => Promise<ProfileUpdateResult>;
+  updateProfile: (patch: { displayName?: string; bio?: string; avatarUrl?: string }) => Promise<ProfileUpdateResult>;
   /** true = AsyncStorage mock ; false = Supabase Auth */
   isMockAuth: boolean;
 };
@@ -328,7 +328,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [persistMock]);
 
   const updateProfile = useCallback(
-    async (patch: { displayName?: string; bio?: string }) => {
+    async (patch: { displayName?: string; bio?: string; avatarUrl?: string }) => {
       if (!user) throw new Error('Connectez-vous pour modifier le profil.');
       const nextDisplay =
         patch.displayName !== undefined ? patch.displayName.trim() : user.displayName;
@@ -339,6 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...user,
           displayName: nextDisplay,
           bio: nextBio,
+          avatarUrl: patch.avatarUrl ?? user.avatarUrl,
         };
         await persistMock(next);
         return { pending: false, masked: false };
@@ -347,9 +348,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const row = await persistProfile(user.id, {
         display_name: nextDisplay,
         bio: nextBio,
+        ...(patch.avatarUrl !== undefined ? { avatar_url: patch.avatarUrl } : {}),
       });
       if (!row) {
-        setUser({ ...user, displayName: nextDisplay, bio: nextBio });
+        setUser({ ...user, displayName: nextDisplay, bio: nextBio, avatarUrl: patch.avatarUrl ?? user.avatarUrl });
         return { pending: false, masked: false };
       }
       // 018 : seules les valeurs modifiées passent par le filtre ; une valeur
@@ -362,6 +364,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...user,
         displayName: row.display_name ?? user.displayName,
         bio: row.bio ?? '',
+        avatarUrl: row.avatar_url || user.avatarUrl,
       });
       return {
         pending: outcomes.includes('pending'),
