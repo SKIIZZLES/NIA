@@ -11,6 +11,7 @@ import { getSupabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileRow } from '@/types/database';
 import { updateProfile as persistProfile } from '@/lib/profiles';
 import { profileFieldOutcome } from '@/lib/textFilter';
+import { deferredAuthState } from '@/lib/authState';
 import {
   getGoogleIdToken,
   signInWithGoogleIdToken,
@@ -198,6 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let alive = true;
+    let authEventRevision = 0;
     const sb = getSupabase();
 
     (async () => {
@@ -214,9 +216,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data } = await sb.auth.getSession();
         const session = data.session;
-        if (session?.user && alive) {
+        if (session?.user && alive && authEventRevision === 0) {
           const profile = await ensureProfileRow(session.user);
-          if (alive) setUser(profileToUser(session.user, profile));
+          if (alive && authEventRevision === 0) setUser(profileToUser(session.user, profile));
         }
       } catch {
         // ignore corrupt / network
@@ -229,18 +231,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       alive = false;
     };
 
-    const { data: sub } = sb.auth.onAuthStateChange(async (_event: string, session: AuthSession) => {
-      if (!alive) return;
+    const authState = deferredAuthState<AuthSession>(async (session, isCurrent) => {
+      if (!alive || !isCurrent()) return;
       if (!session?.user) {
         setUser(null);
         return;
       }
-      const profile = await ensureProfileRow(session.user);
-      if (alive) setUser(profileToUser(session.user, profile));
+      // Render the authenticated identity even if profile enrichment is offline.
+      setUser(profileToUser(session.user, null));
+      try {
+        const profile = await ensureProfileRow(session.user);
+        if (alive && isCurrent()) setUser(profileToUser(session.user, profile));
+      } catch {
+        // Keep the session identity; never reject an auth event on network failure.
+      }
+    });
+    const { data: sub } = sb.auth.onAuthStateChange((_event: string, session: AuthSession) => {
+      ++authEventRevision;
+      authState.onSession(session);
     });
 
     return () => {
       alive = false;
+      authState.dispose();
       sub.subscription.unsubscribe();
     };
   }, []);
