@@ -21,6 +21,7 @@
     "buffer": "^6.0.3",
     "expo": "~57.0.23",
     "expo-audio": "~57.0.5",
+    "expo-build-properties": "~57.0.18",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.18",
     "expo-crypto": "^57.0.3",
@@ -71,7 +72,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:watch": "jest --watchAll"
+    "test:watch": "jest --watchAll",
+    "test:android-r8": "node --test scripts/android-r8.test.cjs"
   },
   "private": true,
   "expo": {

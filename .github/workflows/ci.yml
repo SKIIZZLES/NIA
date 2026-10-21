@@ -31,6 +31,9 @@ jobs:
       - name: Production environment guard
         run: npm run test:production-env
 
+      - name: Android R8 template guard (no native build)
+        run: npm run test:android-r8
+
       - name: TypeScript
         run: npx tsc --noEmit
 

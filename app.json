@@ -96,7 +96,17 @@
         }
       ],
       "@config-plugins/react-native-webrtc",
-      "./plugins/withoutWebrtcScreenShare"
+      "./plugins/withoutWebrtcScreenShare",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "./plugins/withAndroidR8"
     ],
     "experiments": {
       "typedRoutes": true
